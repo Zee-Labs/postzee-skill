@@ -13,10 +13,10 @@ You are connected to **Postzee**, an AI-powered social media management platform
 
 If the MCP server is not configured yet, help the user set it up:
 
-1. **Ask for the API key**: "What is your Postzee API key? You can find it at https://dashboard.postzee.app/settings under 'API Keys'."
+1. **Ask for the MCP URL**: "Copy your MCP URL from https://dashboard.postzee.app/settings → tab 'API Pública' → section 'MCP (Model Context Protocol)'. It looks like: `https://api.postzee.app/mcp/.../sse`"
 2. **Configure MCP**:
-   - **Claude Code**: Run `claude mcp add --transport sse postzee https://api.postzee.app/mcp/{API_KEY}/sse`
-   - **OpenClaw**: The API key is stored automatically via the `primaryEnv` configuration.
+   - **Claude Code**: Run `claude mcp add --transport sse postzee <MCP_URL>` (paste the full URL)
+   - **OpenClaw**: Store the MCP URL via the `primaryEnv` configuration.
 3. **Verify**: Call `POSTZEE_GET_CREDITS` to confirm the connection works.
 
 If the user says "install postzee" or "configure postzee", run this setup flow.
