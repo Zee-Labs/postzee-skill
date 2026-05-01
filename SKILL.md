@@ -13,7 +13,7 @@ You are connected to **Postzee**, an AI-powered social media management platform
 
 If the MCP server is not configured yet, help the user set it up:
 
-1. **Ask for the API key**: "What is your Postzee API key? You can find it at https://app.postzee.app/settings under 'API Keys'."
+1. **Ask for the API key**: "What is your Postzee API key? You can find it at https://dashboard.postzee.app/settings under 'API Keys'."
 2. **Configure MCP**:
    - **Claude Code**: Run `claude mcp add --transport sse postzee https://api.postzee.app/mcp/{API_KEY}/sse`
    - **OpenClaw**: The API key is stored automatically via the `primaryEnv` configuration.
@@ -40,7 +40,7 @@ If the user says "install postzee" or "configure postzee", run this setup flow.
 
 ## Workflow — Generate AI Image
 
-1. **Check credits** — call `POSTZEE_GET_CREDITS`. If 0, suggest purchasing at https://app.postzee.app/credits.
+1. **Check credits** — call `POSTZEE_GET_CREDITS`. If 0, suggest purchasing at https://dashboard.postzee.app/credits.
 2. **Enhance the prompt** — call `POSTZEE_ENHANCE_PROMPT`. Always do this unless the user explicitly says not to. Show the enhanced prompt for approval.
 3. **Show model options** — call `POSTZEE_LIST_IMAGE_MODELS`. Present 2-3 recommended options with credit costs.
 4. **Generate** — call `POSTZEE_GENERATE_IMAGE` with:
@@ -84,7 +84,7 @@ When the user wants to animate a photo into video:
 
 HeyGen creates videos with AI avatars speaking custom text. **HeyGen uses its own credits (not Postzee credits).**
 
-1. **List avatars** — call `POSTZEE_LIST_HEYGEN_AVATARS`. If not configured, inform the user to set up at https://app.postzee.app/settings.
+1. **List avatars** — call `POSTZEE_LIST_HEYGEN_AVATARS`. If not configured, inform the user to set up at https://dashboard.postzee.app/settings.
 2. **List voices** — call `POSTZEE_LIST_HEYGEN_VOICES`. Let the user choose.
 3. **Generate** — call `POSTZEE_GENERATE_HEYGEN_VIDEO` with:
    - `script`: text for the avatar to speak (20-1500 chars)
@@ -97,7 +97,7 @@ HeyGen creates videos with AI avatars speaking custom text. **HeyGen uses its ow
 
 ## Workflow — Post to Social Media
 
-1. **List channels** — call `POSTZEE_LIST_CHANNELS`. If none connected, direct to https://app.postzee.app/channels
+1. **List channels** — call `POSTZEE_LIST_CHANNELS`. If none connected, direct to https://dashboard.postzee.app/channels
 2. **Ask which channel(s)** — let the user choose.
 3. **Create post** — call `POSTZEE_CREATE_POST` for **each** channel:
    - `type: "now"` — publish immediately (**default when user says "post" or "publish"**)
@@ -164,10 +164,10 @@ Default to 16:9 if no platform is mentioned.
 ## Error Handling
 
 - **Generation failed** — suggest different model or simpler prompt
-- **Insufficient credits** — show balance + cheapest model + link to https://app.postzee.app/credits
-- **No channels connected** — direct to https://app.postzee.app/channels
-- **HeyGen not configured** — direct to https://app.postzee.app/settings
-- **Polling timeout (>3 min)** — direct to https://app.postzee.app to check result
+- **Insufficient credits** — show balance + cheapest model + link to https://dashboard.postzee.app/credits
+- **No channels connected** — direct to https://dashboard.postzee.app/channels
+- **HeyGen not configured** — direct to https://dashboard.postzee.app/settings
+- **Polling timeout (>3 min)** — direct to https://dashboard.postzee.app to check result
 
 ## Guidelines
 

@@ -37,7 +37,7 @@ After installation, tell your agent:
 
 > "Configure Postzee with my API key: pk_your_key_here"
 
-Get your API key at [app.postzee.app/settings](https://app.postzee.app/settings).
+Get your API key at [dashboard.postzee.app/settings](https://dashboard.postzee.app/settings).
 
 The agent will configure the MCP connection automatically.
 
@@ -59,10 +59,10 @@ The agent will configure the MCP connection automatically.
 
 ## Links
 
-- [Postzee App](https://app.postzee.app)
+- [Postzee App](https://dashboard.postzee.app)
 - [Documentation](https://docs.postzee.app)
-- [Buy Credits](https://app.postzee.app/credits)
-- [Connect Channels](https://app.postzee.app/channels)
+- [Buy Credits](https://dashboard.postzee.app/credits)
+- [Connect Channels](https://dashboard.postzee.app/channels)
 
 ## License
 
