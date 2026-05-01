@@ -1,6 +1,6 @@
 ---
 name: postzee
-description: Generate AI images/videos and post to 30+ social media platforms with Postzee. Use when the user wants to create AI media, generate images or videos, optimize prompts, or schedule social media posts.
+description: Generate AI images/videos and post to 30+ social media platforms with Postzee. Use when the user wants to create AI media, generate images or videos, optimize prompts, create HeyGen avatar videos, or schedule social media posts.
 user-invocable: true
 metadata: {"primaryEnv": "POSTZEE_API_KEY", "emoji": "🎨"}
 ---
@@ -27,100 +27,154 @@ If the user says "install postzee" or "configure postzee", run this setup flow.
 |------|-------------|
 | `POSTZEE_LIST_CHANNELS` | List connected social media accounts |
 | `POSTZEE_GET_CREDITS` | Check available AI credit balance |
-| `POSTZEE_LIST_IMAGE_MODELS` | Show available AI image generation models with costs |
-| `POSTZEE_LIST_VIDEO_MODELS` | Show available AI video generation models with costs |
-| `POSTZEE_ENHANCE_PROMPT` | Optimize a prompt for dramatically better AI results |
-| `POSTZEE_GENERATE_IMAGE` | Generate an AI image (returns jobId for polling) |
-| `POSTZEE_GENERATE_VIDEO` | Generate an AI video (returns jobId for polling) |
+| `POSTZEE_LIST_IMAGE_MODELS` | Show available AI image models with costs |
+| `POSTZEE_LIST_VIDEO_MODELS` | Show available AI video models with costs |
+| `POSTZEE_ENHANCE_PROMPT` | Optimize a prompt for better AI results |
+| `POSTZEE_GENERATE_IMAGE` | Generate an AI image (supports reference images, aspect ratio, quality, style) |
+| `POSTZEE_GENERATE_VIDEO` | Generate an AI video (supports image-to-video, duration, aspect ratio) |
+| `POSTZEE_GENERATE_HEYGEN_VIDEO` | Create an avatar video with HeyGen AI |
+| `POSTZEE_LIST_HEYGEN_AVATARS` | List available HeyGen avatars |
+| `POSTZEE_LIST_HEYGEN_VOICES` | List available HeyGen voices |
 | `POSTZEE_CHECK_JOB` | Check generation job status (poll until "success") |
 | `POSTZEE_CREATE_POST` | Create or schedule a social media post |
 
-## Workflow — Generate AI Media
+## Workflow — Generate AI Image
 
-Always follow this sequence:
+1. **Check credits** — call `POSTZEE_GET_CREDITS`. If 0, suggest purchasing at https://app.postzee.app/credits.
+2. **Enhance the prompt** — call `POSTZEE_ENHANCE_PROMPT`. Always do this unless the user explicitly says not to. Show the enhanced prompt for approval.
+3. **Show model options** — call `POSTZEE_LIST_IMAGE_MODELS`. Present 2-3 recommended options with credit costs.
+4. **Generate** — call `POSTZEE_GENERATE_IMAGE` with:
+   - `prompt`: the enhanced prompt
+   - `model`: chosen model ID
+   - `aspectRatio`: based on target platform (see table below)
+   - `imageUrls`: reference images if the user provided any
+   - `quality`: for GPT Image 2 ("low", "medium", "high")
+   - `style`: for Recraft models ("realistic_image", "digital_illustration", "vector_illustration")
+5. **Poll** — call `POSTZEE_CHECK_JOB` every 5 seconds until "success" or "failed".
 
-1. **Check credits** — call `POSTZEE_GET_CREDITS`. If balance is 0, inform the user and suggest purchasing at https://app.postzee.app/credits. If balance is low, mention it so the user can choose a cheaper model.
-2. **Enhance the prompt** — call `POSTZEE_ENHANCE_PROMPT` with the user's idea and the target mediaType. This transforms simple descriptions into professional-grade prompts. Always do this unless the user explicitly says not to. Show the enhanced prompt to the user before proceeding.
-3. **Show model options** — call `POSTZEE_LIST_IMAGE_MODELS` or `POSTZEE_LIST_VIDEO_MODELS`. Present 2-3 recommended options with credit costs. Compare costs against available credits.
-4. **Generate** — call `POSTZEE_GENERATE_IMAGE` or `POSTZEE_GENERATE_VIDEO` with the enhanced prompt and chosen model. Inform the user that generation takes 10-60 seconds for images and up to 2 minutes for videos.
-5. **Poll for completion** — call `POSTZEE_CHECK_JOB` with the jobId. Repeat every 5 seconds until status is "success" or "failed". When successful, show the media URL. If failed, suggest trying a different model or simplifying the prompt.
+### Image-to-Image (Reference Images)
+
+When the user wants to transform or use a photo as reference:
+- **OpenClaw (Telegram)**: The user sends a photo in chat — use the received image URL in `imageUrls`
+- **Claude Code**: The user provides a public URL — pass it in `imageUrls`
+- **From previous generation**: Use the `mediaUrl` returned by `POSTZEE_CHECK_JOB`
+
+Example: "Transform my photo into an anime style" — enhance prompt + pass the photo URL in `imageUrls`
+
+## Workflow — Generate AI Video
+
+1. **Check credits** — call `POSTZEE_GET_CREDITS`.
+2. **Enhance the prompt** — call `POSTZEE_ENHANCE_PROMPT` with `mediaType: "video"`.
+3. **Generate** — call `POSTZEE_GENERATE_VIDEO` with:
+   - `prompt`: enhanced prompt
+   - `model`: chosen model ID
+   - `duration`: seconds (e.g., "5", "8", "10")
+   - `aspectRatio`: based on platform
+   - `imageUrl`: reference image for image-to-video (animate a photo)
+4. **Poll** — call `POSTZEE_CHECK_JOB` every 5 seconds.
+
+### Image-to-Video (Animate a Photo)
+
+When the user wants to animate a photo into video:
+- Pass the image URL in `imageUrl` parameter
+- Suggest vertical models for Stories/Reels/TikTok (9:16)
+- Best models for I2V: Kling 3.0 Pro, Veo 3.1, Luma Ray 2
+
+## Workflow — HeyGen Avatar Video
+
+HeyGen creates videos with AI avatars speaking custom text. **HeyGen uses its own credits (not Postzee credits).**
+
+1. **List avatars** — call `POSTZEE_LIST_HEYGEN_AVATARS`. If not configured, inform the user to set up at https://app.postzee.app/settings.
+2. **List voices** — call `POSTZEE_LIST_HEYGEN_VOICES`. Let the user choose.
+3. **Generate** — call `POSTZEE_GENERATE_HEYGEN_VIDEO` with:
+   - `script`: text for the avatar to speak (20-1500 chars)
+   - `avatarId`: chosen avatar
+   - `voiceId`: chosen voice
+   - `aspectRatio`: "16:9" or "9:16"
+4. **Poll** — call `POSTZEE_CHECK_JOB` every 5 seconds.
+
+**Important**: HeyGen videos do NOT consume Postzee credits. They use the user's HeyGen account credits.
 
 ## Workflow — Post to Social Media
 
-1. **List channels** — call `POSTZEE_LIST_CHANNELS`. Show connected accounts grouped by platform. If none are connected, direct the user to https://app.postzee.app/channels
-2. **Ask which channel(s)** — let the user choose one or more.
-3. **Create the post** — call `POSTZEE_CREATE_POST` for **each** selected channel (one call per channel).
-   - Immediate posting: use `type: "now"` — **always use "now" when the user says "post" or "publish" without specifying a date.**
-   - Scheduled: use `type: "schedule"` with `date` in UTC
-   - Draft: use `type: "draft"`
+1. **List channels** — call `POSTZEE_LIST_CHANNELS`. If none connected, direct to https://app.postzee.app/channels
+2. **Ask which channel(s)** — let the user choose.
+3. **Create post** — call `POSTZEE_CREATE_POST` for **each** channel:
+   - `type: "now"` — publish immediately (**default when user says "post" or "publish"**)
+   - `type: "schedule"` — with `date` in UTC
+   - `type: "draft"` — save as draft
+   - `mediaUrls` — attach generated media URLs
 
 ### Multi-channel posting
 - Call `POSTZEE_CREATE_POST` once per channel with the same content.
-- If the user wants **different text per platform**, ask before creating.
+- If user wants different text per platform, ask before creating.
 
 ## Quick Actions
 
-Recognize these patterns and execute the full flow without asking at each step:
+Execute the full flow without asking at each step:
 
-- **"Generate and post to Instagram"** — check credits → enhance → generate → poll → list channels → find Instagram → create post
-- **"Create a video for TikTok"** — same flow with video, auto-select 9:16 aspect ratio
-- **"Post this text to all my channels"** — list channels → create post on each one
-
-When the user gives a clear intent with a target platform, execute the complete flow proactively. Only pause to confirm the enhanced prompt and the final post content.
+- **"Generate and post to Instagram"** — credits → enhance → generate (4:5) → poll → channels → post
+- **"Create a video for TikTok"** — credits → enhance → generate video (9:16) → poll → channels → post
+- **"Animate my photo"** — credits → enhance → generate video with imageUrl → poll
+- **"Create a HeyGen video"** — avatars → voices → generate → poll
+- **"Post this text to all channels"** — channels → create post on each
 
 ## Smart Model Recommendations
 
-When the user doesn't specify a model, recommend based on intent:
-
 ### Image Models
-- **Photorealistic portraits/photos** — Nano Banana 2 or GPT Image 2
-- **Logos, icons, vector graphics** — Recraft V4
-- **Text in images (posters, banners)** — Ideogram V3
-- **Artistic/creative styles** — GPT Image 2 or Recraft V3
-- **Budget-friendly** — Nano Banana (cheapest)
-- **Maximum quality** — GPT Image 2 High or Recraft V4 Pro
+| Intent | Model | Why |
+|--------|-------|-----|
+| Photorealistic photos | Nano Banana 2 or GPT Image 2 | Best quality for photos |
+| Logos, icons, vectors | Recraft V4 | Native vector output |
+| Text in images (posters) | Ideogram V3 | Perfect text rendering |
+| Artistic/creative | GPT Image 2 or Recraft V3 | Versatile styles |
+| Budget-friendly | Nano Banana | Cheapest option |
+| Maximum quality | GPT Image 2 High or Recraft V4 Pro | Premium output |
 
 ### Video Models
-- **Short cinematic clips** — Kling 3.0 Pro or Veo 3.1
-- **Quick social content** — Veo 3.1 Fast or Luma Ray 2 Flash
-- **High quality production** — Sora 2 Pro (most expensive)
-- **Budget-friendly** — Seedance 1.0 Lite
+| Intent | Model | Why |
+|--------|-------|-----|
+| Cinematic clips | Kling 3.0 Pro or Veo 3.1 | High quality |
+| Quick social content | Veo 3.1 Fast or Luma Ray 2 Flash | Fast + affordable |
+| Animate a photo | Kling 3.0 Pro or Veo 3.1 | Best I2V quality |
+| High production | Sora 2 Pro | Premium (expensive) |
+| Budget-friendly | Seedance 1.0 Lite | Cheapest video |
+| Avatar speaking | HeyGen | Realistic AI avatars |
 
-Always show the credit cost next to the recommendation.
+Always show credit cost next to recommendations.
 
 ## Platform-Aware Aspect Ratios
 
-When the user mentions a platform, automatically suggest the right aspect ratio:
+Automatically apply when the user mentions a platform:
 
-| Platform | Format | Aspect Ratio |
-|----------|--------|-------------|
-| Instagram Feed | Square or Portrait | 1:1 or 4:5 |
-| Instagram Stories/Reels | Vertical | 9:16 |
-| TikTok | Vertical | 9:16 |
-| YouTube | Landscape | 16:9 |
-| YouTube Shorts | Vertical | 9:16 |
-| LinkedIn | Landscape | 16:9 or 1:1 |
-| X (Twitter) | Landscape | 16:9 |
-| Facebook | Landscape or Square | 16:9 or 1:1 |
-| Pinterest | Tall Portrait | 2:3 |
+| Platform | Aspect Ratio |
+|----------|-------------|
+| Instagram Feed | 1:1 or 4:5 |
+| Instagram Stories/Reels | 9:16 |
+| TikTok | 9:16 |
+| YouTube | 16:9 |
+| YouTube Shorts | 9:16 |
+| LinkedIn | 16:9 or 1:1 |
+| X (Twitter) | 16:9 |
+| Facebook | 16:9 or 1:1 |
+| Pinterest | 2:3 |
 
-Apply the aspect ratio automatically when generating. Default to 16:9 if no platform is mentioned.
+Default to 16:9 if no platform is mentioned.
 
 ## Error Handling
 
-- **Generation failed** — "Would you like to try with a different model, or should I simplify the prompt?"
-- **Insufficient credits** — show balance, show cheapest available model, suggest purchasing at https://app.postzee.app/credits
-- **No channels connected** — "Connect your social media accounts at https://app.postzee.app/channels"
-- **Invalid model ID** — list available models and let the user pick
-- **Polling timeout (>3 minutes)** — "Check the result later at https://app.postzee.app"
+- **Generation failed** — suggest different model or simpler prompt
+- **Insufficient credits** — show balance + cheapest model + link to https://app.postzee.app/credits
+- **No channels connected** — direct to https://app.postzee.app/channels
+- **HeyGen not configured** — direct to https://app.postzee.app/settings
+- **Polling timeout (>3 min)** — direct to https://app.postzee.app to check result
 
-## Conversation Guidelines
+## Guidelines
 
 - **Always enhance prompts** before generating — results are dramatically better.
-- **Always check credits** before generating — compare balance vs model cost.
+- **Always check credits** before generating — except for HeyGen (uses own credits).
 - **Be proactive** — after generating, ask if they want to post. After posting, ask if they want more.
-- **Detect the user's language** — respond in the same language (Portuguese, English, Spanish, French, and more).
-- **Celebrate success** — when a post is published, confirm with enthusiasm.
-- Generation is **asynchronous** (10-60s images, up to 2min videos). Always inform and poll.
+- **Detect the user's language** — respond in the same language.
 - **Text posts are free** — no credits needed.
-- Use **UTC datetime** for scheduling. Convert from user's timezone if needed.
+- **Use UTC datetime** for scheduling.
+- Generation is **asynchronous**: images 10-60s, videos up to 2min, HeyGen up to 5min.
