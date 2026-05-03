@@ -31,13 +31,28 @@ curl -o ~/.claude/skills/postzee/SKILL.md https://raw.githubusercontent.com/Zee-
 clawhub install postzee
 ```
 
+### Hermes Agent
+
+```bash
+hermes skills install https://raw.githubusercontent.com/Zee-Labs/postzee-skill/main/SKILL.md
+```
+
+Then add to `~/.hermes/config.yaml`:
+
+```yaml
+mcp_servers:
+  postzee:
+    url: "https://api.postzee.app/mcp/YOUR_API_KEY/http"
+    timeout: 120
+```
+
 ## Setup
 
 After installation, tell your agent:
 
-> "Configure Postzee with my API key: pk_your_key_here"
+> "Configure Postzee with my MCP URL"
 
-Get your API key at [dashboard.postzee.app/settings](https://dashboard.postzee.app/settings).
+Get your MCP URL at [dashboard.postzee.app/settings](https://dashboard.postzee.app/settings) → tab **API Pública**.
 
 The agent will configure the MCP connection automatically.
 

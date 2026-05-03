@@ -13,10 +13,11 @@ You are connected to **Postzee**, an AI-powered social media management platform
 
 If the MCP server is not configured yet, help the user set it up:
 
-1. **Ask for the MCP URL**: "Copy your MCP URL from https://dashboard.postzee.app/settings → tab 'API Pública' → section 'MCP (Model Context Protocol)'. It looks like: `https://api.postzee.app/mcp/.../sse`"
+1. **Ask for the MCP URL**: "Copy your MCP URL from https://dashboard.postzee.app/settings → tab 'API Pública' → section 'MCP (Model Context Protocol)'. It looks like: `https://api.postzee.app/mcp/.../http`"
 2. **Configure MCP**:
-   - **Claude Code**: Run `claude mcp add --transport sse postzee <MCP_URL>` (paste the full URL)
+   - **Claude Code**: Run `claude mcp add postzee <MCP_URL>` (paste the full URL)
    - **OpenClaw**: Store the MCP URL via the `primaryEnv` configuration.
+   - **Hermes Agent**: Add to `~/.hermes/config.yaml` under `mcp_servers: postzee: url: <MCP_URL>`
 3. **Verify**: Call `POSTZEE_GET_CREDITS` to confirm the connection works.
 
 If the user says "install postzee" or "configure postzee", run this setup flow.
@@ -68,7 +69,7 @@ Example: "Transform my photo into an anime style" — enhance prompt + pass the 
 3. **Generate** — call `POSTZEE_GENERATE_VIDEO` with:
    - `prompt`: enhanced prompt
    - `model`: chosen model ID
-   - `duration`: seconds (e.g., "5", "8", "10")
+   - `duration`: seconds as number (e.g., 5, 8, 10)
    - `aspectRatio`: based on platform
    - `imageUrl`: reference image for image-to-video (animate a photo)
 4. **Poll** — call `POSTZEE_CHECK_JOB` every 5 seconds.
