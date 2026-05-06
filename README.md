@@ -1,35 +1,33 @@
-# Postzee Skill v2
+# Postzee Skill v3
 
 The most complete AI agent skill for social media production. Turns your agent into a **world-class creative director, copywriter, video producer, and social media manager** — generating images, videos, carousels, captions, and posting to 30+ networks.
 
-## What's new in v2
+All operations go through the **Postzee MCP HTTP** server — never the REST API directly.
 
-- **Conversational creative briefs** — the agent builds a full creative direction with you before generating anything
-- **Carousel mastery** — 10 proven frameworks (listicle, BAB, mythbusting, story arc, comparison, mistakes, hacks, quote+commentary, BTS, step-by-step) with per-platform specs
-- **Multi-scene video consistency** — character lock via Veo 3.1 R2V, Sora 2 Storyboard 25s, Wan FLF2V chain, or reference image
-- **Professional ffmpeg composition** — concat with crossfades, audio ducking, loudness normalization, aspect ratio conversion, Ken Burns, picture-in-picture, chromakey
-- **Whisper subtitle workflows** — standard, highlighted-word (viral TikTok style), single-word, karaoke, type-on
-- **Copywriting frameworks** — AIDA, PAS, BAB, FAB, 4 Ps with per-platform templates
-- **80+ proven hooks library** organized by category (Number+Benefit, Pain+Relief, Bold Claim, Curiosity Gap, Question, Time-bound, Story, Mistake, BTS, Comparison)
-- **Trends 2026 snapshot** with macro shifts, format trends, visual aesthetics, algorithm signals
-- **Smart model selection** — picks the right image/video model based on use case + cost
-- **Multi-language native** — respects user's language (any), adapts captions and CTAs culturally
+## What's new in v3
+
+- **Plan-aware & credit-aware** — agent reads the user's subscription tier, credit balance, and channel state via `POSTZEE_GET_CONTEXT` before any work, then makes intelligent CTAs (FREE → upgrade, low credits → matched pack, posts cap → TEAM, etc.)
+- **Single source of truth** — model catalog, capabilities, durations, resolutions, platform specs, and best-times all come live from the MCP. Skill no longer hardcodes any of these.
+- **Costs in credits, never USD** — `POSTZEE_ESTIMATE_GENERATION_COST` is the only place pricing is shown to the user
+- **Skill version self-check** — every session, agent compares its installed version against the published version returned by the MCP and warns the user if outdated
+- **No invented features** — agent only proposes features the MCP currently exposes (`features.veoR2V`, `features.soraStoryboard`, etc.)
+- **Pre-flight validation** — `POSTZEE_VALIDATE_GENERATION` catches param errors before burning credits
+- **8 new MCP tools + 5 extended** — see [Architecture](#architecture)
 
 ## Capabilities
 
 ### Image
-- 25+ AI image models (GPT Image 2, Recraft V4, Nano Banana 2/Pro, Ideogram V3 Quality, FLUX 2 Pro, etc.)
-- Per-platform aspect ratio (1:1, 4:5, 9:16, 16:9, 2:3)
+- 15+ AI image models (GPT Image 2, Recraft V4, Nano Banana 2/Pro, Ideogram V3, FLUX 2 Pro, etc.) — list lives in MCP, not skill
+- Per-platform aspect ratio
 - Reference image / character consistency
-- Vector output (Recraft V4 Vector / SVG)
+- Vector output (SVG via Recraft)
 
 ### Video
 - 20+ AI video models (Veo 3.1, Sora 2/Pro, Kling, Luma Ray, Seedance, Pixverse, Wan, Vidu)
 - Native lip-sync (HeyGen, Sora 2, Veo 3.1)
-- Reference-to-Video character lock (Veo 3.1 R2V)
-- Multi-scene storyboards (Sora 2 Storyboard 25s)
-- Frame-chain consistency (Wan FLF2V)
-- ffmpeg composition (concat, transitions, audio mix, normalization)
+- 1080p Pro for Sora via `quality: "high"`
+- Multi-language audio control
+- First-Last-Frame (Wan FLF2V)
 
 ### Subtitles
 - Whisper.cpp / faster-whisper / WhisperX / OpenAI Whisper API
@@ -37,32 +35,56 @@ The most complete AI agent skill for social media production. Turns your agent i
 - Burn-in via ffmpeg with ASS / SRT styling
 
 ### Posting
-- 30+ social networks
-- Carousel posting in correct order (mediaUrls array)
+- 30+ social networks (Instagram, Facebook, LinkedIn, X, TikTok, YouTube, Pinterest, Threads, BlueSky, Reddit, Mastodon, Telegram, Discord, etc.)
+- Carousel posting in correct order (`mediaUrls` array)
 - Per-platform caption optimization
-- Schedule or post immediately
+- Schedule (with timezone-aware best times) or post immediately
+- **Subscription-gated** — FREE plan blocked at MCP level (no surprise paywalls)
 
 ## Architecture
 
 ```
 postzee-skill/
-├── SKILL.md                          # Orchestrator
+├── SKILL.md                          # Orchestrator v3.0.0
 ├── README.md                         # This file
 └── reference/
-    ├── models-image.md               # Image model capability matrix
-    ├── models-video.md               # Video model capability matrix
-    ├── multi-scene-workflow.md       # 4 strategies for character/scene consistency
-    ├── heygen-vs-aivideo.md          # Talking-head decision matrix
-    ├── carousel-mastery.md           # 10 frameworks + per-platform specs
+    ├── plans-and-pricing.md          # NEW v3 — 5 plans, 5 credit packs, when to recommend which
+    ├── credit-aware-flow.md          # NEW v3 — state matrix and CTA copy templates
+    ├── carousel-mastery.md           # 10 frameworks
     ├── captions-frameworks.md        # AIDA/PAS/BAB/FAB/4Ps templates
     ├── hooks-library.md              # 80+ proven hook templates
-    ├── platform-specs.md             # 2026 specs for all platforms
+    ├── multi-scene-workflow.md       # Multi-scene strategies (gated by features.*)
+    ├── heygen-vs-aivideo.md          # Talking-head decision matrix
     ├── ffmpeg-cookbook.md            # Professional video composition recipes
     ├── subtitle-workflows.md         # Whisper + trending caption styles
     └── trends-2026.md                # Macro shifts and format trends
 ```
 
-The agent loads `SKILL.md` first, then references the appropriate file based on user intent.
+The agent loads `SKILL.md` first, then references the appropriate file based on user intent. Three former files (`models-image.md`, `models-video.md`, `platform-specs.md`) were **removed in v3** — that information now comes live from MCP tools.
+
+### MCP tools used by the skill
+
+The skill talks to the Postzee backend exclusively via these MCP tools:
+
+| Tool | Purpose |
+|------|---------|
+| `POSTZEE_GET_CONTEXT` | Plan, credits, storage, channels, features, skill version (call first every session) |
+| `POSTZEE_LIST_PLANS` | The 5 subscription tiers with prices and limits |
+| `POSTZEE_LIST_CREDIT_PACKAGES` | The 5 one-time credit packs (eternal) |
+| `POSTZEE_LIST_MODELS_DETAILED` | Capability matrix (audio, lip-sync, durations, resolutions, params) — no absolute price |
+| `POSTZEE_LIST_PLATFORM_SPECS` | Per-platform aspect ratios, max slides, captions limits |
+| `POSTZEE_GET_BEST_POSTING_TIMES` | Best windows per channel in the org's timezone |
+| `POSTZEE_ESTIMATE_GENERATION_COST` | Cost in credits — single source of truth |
+| `POSTZEE_VALIDATE_GENERATION` | Pre-flight: params valid? credits enough? plan permits? |
+| `POSTZEE_LIST_CHANNELS` | Connected social accounts |
+| `POSTZEE_GET_CREDITS` | Credit balance only (subset of GET_CONTEXT) |
+| `POSTZEE_ENHANCE_PROMPT` | Optimize a prompt |
+| `POSTZEE_GENERATE_IMAGE` | Generate an AI image |
+| `POSTZEE_GENERATE_VIDEO` | Generate an AI video |
+| `POSTZEE_GENERATE_HEYGEN_VIDEO` | Avatar video with HeyGen (uses HeyGen credits) |
+| `POSTZEE_LIST_HEYGEN_AVATARS` / `_VOICES` | HeyGen catalog |
+| `POSTZEE_CHECK_JOB` | Poll generation status |
+| `POSTZEE_CREATE_POST` | Publish or schedule (subscription-gated server-side) |
 
 ## Installation
 
@@ -109,6 +131,16 @@ After installation, tell your agent:
 
 Get your MCP URL at [dashboard.postzee.app/settings](https://dashboard.postzee.app/settings) → **API Pública** tab.
 
+## Updating the skill
+
+The agent self-checks the skill version on every new session and warns you if there's a newer release. To update:
+
+```bash
+gh skill update postzee
+# or, if installed manually:
+cd ~/.claude/skills/postzee && git pull
+```
+
 ## Usage Examples
 
 ### Image generation
@@ -120,7 +152,7 @@ Get your MCP URL at [dashboard.postzee.app/settings](https://dashboard.postzee.a
 ### Video generation
 ```
 "Create a 15-second cinematic dialogue scene for TikTok"
-"Make a multi-scene story about a transformation journey, 25s, character locked"
+"Make a multi-scene story about a transformation journey"
 ```
 
 ### Carousel
@@ -134,14 +166,9 @@ Get your MCP URL at [dashboard.postzee.app/settings](https://dashboard.postzee.a
 "Create a HeyGen explainer video, 1 minute, my standard avatar, calm voice"
 ```
 
-### Multi-scene with consistency
+### Posting
 ```
-"Make a 30s video with the same character across 4 scenes — morning routine to evening reflection"
-```
-
-### Composition (with shell access)
-```
-"Combine these 3 clips with crossfade transitions, add bg music with ducking, normalize to -14 LUFS"
+"Post this carousel to my Instagram and LinkedIn channels, schedule for tomorrow at the best time"
 ```
 
 ### Captions and copy
@@ -150,28 +177,26 @@ Get your MCP URL at [dashboard.postzee.app/settings](https://dashboard.postzee.a
 "Generate 3 hook variations for this carousel"
 ```
 
-### Posting
-```
-"Post this carousel to my Instagram and LinkedIn channels, schedule for tomorrow 7pm"
-```
+## Plan & Credit awareness
+
+The skill knows Postzee's plan structure (FREE / STANDARD / TEAM / PRO / ULTIMATE) and one-time credit packs (Starter / Basic / Standard / Pro / Enterprise). When you're low on credits or your plan doesn't cover what you're trying to do, the agent surfaces a contextual upgrade CTA — never a surprise paywall mid-generation.
+
+**Cost is always shown in credits.** ($1 USD = 1,000 credits internally; the agent only ever talks credits to you.)
 
 ## Requirements
 
-- A [Postzee](https://postzee.app) account (free or paid)
-- AI credits for media generation (starting at $2 for 2,000 credits)
-- At least one connected social channel (for posting)
+- A [Postzee](https://postzee.app) account
+- AI credits to generate (any subscription tier with monthly credits, or one-time credit packs from any plan including FREE)
+- A paid plan (STANDARD or higher) to publish via Postzee. FREE accounts can generate but not post — you can still download files and post manually.
 - For ffmpeg composition: shell access in your agent environment + `ffmpeg` installed
 - For local subtitles: `whisper.cpp` or `whisperx` installed
-
-## Cost philosophy
-
-The skill is **cost-aware** — it estimates credits before generating and proposes mid-tier models for testing, premium for finals. Carousels mix premium (slide 1 + CTA) with cheaper middle slides for 4x cost reduction without quality loss.
 
 ## Links
 
 - [Postzee App](https://dashboard.postzee.app)
 - [Documentation](https://docs.postzee.app)
 - [Buy Credits](https://dashboard.postzee.app/credits)
+- [Manage Plan](https://dashboard.postzee.app/billing)
 - [Connect Channels](https://dashboard.postzee.app/channels)
 - [API Public Settings](https://dashboard.postzee.app/settings)
 

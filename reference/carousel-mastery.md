@@ -378,91 +378,65 @@ Quick grid showing all 7 items in a single visual.
 
 ### Images vs illustrations vs text-only
 
-| Type | Use for | Best model |
-|------|---------|-----------|
-| Photo | Lifestyle, product, BTS | Nano Banana 2, GPT Image 2 High |
-| Illustration | Educational, conceptual | Recraft V4 |
-| Icon-driven | Listicle, comparison | Recraft V4, GPT Image 2 |
-| Text-only | Quote, hook, CTA | Ideogram V3 Quality |
-| Mixed text+visual | Most common | GPT Image 2 High |
+| Type | Use for | How to pick the model |
+|------|---------|-----------------------|
+| Photo | Lifestyle, product, BTS | `POSTZEE_LIST_MODELS_DETAILED({type:"image"})` → look for `bestFor: ["photoreal photos", ...]` |
+| Illustration | Educational, conceptual | look for `bestFor: ["illustrations", ...]` |
+| Icon-driven | Listicle, comparison | look for `bestFor: ["illustrations"]` or `["versatile mixed text+visual"]` |
+| Text-only | Quote, hook, CTA | look for `bestFor: ["text in image"]` (Ideogram family is strong here) |
+| Mixed text+visual | Most common | `bestFor: ["versatile mixed text+visual"]` |
+| SVG / vector logo | Brand assets | `supportsVector: true` |
+
+Always pull the live model catalog via the MCP. The capability matrix evolves.
 
 ---
 
 ## Per-platform specs (carousel)
 
-### Instagram
+**Always fetch live specs via `POSTZEE_LIST_PLATFORM_SPECS`.** The MCP is the single source of truth — Postzee maintains current specs centrally.
 
-| Spec | Value |
-|------|-------|
-| Max slides | 20 |
-| Best aspect ratio | **4:5** (portrait, fills more screen) |
-| Acceptable | 1:1 |
-| Sweet spot | 7-10 slides |
-| Hook critical? | YES — slide 1 makes or breaks it |
-| Captions | 125 chars visible before "see more" |
-| Save rate matters | YES — algorithm weighting |
+The general ranges below are guidance to help you frame the brief; **the MCP returns authoritative values for `maxSlides`, `recommendedSlides`, `aspectRatios`, `format`, `captions.maxChars`, `captions.visibleChars`, and `captions.hashtagsRecommended` for each platform.**
 
-### LinkedIn
-
-| Spec | Value |
-|------|-------|
-| Max | 300 (PDF document upload) |
-| Best aspect ratio | 1:1 or 4:5 |
-| Sweet spot | 8-12 slides |
-| Format | **PDF document upload** (better than image carousel) |
-| Captions | First 3 lines visible — write hook here |
-| Engagement driver | Comments + sharers |
-
-### TikTok Photo Mode
-
-| Spec | Value |
-|------|-------|
-| Max | 35 slides |
-| Best aspect ratio | **9:16** (vertical) |
-| Sweet spot | 7-12 slides |
-| Algorithm note | Distinct from video TikTok — different feed |
-| Music | Add trending audio post-creation |
-| Text overlay | Native TikTok text editor adds value |
-
-### Pinterest Idea Pin
-
-| Spec | Value |
-|------|-------|
-| Max | 20 |
-| Best aspect ratio | **9:16** (always vertical) |
-| Sweet spot | 5-7 slides |
-| Note | Idea Pins are similar to carousels but Pinterest-specific |
-
-### X / Twitter
-
-| Spec | Value |
-|------|-------|
-| Max images per tweet | 4 |
-| Best aspect ratio | 16:9 or 1:1 |
-| Tip | For longer carousels, do a tweet thread (each tweet up to 4 images) |
-
-### Facebook
-
-| Spec | Value |
-|------|-------|
-| Max | 10 |
-| Best aspect ratio | 1:1 or 4:5 |
-| Sweet spot | 5-8 slides |
-| Note | Similar to Instagram patterns |
+| Platform | Format hint | Sweet spot range |
+|----------|-------------|------------------|
+| Instagram | image carousel, prefer 4:5 | 7-10 slides — hook critical |
+| LinkedIn | **PDF document upload** (3-5x more engagement than image carousel), 1:1 or 4:5 | 8-12 slides |
+| TikTok Photo Mode | image carousel, 9:16 vertical | 7-12 slides — distinct algorithm from video |
+| Pinterest Idea Pin | 9:16 vertical | 5-7 slides |
+| X / Twitter | up to 4 images per tweet, threads for longer | use threads (each tweet up to 4) |
+| Facebook | image carousel | 5-8 slides |
+| Threads | image carousel | 5-8 slides |
 
 ---
 
 ## Generation strategy with Postzee
 
+### Step 1 — Pick model(s) via the MCP
+
+Always call `POSTZEE_LIST_MODELS_DETAILED({type:"image"})` and pick based on `bestFor` and `costTier`. Never hardcode model ids — the catalog evolves.
+
+### Step 2 — Validate cost upfront
+
+```
+POSTZEE_VALIDATE_GENERATION({
+  type: "image",
+  model: "<chosen-model>",
+  aspectRatio: "4:5",
+  slideCount: 10
+})
+```
+
+Returns `totalEstimatedCredits` and `willExceedBalance`. Show the user the **credit total** and confirm before proceeding.
+
 ### Strategy 1 — Same model, all slides (consistent style)
 
 ```
-For each slide N of 10:
+For each slide N of total:
   POSTZEE_GENERATE_IMAGE({
-    model: "gpt-image-2-high",
-    prompt: `[brand style description] 
+    model: "<picked-model>",
+    prompt: `[brand style description]
              Slide ${N} of ${total}: [slide content]
-             Same visual style as previous slides: 
+             Same visual style as previous slides:
              [palette: navy + cream + coral]
              [typography: Inter Bold for titles]
              [layout: centered, vertical]`,
@@ -470,19 +444,19 @@ For each slide N of 10:
   })
 ```
 
-**Cost (10 slides × 440 credits):** ~4,400 credits = $4.40
+Premium model on every slide = highest visual consistency, higher total cost.
 
-### Strategy 2 — Mixed models by slide type (cost optimized)
+### Strategy 2 — Mixed models by slide type (cost-optimized)
+
+Pick a strong text-rendering model for the hook + recap slides (where text is hero), and a cheaper photoreal/illustration model for content-heavy slides. Determine via `costTier` from `POSTZEE_LIST_MODELS_DETAILED`:
 
 ```
-SLIDE 1 (hook with text)         → ideogram-v3-quality (180)
-SLIDES 2-9 (text + visual mix)   → gpt-image-2-medium (120)
-SLIDE 10 (CTA, mostly visual)    → recraft-v4 (80)
+SLIDE 1 (hook with text)        → costTier: "low" or "mid", bestFor includes "text in image"
+SLIDES 2 to N-1 (mixed content) → costTier: "low" or "mid", bestFor matches slide type
+SLIDE N (CTA, mostly visual)    → costTier: "very-low" or "low"
 ```
 
-**Cost:** 180 + (8 × 120) + 80 = 1,220 credits = $1.22
-
-**4x cheaper than premium-everywhere, similar quality if prompts are well-crafted.**
+This typically reduces total credits significantly versus premium-everywhere with comparable quality if prompts are well-crafted.
 
 ### Strategy 3 — Reference-based (locked style)
 
@@ -490,7 +464,7 @@ SLIDE 10 (CTA, mostly visual)    → recraft-v4 (80)
 1. Generate slide 1 (hook) with desired visual style
 2. Use slide 1 as imageUrls reference for slides 2-N
    POSTZEE_GENERATE_IMAGE({
-     model: "gpt-image-2-high",
+     model: "<picked-model>",
      prompt: "[slide 2 content], same style as reference",
      imageUrls: [slide_1_url]
    })
@@ -519,7 +493,7 @@ POSTZEE_CREATE_POST({
     slide_9_url,
     slide_10_cta_url         // Last slide
   ],
-  caption: "[written caption]",
+  text: "[written caption]",  // ← param is `text`, not `caption`
   type: "now"
 })
 ```
@@ -544,17 +518,14 @@ POSTZEE_CREATE_POST({
 
 ---
 
-## Cost estimation by carousel type
+## Cost estimation
 
-| Carousel | Slides | Mix | Est. cost |
-|----------|--------|-----|-----------|
-| Quote + commentary | 5 | All Ideogram V3 Balanced | ~600 credits ($0.60) |
-| Listicle | 8 | 1 Ideogram Quality + 7 GPT Image 2 Medium | ~1,020 credits ($1.02) |
-| Story arc | 10 | Mix of GPT Image 2 + Recraft | ~2,000 credits ($2.00) |
-| Premium brand | 10 | All GPT Image 2 High | ~4,400 credits ($4.40) |
-| Tutorial step-by-step | 7 | All Ideogram V3 Quality (heavy text) | ~1,260 credits ($1.26) |
+**Never quote dollar amounts. Always credits.** Always run `POSTZEE_VALIDATE_GENERATION({slideCount: N})` BEFORE generating to get the live total in credits and confirm the user's balance covers it.
 
-Always tell the user the est. cost before generating.
+Example to the user (in their language):
+> "Pra esse carrossel de 10 slides com [model], vai dar **{credits} créditos** no total. Você tem {available} disponíveis. Sigo?"
+
+If `willExceedBalance: true` from the MCP, switch into the credit-pack CTA flow (see `credit-aware-flow.md`).
 
 ---
 
