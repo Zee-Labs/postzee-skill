@@ -18,6 +18,8 @@ Carousels drive **3-5x more engagement** than single images on Instagram and Lin
 
 Pick the framework based on user's content type. Each framework has a proven structure.
 
+> **Note on examples:** the templates below are written in English for canonical clarity. **Always translate the actual slide copy into the user's language** and adapt to their tone and culture. The structure is universal; the words are not.
+
 ### Framework 1 — Listicle ("X things that...")
 
 **Structure:** Hook → N items → CTA
@@ -26,12 +28,12 @@ Pick the framework based on user's content type. Each framework has a proven str
 
 **When to use:** Educational content with clearly enumerable points.
 
-**Example: "7 ferramentas que todo founder solo precisa em 2026"**
+**Example: "7 tools every solo founder needs in 2026"**
 
 ```
 SLIDE 1 (hook):
-  Big text: "7 ferramentas que todo founder solo PRECISA em 2026"
-  Subtle: "Salva pra não perder"
+  Big text: "7 tools every solo founder NEEDS in 2026"
+  Subtle: "Save so you don't lose it"
 
 SLIDE 2-8 (one tool per slide):
   Number badge "1/7" top-right
@@ -41,12 +43,12 @@ SLIDE 2-8 (one tool per slide):
   Visual: tool logo / screenshot mockup
 
 SLIDE 9 (recap):
-  "TL;DR — Stack completo do solopreneur"
+  "TL;DR — The complete solopreneur stack"
   Mini grid showing all 7 names
 
 SLIDE 10 (CTA):
-  "Salva esse carrossel 📌"
-  "Segue @user pra mais"
+  "Save this carousel 📌"
+  "Follow @user for more"
   Brand handle/logo
 ```
 
@@ -60,17 +62,17 @@ SLIDE 10 (CTA):
 
 **When to use:** Tutorials, how-to, processes.
 
-**Example: "Como criar um vídeo viral em 30 minutos"**
+**Example: "How to create a viral video in 30 minutes"**
 
 ```
-SLIDE 1: "Como criar um vídeo viral em 30 minutos (passo a passo)"
-SLIDE 2: "Passo 1: Defina o hook em 1 frase"
-SLIDE 3: "Passo 2: Roteiro de 3 atos em 5 minutos"
-SLIDE 4: "Passo 3: Grave 5 takes — escolha o melhor"
-SLIDE 5: "Passo 4: Edite com cortes a cada 2-3s"
-SLIDE 6: "Passo 5: Legendas estilo MrBeast"
-SLIDE 7: "Resultado: vídeo de 15s pronto pra postar"
-SLIDE 8: CTA "Quer o template? Comenta 'TEMPLATE' 👇"
+SLIDE 1: "How to create a viral video in 30 minutes (step-by-step)"
+SLIDE 2: "Step 1: Define the hook in one sentence"
+SLIDE 3: "Step 2: 3-act script in 5 minutes"
+SLIDE 4: "Step 3: Record 5 takes — keep the best"
+SLIDE 5: "Step 4: Edit with cuts every 2-3s"
+SLIDE 6: "Step 5: MrBeast-style captions"
+SLIDE 7: "Result: 15s video, ready to post"
+SLIDE 8: CTA "Want the template? Comment 'TEMPLATE' 👇"
 ```
 
 ---
@@ -83,16 +85,16 @@ SLIDE 8: CTA "Quer o template? Comenta 'TEMPLATE' 👇"
 
 **When to use:** Selling transformation (course, product, service).
 
-**Example: "Como sai de 0 a 10K seguidores em 90 dias"**
+**Example: "How I went from 0 to 10K followers in 90 days"**
 
 ```
-SLIDE 1: "Como sai de 0 a 10K seguidores em 90 dias"
-SLIDE 2: "Antes: 47 seguidores. Posts genéricos. 5 likes."
-SLIDE 3: "O problema não era o algoritmo. Era minha estratégia."
-SLIDE 4: "Mudei 3 coisas..."
-SLIDE 5: "1. Hook em todo post / 2. 1 tema único / 3. Posto às 19h"
-SLIDE 6: "Depois: 10.4K seguidores em 89 dias. CPM negativo."
-SLIDE 7: CTA "Curso completo no link da bio"
+SLIDE 1: "How I went from 0 to 10K followers in 90 days"
+SLIDE 2: "Before: 47 followers. Generic posts. 5 likes."
+SLIDE 3: "The problem wasn't the algorithm. It was my strategy."
+SLIDE 4: "I changed 3 things..."
+SLIDE 5: "1. Hook on every post / 2. One single theme / 3. Post at 7pm"
+SLIDE 6: "After: 10.4K followers in 89 days. Negative CPM."
+SLIDE 7: CTA "Full course in bio link"
 ```
 
 ---
@@ -105,16 +107,16 @@ SLIDE 7: CTA "Curso completo no link da bio"
 
 **When to use:** Disrupting common knowledge in your niche. Highly shareable.
 
-**Example: "5 mitos sobre marketing digital que estão te custando dinheiro"**
+**Example: "5 digital marketing myths that are costing you money"**
 
 ```
-SLIDE 1: "5 mitos sobre marketing digital que estão te custando $$$"
-SLIDE 2: "MITO 1: 'Quanto mais hashtags, melhor'"
-SLIDE 3: "VERDADE: 3-5 max. Mais que isso = spam signal."
-SLIDE 4: "MITO 2: 'Postar todo dia é essencial'"
-SLIDE 5: "VERDADE: 3 posts excelentes > 7 medianos. Algoritmo prefere quality."
-[continua com 3 mais]
-SLIDE 9: CTA "Qual mito você acreditava? 👇"
+SLIDE 1: "5 digital marketing myths that are costing you $$$"
+SLIDE 2: "MYTH 1: 'The more hashtags, the better'"
+SLIDE 3: "TRUTH: 3-5 max. More than that = spam signal."
+SLIDE 4: "MYTH 2: 'Posting every day is essential'"
+SLIDE 5: "TRUTH: 3 great posts > 7 mediocre ones. The algorithm prefers quality."
+[continues with 3 more]
+SLIDE 9: CTA "Which myth did you believe? 👇"
 ```
 
 ---
@@ -127,18 +129,18 @@ SLIDE 9: CTA "Qual mito você acreditava? 👇"
 
 **When to use:** Personal stories, case studies, brand narratives.
 
-**Example: "Falência → 7 figures em 18 meses"**
+**Example: "Bankruptcy → 7 figures in 18 months"**
 
 ```
-SLIDE 1: "De falência a 7 figures em 18 meses (real story)"
-SLIDE 2: SETUP — "Outubro 2024: Saldo bancário R$ 0. Cartão estourado."
-SLIDE 3: TENSION — "Eu tinha 30 dias pra pagar aluguel ou perder tudo."
-SLIDE 4: TURNING POINT — "Foi quando descobri X..."
-SLIDE 5: ACTION — "Apliquei isso por 60 dias seguidos..."
-SLIDE 6: CLIMAX — "Primeiro mês: R$ 8K. Segundo: R$ 30K."
-SLIDE 7: RESOLUTION — "Hoje: equipe de 6, 7-figures ARR."
-SLIDE 8: LESSON — "Lição: O segredo não era trabalhar mais. Era trabalhar em X."
-SLIDE 9: CTA — "Comenta 'STORY' pra eu te mandar o passo a passo"
+SLIDE 1: "From bankruptcy to 7 figures in 18 months (real story)"
+SLIDE 2: SETUP — "October 2024: bank balance $0. Credit card maxed."
+SLIDE 3: TENSION — "I had 30 days to pay rent or lose everything."
+SLIDE 4: TURNING POINT — "That's when I discovered X..."
+SLIDE 5: ACTION — "I applied this for 60 days straight..."
+SLIDE 6: CLIMAX — "First month: $8K. Second: $30K."
+SLIDE 7: RESOLUTION — "Today: team of 6, 7-figure ARR."
+SLIDE 8: LESSON — "Lesson: the secret wasn't working harder. It was working on X."
+SLIDE 9: CTA — "Comment 'STORY' to get the step-by-step"
 ```
 
 ---
@@ -151,17 +153,17 @@ SLIDE 9: CTA — "Comenta 'STORY' pra eu te mandar o passo a passo"
 
 **When to use:** Buying decisions, tool comparison, methodology debate.
 
-**Example: "Notion vs Obsidian: qual escolher em 2026"**
+**Example: "Notion vs Obsidian: which to choose in 2026"**
 
 ```
-SLIDE 1: "Notion vs Obsidian — qual ferramenta escolher em 2026?"
-SLIDE 2: "Vou comparar em 4 critérios objetivos"
-SLIDE 3: "Critério 1: Curva de aprendizado — Notion 8/10, Obsidian 5/10"
-SLIDE 4: "Critério 2: Customização — Notion 6/10, Obsidian 10/10"
-SLIDE 5: "Critério 3: Colaboração — Notion 9/10, Obsidian 4/10"
-SLIDE 6: "Critério 4: Privacidade — Notion 5/10, Obsidian 10/10"
-SLIDE 7: VEREDICTO — "Para times: Notion. Para individuais geeks: Obsidian."
-SLIDE 8: CTA — "Qual você usa? 👇"
+SLIDE 1: "Notion vs Obsidian — which tool to choose in 2026?"
+SLIDE 2: "I'll compare on 4 objective criteria"
+SLIDE 3: "Criterion 1: Learning curve — Notion 8/10, Obsidian 5/10"
+SLIDE 4: "Criterion 2: Customization — Notion 6/10, Obsidian 10/10"
+SLIDE 5: "Criterion 3: Collaboration — Notion 9/10, Obsidian 4/10"
+SLIDE 6: "Criterion 4: Privacy — Notion 5/10, Obsidian 10/10"
+SLIDE 7: VERDICT — "For teams: Notion. For solo geeks: Obsidian."
+SLIDE 8: CTA — "Which one do you use? 👇"
 ```
 
 ---
@@ -174,17 +176,17 @@ SLIDE 8: CTA — "Qual você usa? 👇"
 
 **When to use:** Negative-framed (powerful for engagement). Curiosity hook.
 
-**Example: "10 erros que matam carrosséis no Instagram"**
+**Example: "10 mistakes that kill Instagram carousels"**
 
 ```
-SLIDE 1: "10 erros que matam seus carrosséis no Instagram"
-SLIDE 2: "Erro 1: Slide 1 sem hook visual claro"
-        SOLUÇÃO: "Use texto MASSIVO, pergunta ousada, ou número curioso"
-SLIDE 3: "Erro 2: Mais de 2 fontes diferentes"
-        SOLUÇÃO: "1 fonte hero (títulos) + 1 fonte body (texto)"
-[...continua]
-SLIDE 11: "Salva pra revisar antes do próximo carrossel"
-SLIDE 12: CTA — "Qual erro você cometia? 👇"
+SLIDE 1: "10 mistakes that kill your Instagram carousels"
+SLIDE 2: "Mistake 1: Slide 1 without a clear visual hook"
+        SOLUTION: "Use MASSIVE text, a bold question, or a curious number"
+SLIDE 3: "Mistake 2: More than 2 different fonts"
+        SOLUTION: "1 hero font (titles) + 1 body font (text)"
+[...continues]
+SLIDE 11: "Save this to review before your next carousel"
+SLIDE 12: CTA — "Which mistake were you making? 👇"
 ```
 
 ---
@@ -197,16 +199,16 @@ SLIDE 12: CTA — "Qual erro você cometia? 👇"
 
 **When to use:** Actionable advice, quick wins.
 
-**Example: "9 hacks de produtividade que mudaram minha vida"**
+**Example: "9 productivity hacks that changed my life"**
 
 ```
-SLIDE 1: "9 hacks de produtividade que mudaram minha vida"
-SLIDE 2: "1. Regra dos 2 minutos: se demora <2min, faça AGORA"
-SLIDE 3: "2. Block calendar: agende focus time como reunião"
-SLIDE 4: "3. 80/20: identifica os 20% que geram 80% — corta o resto"
-[...continua]
-SLIDE 10: "O hack mais poderoso? O #7. Aplica essa semana."
-SLIDE 11: CTA — "Salva pra aplicar amanhã"
+SLIDE 1: "9 productivity hacks that changed my life"
+SLIDE 2: "1. The 2-minute rule: if it takes <2min, do it NOW"
+SLIDE 3: "2. Calendar block: schedule focus time like a meeting"
+SLIDE 4: "3. 80/20: find the 20% that drives 80% — cut the rest"
+[...continues]
+SLIDE 10: "The most powerful hack? #7. Apply it this week."
+SLIDE 11: CTA — "Save this to apply tomorrow"
 ```
 
 ---
@@ -219,22 +221,22 @@ SLIDE 11: CTA — "Salva pra aplicar amanhã"
 
 **When to use:** Inspirational, philosophical content. Quick to consume.
 
-**Example: "A frase de Naval Ravikant que mudou meu negócio"**
+**Example: "The Naval Ravikant quote that changed my business"**
 
 ```
-SLIDE 1 (visual heavy): "A frase de Naval que mudou meu negócio"
-SLIDE 2 (quote slide): 
-  Big text: "Specific knowledge is found by pursuing your 
-              genuine curiosity and passion rather than 
+SLIDE 1 (visual heavy): "The Naval quote that changed my business"
+SLIDE 2 (quote slide):
+  Big text: "Specific knowledge is found by pursuing your
+              genuine curiosity and passion rather than
               what is hot right now."
   - Naval Ravikant
-SLIDE 3 (context): "Em 2024 eu tava perseguindo o que era hot. 
-                    Resultado: burnout + zero diferenciação."
-SLIDE 4 (application): "Mudei pra pursuir o que me dava energia. 
-                        18 meses depois: posicionamento único + 7-figures."
-SLIDE 5 (twist): "A pergunta certa não é 'o que é trending?' — 
-                  é 'no que eu sou geneticamente curioso?'"
-SLIDE 6 (CTA): "Qual sua specific knowledge? 👇"
+SLIDE 3 (context): "In 2024 I was chasing what was hot.
+                    Result: burnout + zero differentiation."
+SLIDE 4 (application): "I switched to pursuing what energized me.
+                        18 months later: unique positioning + 7-figures."
+SLIDE 5 (twist): "The right question isn't 'what's trending?' —
+                  it's 'what am I genetically curious about?'"
+SLIDE 6 (CTA): "What's your specific knowledge? 👇"
 ```
 
 ---
@@ -247,17 +249,17 @@ SLIDE 6 (CTA): "Qual sua specific knowledge? 👇"
 
 **When to use:** Authenticity, transparency, building trust.
 
-**Example: "Como produzo 30 conteúdos por semana sozinho"**
+**Example: "How I produce 30 pieces of content per week solo"**
 
 ```
-SLIDE 1: "Como produzo 30 conteúdos/semana SOZINHO (BTS real)"
-SLIDE 2: "Segunda 8h: brainstorm de 10 hooks novos no Notion"
-SLIDE 3: "Terça 7-9h: gravação batch de 5 vídeos no estúdio"
-SLIDE 4: "Quarta: edição + IA pra captions automáticas"
-SLIDE 5: "Quinta: scheduling no Postzee — tudo programado"
-SLIDE 6: "Sexta: análise de métricas, otimização"
-SLIDE 7: REVEAL — "O segredo: tudo é batched. Não posto no dia."
-SLIDE 8: CTA — "Comenta 'BTS' pra eu mandar minha planilha"
+SLIDE 1: "How I produce 30 pieces of content/week SOLO (real BTS)"
+SLIDE 2: "Monday 8am: brainstorm 10 new hooks in Notion"
+SLIDE 3: "Tuesday 7-9am: batch record 5 videos in studio"
+SLIDE 4: "Wednesday: edit + AI for auto captions"
+SLIDE 5: "Thursday: schedule on Postzee — all programmed"
+SLIDE 6: "Friday: metrics analysis, optimization"
+SLIDE 7: REVEAL — "The secret: it's all batched. I never post day-of."
+SLIDE 8: CTA — "Comment 'BTS' to get my spreadsheet"
 ```
 
 ---
@@ -552,9 +554,9 @@ The carousel and the caption work together. The caption hooks people who *might*
 
 **Example:**
 
-Carousel slide 1: "7 ferramentas que todo founder solo precisa em 2026"
+Carousel slide 1: "7 tools every solo founder needs in 2026"
 
-Caption hook: "Eu testei 47 ferramentas em 2025. Essas 7 são as que sobreviveram. ⤵️"
+Caption hook: "I tested 47 tools in 2025. These 7 are the ones that survived. ⤵️"
 
 → **Two hooks = two chances to stop the scroll.**
 

@@ -67,12 +67,12 @@ USER WANTS A PERSON TO SAY SPECIFIC WORDS?
    → if false, redirect user to https://dashboard.postzee.app/settings
 
 2. POSTZEE_LIST_HEYGEN_AVATARS
-   → Show user options or filter by criteria
-   "Você prefere um avatar masculino, feminino, jovem, mais maduro?"
+   → Show user options or filter by criteria. Ask (in their language):
+   "Do you prefer a male or female avatar? Younger or more mature?"
 
 3. POSTZEE_LIST_HEYGEN_VOICES
-   → Filter by language and gender
-   "Qual idioma e tom? PT-BR feminino calmo? EN-US masculino energético?"
+   → Filter by language and gender. Ask (in their language):
+   "Which language and tone? Calm female PT-BR? Energetic male EN-US?"
 
 4. POSTZEE_GENERATE_HEYGEN_VIDEO({
      script: "[20-1500 chars]",
@@ -83,17 +83,17 @@ USER WANTS A PERSON TO SAY SPECIFIC WORDS?
 
 5. POSTZEE_CHECK_JOB (poll, may take up to 5min)
 
-6. ⚠️ Inform user: "Esse vídeo usa créditos da sua conta HeyGen,
-   não os créditos Postzee."
+6. ⚠️ Inform user (in their language): "This video uses credits from your
+   HeyGen account, not Postzee credits."
 ```
 
 ### When `features.heygen === false`
 
-Redirect:
-> "HeyGen ainda não tá configurado na tua conta. Cadastra a chave em
-> https://dashboard.postzee.app/settings → HeyGen integration. Sem isso,
-> posso seguir com Sora 2 ou Veo 3.1 que cobram nos créditos Postzee
-> normais. Qual prefere?"
+Redirect (translate to the user's language):
+> "HeyGen isn't configured on your account yet. Add your API key at
+> https://dashboard.postzee.app/settings → HeyGen integration. Without it,
+> I can proceed with Sora 2 or Veo 3.1 which bill on regular Postzee credits.
+> Which do you prefer?"
 
 ---
 
@@ -139,15 +139,20 @@ Redirect:
 ### Sora 2 dialogue prompt structure
 
 ```
-A young Brazilian woman in her late 20s, dark curly hair,
+A young woman in her late 20s, dark curly hair,
 casual chic blazer over white t-shirt, sitting in a sunlit
-modern café in São Paulo. She looks directly at camera
+modern café. She looks directly at camera
 while sipping espresso, then sets the cup down and says
-warmly: "Olha, eu vou te contar um segredo: o melhor café
-de São Paulo não é o que você imagina."
+warmly: "Look, let me tell you a secret: the best coffee
+in this city isn't what you'd imagine."
 Camera slowly pushes in. Natural ambient sound + soft
 café atmosphere.
 ```
+
+(The dialogue line itself can be in any language — pass exactly what the
+user wants the character to say. Sora 2 lip-sync works best in English
+but is functional in many languages; for premium multilingual lip-sync,
+prefer Veo 3.1.)
 
 ### Limitations
 - Per-call duration limited (check model's `durations`)
@@ -222,11 +227,11 @@ When user is undecided:
 - **Custom brand** → user can create from their own photo (HeyGen Talking Photos)
 
 ### Voice
-- **PT-BR neutro feminino** → young teaching style
-- **PT-BR calmo masculino** → authoritative explainer
+- **Neutral female (any language)** → young teaching style
+- **Calm male (any language)** → authoritative explainer
 - **EN-US energetic** → marketing, hype
 - **EN-UK calm** → premium, sophisticated
-- **Any language** → match audience demographics
+- **Any language** → match audience demographics; HeyGen supports 40+ languages
 
 When in doubt, generate 1 short test (15s) with chosen avatar+voice → user confirms → continue with full content.
 

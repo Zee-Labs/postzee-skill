@@ -2,6 +2,8 @@
 
 The caption is **half the post**. A great visual with a generic caption underperforms; an average visual with a phenomenal caption can go viral. This guide gives you proven frameworks per platform.
 
+> **Examples below are written in English as canonical templates.** Always render the final caption in the user's language, adapting tone and idioms naturally. The framework structure (AIDA, PAS, BAB, FAB, 4Ps) is universal.
+
 ---
 
 ## The 5 copywriting frameworks (memorize these)
@@ -19,13 +21,13 @@ The caption is **half the post**. A great visual with a generic caption underper
 
 **Example (Postzee feature launch):**
 
-> Você ainda perde 4 horas por semana agendando posts manualmente? ⚡
-> 
-> A maioria dos founders solo gasta mais tempo administrando o calendário do que criando conteúdo.
-> 
-> Imagina poder programar 30 dias de posts em 15 minutos — em todas as redes ao mesmo tempo.
-> 
-> Comece grátis: link na bio 👇
+> Still losing 4 hours a week scheduling posts manually? ⚡
+>
+> Most solo founders spend more time managing the calendar than creating content.
+>
+> Imagine scheduling 30 days of posts in 15 minutes — on every network at once.
+>
+> Start free: link in bio 👇
 
 ---
 
@@ -41,11 +43,11 @@ The caption is **half the post**. A great visual with a generic caption underper
 
 **Example:**
 
-> Você está postando todo dia e não cresce.
-> 
-> Não é o algoritmo. É que você está sem hook nos primeiros 3 segundos. 90% dos vídeos que falham, falham na slide 1.
-> 
-> Use esses 5 hooks que sempre funcionam: [...]
+> You're posting every day and not growing.
+>
+> It's not the algorithm. You're missing a hook in the first 3 seconds. 90% of videos that fail, fail on slide 1.
+>
+> Use these 5 hooks that always work: [...]
 
 ---
 
@@ -61,11 +63,11 @@ The caption is **half the post**. A great visual with a generic caption underper
 
 **Example:**
 
-> Antes: 200 seguidores, 3 likes por post, vontade de desistir.
-> 
-> Depois: 47K seguidores, posts virais semanais, 2 ofertas de marca por semana.
-> 
-> O que mudou? Parei de seguir tendências. Comecei a aplicar UMA estratégia: [...]
+> Before: 200 followers, 3 likes per post, ready to quit.
+>
+> After: 47K followers, weekly viral posts, 2 brand offers per week.
+>
+> What changed? I stopped chasing trends. I started applying ONE strategy: [...]
 
 ---
 
@@ -81,11 +83,11 @@ The caption is **half the post**. A great visual with a generic caption underper
 
 **Example:**
 
-> Postzee agora gera vídeos completos com IA — 30s de vídeo cinematográfico com legendas em qualquer idioma.
-> 
-> Diferente de outras ferramentas, conectamos modelos como Sora 2 e Veo 3.1 com agendamento automático em 30+ redes.
-> 
-> Você cria 1 mês de conteúdo de vídeo em 1 tarde. Sem editor de vídeo. Sem produtora.
+> Postzee now generates full videos with AI — 30s cinematic video with captions in any language.
+>
+> Unlike other tools, we connect models like Sora 2 and Veo 3.1 with automatic scheduling across 30+ networks.
+>
+> Create 1 month of video content in one afternoon. No video editor. No production house.
 
 ---
 
@@ -102,13 +104,13 @@ The caption is **half the post**. A great visual with a generic caption underper
 
 **Example:**
 
-> Imagina acordar todos os dias com 3 leads qualificados na inbox — sem precisar prospectar.
-> 
-> Vou te mostrar o sistema exato que uso há 18 meses pra atrair leads dormindo.
-> 
-> Resultado: 47 clientes recorrentes, $30K MRR, sem ads. Apenas conteúdo orgânico estratégico.
-> 
-> Salva esse post — vou postar o passo a passo amanhã.
+> Imagine waking up every day with 3 qualified leads in your inbox — without having to prospect.
+>
+> I'll show you the exact system I've used for 18 months to attract leads in my sleep.
+>
+> Result: 47 recurring clients, $30K MRR, no ads. Just strategic organic content.
+>
+> Save this post — I'll post the step-by-step tomorrow.
 
 ---
 
@@ -143,16 +145,16 @@ The caption is **half the post**. A great visual with a generic caption underper
 **Example caption for the 7-tools carousel:**
 
 ```
-Eu testei 47 ferramentas em 2025.
+I tested 47 tools in 2025.
 
-Essas 7 são as que sobreviveram à minha rotina diária como solo founder.
+These 7 are the ones that survived my daily routine as a solo founder.
 
-Da gestão de tarefas à automação de marketing, tudo otimizado pra ROI.
+From task management to marketing automation, all optimized for ROI.
 
-→ Salva esse carrossel pra montar tua stack
-→ Comenta qual sua ferramenta favorita 👇
+→ Save this carousel to build your stack
+→ Comment your favorite tool 👇
 
-#solopreneur #produtividade #ferramentasdigitais #founder #saas
+#solopreneur #productivity #digitaltools #founder #saas
 ```
 
 ### LinkedIn
@@ -183,25 +185,25 @@ Da gestão de tarefas à automação de marketing, tudo otimizado pra ROI.
 **Example:**
 
 ```
-3 anos atrás eu estava em burnout severo.
-Trabalhando 80h/semana num SaaS que não decolava.
-Hoje, mesmo time, faço 30h/semana e faturamos 5x mais.
+3 years ago I was in severe burnout.
+Working 80h/week on a SaaS that wasn't taking off.
+Today, same team, I work 30h/week and we earn 5x more.
 
-A diferença? Parei de fazer 7 coisas:
+The difference? I stopped doing 7 things:
 
-1. Reuniões internas sem agenda escrita
-2. Resposta a email fora de janela definida
-3. Aceitar features de cliente sem analisar
-4. Trabalhar em weekends como "esforço extra"
-5. Pular almoço pra "ganhar tempo"
-6. Multitasking durante deep work
-7. Acreditar que esforço = resultado
+1. Internal meetings without a written agenda
+2. Replying to email outside a defined window
+3. Accepting client features without analysis
+4. Working weekends as "extra effort"
+5. Skipping lunch to "save time"
+6. Multitasking during deep work
+7. Believing that effort = results
 
-A produtividade não é fazer mais. É fazer menos, melhor.
+Productivity isn't doing more. It's doing less, better.
 
-Qual desses você ainda faz? 👇
+Which of these do you still do? 👇
 
-#produtividade #liderança #saas
+#productivity #leadership #saas
 ```
 
 ### TikTok / Reels (vertical video)
@@ -225,11 +227,11 @@ Qual desses você ainda faz? 👇
 **Example:**
 
 ```
-o erro que faz 90% dos vídeos não bombarem 🚨
+the mistake that keeps 90% of videos from going viral 🚨
 
-salva pra revisar antes do próximo post 📌
+save this to review before your next post 📌
 
-#marketingdigital #criadordeconteudo #tiktoktips
+#digitalmarketing #contentcreator #tiktoktips
 ```
 
 ### X / Twitter
@@ -341,33 +343,35 @@ These can plug into any framework. See `hooks-library.md` for 50+ templates.
 
 ### High-engagement CTAs by intent
 
+> Templates in English — translate to the user's language and adapt the idiom.
+
 **For SAVES (algorithmic boost):**
-- "Salva pra revisar depois 📌"
+- "Save this for later 📌"
 - "Bookmark this for later"
 - "Pin this so you don't lose it"
 
 **For COMMENTS (algorithm + social proof):**
-- "Qual desses você usa? 👇"
-- "Comenta tua maior dor com [topic]"
-- "Concordas? Discorda? Me conta nos comentários"
-- "Comenta 'KEYWORD' que te mando o template"
+- "Which of these do you use? 👇"
+- "Comment your biggest pain point with [topic]"
+- "Agree? Disagree? Tell me in the comments"
+- "Comment 'KEYWORD' and I'll send the template"
 
 **For SHARES (organic reach):**
-- "Marca alguém que precisa ver isso"
-- "Compartilha com aquele amigo que..."
+- "Tag someone who needs to see this"
+- "Share with that friend who..."
 - "Tag a founder who needs this"
 
 **For DM (lead gen):**
-- "DM 'GUIDE' pra eu te mandar o material completo"
-- "Comenta 'PRONTO' que mando o checklist no privado"
+- "DM 'GUIDE' and I'll send the full material"
+- "Comment 'READY' and I'll DM you the checklist"
 
 **For LINK CLICK:**
-- "Link na bio pro guia completo"
-- "Clica no link da bio se quer começar hoje"
-- "Tudo destrinchado no artigo (link na bio)"
+- "Link in bio for the full guide"
+- "Click the bio link if you want to start today"
+- "Everything broken down in the article (link in bio)"
 
 **For FOLLOW:**
-- "Segue @user pra mais [topic]"
+- "Follow @user for more [topic]"
 - "Follow for daily [niche] tips"
 
 **Don't use:** "What do you think?" (vague, no engagement)
@@ -413,9 +417,9 @@ The carousel and the caption are two hooks. The caption hooks people who *might 
 
 **Example:**
 
-Carousel slide 1: **"7 ferramentas que todo founder solo precisa em 2026"**
+Carousel slide 1: **"7 tools every solo founder needs in 2026"**
 
-Caption hook: *"Eu testei 47 ferramentas em 2025. Essas 7 são as que sobreviveram. ⤵️"*
+Caption hook: *"I tested 47 tools in 2025. These 7 are the ones that survived. ⤵️"*
 
 → **Two angles, two chances to stop the scroll.**
 
@@ -435,13 +439,13 @@ Match tone to:
 
 | Tone | When | Example phrases |
 |------|------|-----------------|
-| **Educational-friendly** | How-tos, tips | "Aqui vai um insight rápido pra você..." |
-| **Punchy-confident** | Bold takes, hooks | "Vou ser direto:" / "Fato:" |
-| **Warm-storytelling** | Personal stories | "Deixa eu te contar uma coisa..." |
-| **Provocative-polarizing** | Mythbusting | "Opinião impopular:" / "Pode discordar, mas..." |
-| **Hype-energetic** | Launches, sales | "ACABEI DE LANÇAR!" / "Você precisa ver isso" |
-| **Calm-authoritative** | Thought leadership | "Depois de 10 anos de [topic], aprendi que..." |
-| **Inclusive-conversational** | Community building | "Tô curioso: vocês fariam o que?" |
+| **Educational-friendly** | How-tos, tips | "Here's a quick insight for you..." |
+| **Punchy-confident** | Bold takes, hooks | "I'll be direct:" / "Fact:" |
+| **Warm-storytelling** | Personal stories | "Let me tell you something..." |
+| **Provocative-polarizing** | Mythbusting | "Unpopular opinion:" / "You may disagree, but..." |
+| **Hype-energetic** | Launches, sales | "JUST LAUNCHED!" / "You need to see this" |
+| **Calm-authoritative** | Thought leadership | "After 10 years of [topic], I learned that..." |
+| **Inclusive-conversational** | Community building | "I'm curious: what would you do?" |
 
 When undecided, **infer from these signals:**
 - User's prior posts (if visible)
@@ -457,9 +461,9 @@ When undecided, **infer from these signals:**
 
 If user wants the same content in multiple languages:
 - **Don't auto-translate literally** — adapt cultural references
-- **Hashtags differ by language** — `#produtividade` (PT) vs `#productivity` (EN)
-- **CTAs adapt** — "Salva pra depois" (PT) vs "Save for later" (EN)
-- **Tone may shift** — PT-BR is warmer than EN-US which is more direct
+- **Hashtags differ by language** — e.g. `#produtividade` (PT) vs `#productivity` (EN) vs `#productividad` (ES)
+- **CTAs adapt** — e.g. "Save for later" (EN) ↔ "Salva pra depois" (PT) ↔ "Guárdalo para después" (ES)
+- **Tone may shift** — PT-BR is warmer than EN-US which is more direct; FR can be more formal in B2B; DE values precision
 
 When multilingual, generate per-language caption, not single translation.
 
@@ -498,35 +502,37 @@ When multilingual, generate per-language caption, not single translation.
 
 ## Templates by post type
 
+> Templates in English — translate to user's language and adapt the idiom.
+
 ### Educational listicle
 ```
 [Number + outcome hook]
 
-Vou te dar [N] formas de [achieving X]:
+I'll give you [N] ways to [achieve X]:
 
 1. [item — 1 line]
 2. [item — 1 line]
 ...
 
-A #N é a mais poderosa.
+#N is the most powerful.
 
-Salva pra aplicar essa semana 📌
+Save this to apply this week 📌
 
 #niche1 #niche2 #niche3
 ```
 
 ### Personal story
 ```
-[Time marker hook] eu [past state].
-Hoje, [present state].
+[Time marker hook] I was [past state].
+Today, [present state].
 
-A diferença foi [insight in 1 line].
+The difference was [insight in 1 line].
 
 [3-5 sentences telling the story]
 
 [Lesson learned]
 
-Comenta abaixo: qual a tua versão dessa história? 👇
+Comment below: what's your version of this story? 👇
 
 #niche1 #niche2 #niche3
 ```
@@ -535,13 +541,13 @@ Comenta abaixo: qual a tua versão dessa história? 👇
 ```
 [Bold claim — opposite of common belief]
 
-Eu sei, parece contra-intuitivo. Mas:
+I know, it sounds counter-intuitive. But:
 
 [3-4 lines explaining why]
 
-A maioria dos [niche] acredita em X porque [reason]. Mas a verdade é Y.
+Most [niche] believe X because [reason]. But the truth is Y.
 
-Concorda? Discorda? Me convence nos comentários 👇
+Agree? Disagree? Convince me in the comments 👇
 
 #niche1 #niche2 #niche3
 ```
@@ -550,9 +556,9 @@ Concorda? Discorda? Me convence nos comentários 👇
 ```
 [Big news — exciting first line]
 
-Acabamos de lançar [feature/product].
+We just launched [feature/product].
 
-O que muda:
+What changes:
 → [benefit 1]
 → [benefit 2]
 → [benefit 3]
@@ -570,11 +576,11 @@ O que muda:
 
 [3-5 sentences walking through the process]
 
-A parte que ninguém vê: [insight/struggle]
+The part nobody sees: [insight/struggle]
 
 [Lesson or takeaway]
 
-Quer mais BTS? Me marca em "👀" nos comentários
+Want more BTS? Tag me with "👀" in the comments
 
 #niche1 #niche2 #niche3
 ```

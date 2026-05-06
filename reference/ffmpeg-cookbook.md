@@ -18,7 +18,7 @@ ffmpeg -filters 2>/dev/null | grep -E "(xfade|loudnorm|subtitles)"
 # Verifies the filters we'll use exist
 ```
 
-If unavailable, tell user: "Não tenho acesso a ffmpeg neste ambiente — vou produzir os clips individualmente e você combina externamente."
+If unavailable, tell user (in their language): "I don't have ffmpeg access in this environment — I'll produce the clips individually and you can combine them externally."
 
 ---
 

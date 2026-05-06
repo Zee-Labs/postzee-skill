@@ -277,7 +277,7 @@ Sometimes a single-scene video is genuinely better:
 - **Budget-tight** — single-scene is 1 generation vs 3-6 for multi-scene
 
 When in doubt, ask:
-> "Quer um único vídeo dinâmico de [duração] ou uma sequência de cenas conectadas (mais elaborado)?"
+> "Do you want a single dynamic [duration] video, or a connected sequence of scenes (more elaborate)?" — translate naturally to the user's language.
 
 ---
 

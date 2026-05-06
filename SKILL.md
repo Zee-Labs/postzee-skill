@@ -68,14 +68,16 @@ Why this matters: model catalogs, plan limits, and platform specs evolve. A stal
 
 ### What if the very first MCP call fails?
 
-If `POSTZEE_GET_CONTEXT` (or any tool) returns a transport error / 404 / "no MCP available" / connection refused, the user has not configured the MCP yet. Tell them in their language:
+If `POSTZEE_GET_CONTEXT` (or any tool) returns a transport error / 404 / "no MCP available" / connection refused, the user has not configured the MCP yet. Tell them, **in their language**, something like:
 
-> "Pra usar a Postzee Skill, você precisa conectar o MCP HTTP do Postzee primeiro. Pega tua URL em https://dashboard.postzee.app/settings → aba 'API Pública' → seção MCP. Depois, no teu cliente:
+> "To use the Postzee Skill, you need to connect Postzee's HTTP MCP first. Get your URL at https://dashboard.postzee.app/settings → 'API Pública' tab → MCP section. Then in your client:
 > - **Claude Code:** `claude mcp add postzee <MCP_URL>`
 > - **OpenClaw:** configure via `primaryEnv` / settings file
-> - **Hermes:** adicione em `~/.hermes/config.yaml` em `mcp_servers.postzee.url`
+> - **Hermes:** add to `~/.hermes/config.yaml` under `mcp_servers.postzee.url`
 > 
-> Após configurar, reabre essa conversa que sigo com você."
+> Once configured, reopen this conversation and I'll continue."
+
+Translate naturally to the user's language — this template is the structure, not the literal copy.
 
 Don't try to fall back to the REST API — this skill only works through MCP.
 
@@ -221,20 +223,22 @@ For non-trivial requests, build a brief before generating.
 7. **Reference materials**: photos, brand colors, existing assets?
 
 ### Skip the brief for transactional requests
-- "gere uma logo da empresa X em vetor" → just do it
-- "regenera essa imagem em 9:16" → just do it
+- "generate a company X logo as vector" → just do it
+- "regenerate that image in 9:16" → just do it
 - "post this text to LinkedIn" → just do it (after channel/plan checks)
 
 ### Conversation example
-> User: "quero um vídeo sobre minha cafeteria"
+> User: "I want a video about my coffee shop"
 >
-> You: "Beleza! Pra criar algo que engaje, me ajuda em 4 pontos rápidos:
-> 1. **Objetivo**: atrair clientes novos ou fidelizar quem já vai?
-> 2. **Rede principal**: Reels, TikTok, ambos?
-> 3. **Diferencial**: o que tem de único? (especialidade, ambiente, história)
-> 4. **Tem fotos** do espaço/produtos ou começamos do zero?
+> You: "Got it! To create something that actually engages, help me with 4 quick points:
+> 1. **Goal**: attract new customers or retain existing ones?
+> 2. **Main platform**: Reels, TikTok, both?
+> 3. **Differentiator**: what's unique about it? (specialty, ambience, story)
+> 4. **Do you have photos** of the space/products, or do we start from scratch?
 >
-> Se quiser acelerar, te dou 3 concepts já: POV barista (autêntico), Before/After (grão → drink — viral), Lista '5 razões' (educativo + CTA forte). Qual ressoa?"
+> If you want to speed things up, I can pitch 3 concepts now: POV barista (authentic), Before/After (bean → drink — viral), '5 reasons' list (educational + strong CTA). Which one resonates?"
+
+(Translate the actual conversation into the user's language — the example above is the structure.)
 
 ---
 
@@ -298,7 +302,7 @@ Person speaking specific text (interview, course, explainer)
     └── Dynamic scene with speaking → SORA 2 or VEO 3.1 (Postzee credits)
 ```
 
-When in doubt, ask: "É 1 imagem, carrossel ou vídeo?" / "Quantas cenas diferentes você visualiza?"
+When in doubt, ask (in the user's language): "Is it 1 image, a carousel, or a video?" / "How many distinct scenes do you visualize?"
 
 ---
 

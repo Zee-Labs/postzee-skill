@@ -10,7 +10,7 @@ Hooks make or break content. The first 1-3 seconds of a video, slide 1 of a caro
 2. Choose 2-3 templates that fit the topic
 3. Customize with specific numbers, names, claims
 4. **A/B test** when possible — write 3 hook variations, pick the strongest
-5. **Adapt to language and tone** — PT-BR direct vs EN-US punchy vs ES warm
+5. **Adapt to language and tone** — see the cultural-adaptation section below; the templates here are in English as a canonical baseline, always render the final hook in the user's language
 
 ---
 
@@ -18,21 +18,21 @@ Hooks make or break content. The first 1-3 seconds of a video, slide 1 of a caro
 
 The most reliable hook category. Specific numbers create credibility.
 
-1. "[N] coisas que todo [persona] precisa saber em [year]"
-2. "[N] erros que matam [outcome]"
-3. "[N] hacks de [skill] que mudaram minha vida"
-4. "[N] ferramentas que substituíram [common alternative]"
-5. "[N] frases que todo [persona] usa"
-6. "[N] hábitos que separam [winners] de [losers]"
-7. "[N] coisas que aprendi em [time period] de [activity]"
-8. "[N] sinais de que você [is/isn't doing X]"
-9. "[N] verdades duras sobre [topic]"
-10. "Os [N] minutos mais importantes do meu dia"
+1. "[N] things every [persona] needs to know in [year]"
+2. "[N] mistakes that kill [outcome]"
+3. "[N] [skill] hacks that changed my life"
+4. "[N] tools that replaced [common alternative]"
+5. "[N] phrases every [persona] uses"
+6. "[N] habits that separate [winners] from [losers]"
+7. "[N] things I learned in [time period] of [activity]"
+8. "[N] signs you're [doing/not doing X]"
+9. "[N] hard truths about [topic]"
+10. "The [N] most important minutes of my day"
 
 **Examples:**
-- "7 erros que matam carrosséis no Instagram"
-- "5 verdades duras sobre construir um SaaS sozinho"
-- "10 frases que todo founder de sucesso usa"
+- "7 mistakes that kill Instagram carousels"
+- "5 hard truths about building a SaaS solo"
+- "10 phrases every successful founder uses"
 
 ---
 
@@ -40,19 +40,19 @@ The most reliable hook category. Specific numbers create credibility.
 
 Tap directly into the audience's frustration.
 
-11. "Pare de fazer [common mistake]. Faça [alternative] no lugar."
-12. "Você está [doing X]. É exatamente por isso que [bad result]."
-13. "A pior parte de [activity] não é [obvious thing]. É [non-obvious thing]."
-14. "Se você [does X], você está sabotando seu [Y]."
-15. "Eu também acreditava que [common belief]. Até descobrir que [truth]."
-16. "Por que sua [strategy] não está funcionando (e como consertar)"
-17. "O motivo real pelo qual você não [achieving X]"
-18. "[Bad behavior] é o motivo de [bad outcome]. Aqui está como parar."
+11. "Stop doing [common mistake]. Do [alternative] instead."
+12. "You're [doing X]. That's exactly why [bad result]."
+13. "The worst part of [activity] isn't [obvious thing]. It's [non-obvious thing]."
+14. "If you [do X], you're sabotaging your [Y]."
+15. "I used to believe [common belief] too. Until I discovered [truth]."
+16. "Why your [strategy] isn't working (and how to fix it)"
+17. "The real reason you're not [achieving X]"
+18. "[Bad behavior] is the reason for [bad outcome]. Here's how to stop."
 
 **Examples:**
-- "Pare de postar todo dia. Comece a postar com hook."
-- "Você está fazendo brainstorm errado. É exatamente por isso que falta criatividade."
-- "A pior parte de empreender sozinho não é o trabalho. É a solidão estratégica."
+- "Stop posting every day. Start posting with a hook."
+- "You're brainstorming wrong. That's exactly why creativity is missing."
+- "The worst part of solo entrepreneurship isn't the work. It's strategic loneliness."
 
 ---
 
@@ -60,21 +60,21 @@ Tap directly into the audience's frustration.
 
 High risk, high reward. Polarizing content drives strong reactions = engagement.
 
-19. "[Common belief] está errado. Aqui está por quê."
-20. "Esse é o único [thing] que você precisa em [year]."
-21. "Opinião impopular: [topic] é overrated."
-22. "[Famous strategy] é uma armadilha. Faça [alternative] no lugar."
-23. "Pode discordar, mas [bold claim]."
-24. "[Industry standard] está morto. Bem-vindo a [new approach]."
-25. "Vou ser polêmico: [statement]"
-26. "A maior mentira sobre [topic]"
-27. "Esse [common practice] está te custando [resource]"
-28. "[Year] é o ano em que [old way] morre"
+19. "[Common belief] is wrong. Here's why."
+20. "This is the only [thing] you need in [year]."
+21. "Unpopular opinion: [topic] is overrated."
+22. "[Famous strategy] is a trap. Do [alternative] instead."
+23. "You may disagree, but [bold claim]."
+24. "[Industry standard] is dead. Welcome to [new approach]."
+25. "I'll be polarizing: [statement]"
+26. "The biggest lie about [topic]"
+27. "This [common practice] is costing you [resource]"
+28. "[Year] is the year [old way] dies"
 
 **Examples:**
-- "Hashtags estão mortas. Conteúdo de qualidade nunca esteve mais vivo."
-- "Pode discordar, mas: postar todo dia é a forma mais cara de não crescer."
-- "Vou ser polêmico: a maioria dos cursos de marketing é uma fraude."
+- "Hashtags are dead. Quality content has never been more alive."
+- "You may disagree, but: posting every day is the most expensive way not to grow."
+- "I'll be polarizing: most marketing courses are a scam."
 
 ---
 
@@ -82,21 +82,21 @@ High risk, high reward. Polarizing content drives strong reactions = engagement.
 
 Make the audience NEED to know what's next.
 
-29. "Eu fiz [achievement] em [time]. Aqui está como."
-30. "O segredo de [topic] que ninguém te conta"
-31. "Como eu [achievement] (passo a passo real)"
-32. "A coisa mais importante que aprendi sobre [topic]"
-33. "Por que [unexpected outcome] aconteceu quando [setup]"
-34. "Eu [did surprising thing] por [time]. Aqui está o resultado."
-35. "O hack que mudou tudo no meu [domain]"
-36. "Você não vai acreditar no que aconteceu quando eu [tried X]"
-37. "[Surprising number] dias depois de [event], aqui está o que aprendi"
-38. "O experimento que mudou minha forma de pensar sobre [topic]"
+29. "I did [achievement] in [time]. Here's how."
+30. "The [topic] secret nobody tells you"
+31. "How I [achievement] (real step-by-step)"
+32. "The most important thing I learned about [topic]"
+33. "Why [unexpected outcome] happened when [setup]"
+34. "I [did surprising thing] for [time]. Here's the result."
+35. "The hack that changed everything in my [domain]"
+36. "You won't believe what happened when I [tried X]"
+37. "[Surprising number] days after [event], here's what I learned"
+38. "The experiment that changed how I think about [topic]"
 
 **Examples:**
-- "Fiz $50K em 30 dias com 1 produto. Aqui está como."
-- "O segredo de carrosséis virais que ninguém te conta."
-- "Postei conteúdo todo dia por 365 dias. Aqui está o resultado."
+- "I made $50K in 30 days with 1 product. Here's how."
+- "The viral-carousel secret nobody tells you."
+- "I posted content every day for 365 days. Here's the result."
 
 ---
 
@@ -104,20 +104,20 @@ Make the audience NEED to know what's next.
 
 Questions force engagement — the brain auto-answers.
 
-39. "Por que [percentage]% dos [persona] falham em [topic]?"
-40. "Você sabe a diferença entre [A] e [B]?"
-41. "E se eu te dissesse que [counterintuitive truth]?"
-42. "Quanto vale 1 hora do seu tempo?"
-43. "O que [successful person] faz diferente?"
-44. "Por que [common assumption] está errado?"
-45. "Você também sente [common feeling] quando [situation]?"
-46. "Qual é a coisa mais [adjective] que você já fez para [outcome]?"
-47. "Você notou [pattern]? Aqui está por quê."
+39. "Why do [percentage]% of [persona] fail at [topic]?"
+40. "Do you know the difference between [A] and [B]?"
+41. "What if I told you [counterintuitive truth]?"
+42. "How much is 1 hour of your time worth?"
+43. "What does [successful person] do differently?"
+44. "Why is [common assumption] wrong?"
+45. "Do you also feel [common feeling] when [situation]?"
+46. "What's the most [adjective] thing you've ever done for [outcome]?"
+47. "Did you notice [pattern]? Here's why."
 
 **Examples:**
-- "Por que 90% dos founders solo falham nos primeiros 18 meses?"
-- "E se eu te dissesse que postar menos pode te fazer crescer mais?"
-- "Você sabe a diferença entre marketing e branding?"
+- "Why do 90% of solo founders fail in the first 18 months?"
+- "What if I told you posting less can grow you faster?"
+- "Do you know the difference between marketing and branding?"
 
 ---
 
@@ -125,19 +125,19 @@ Questions force engagement — the brain auto-answers.
 
 Time markers = perceived authority and journey.
 
-48. "[Time period] depois de começar [activity], aqui está o que aprendi"
-49. "O que faria diferente se voltasse para o início"
-50. "Em [time period], aprendi mais sobre [topic] que nos [longer period] anteriores"
-51. "[Number] meses construindo [thing]. Aqui está o status."
-52. "[Year] em retrospectiva: [N] lições"
-53. "Antes vs depois de [time period]: [transformation]"
-54. "O que mudou em [topic] em [time period]"
-55. "Foram precisos [time/effort] pra eu entender [insight]"
+48. "[Time period] after starting [activity], here's what I learned"
+49. "What I'd do differently if I went back to the start"
+50. "In [time period], I learned more about [topic] than in the previous [longer period]"
+51. "[Number] months building [thing]. Here's the status."
+52. "[Year] in review: [N] lessons"
+53. "Before vs after [time period]: [transformation]"
+54. "What changed in [topic] in [time period]"
+55. "It took me [time/effort] to understand [insight]"
 
 **Examples:**
-- "12 meses depois de lançar Postzee, aqui está o que aprendi"
-- "5 anos como founder. 7 lições que ninguém ensina."
-- "Foram precisos 100 vídeos pra eu entender o que é hook."
+- "12 months after launching Postzee, here's what I learned"
+- "5 years as a founder. 7 lessons nobody teaches."
+- "It took me 100 videos to understand what a hook really is."
 
 ---
 
@@ -145,19 +145,19 @@ Time markers = perceived authority and journey.
 
 Stories activate emotional engagement.
 
-56. "[Time ago], eu estava [bad state]. Hoje, [good state]."
-57. "Deixa eu te contar a história mais [adjective] da minha [domain]."
-58. "Em [year], eu cometi o maior erro da minha vida..."
-59. "Um cliente me disse algo que mudou tudo..."
-60. "Eu nunca contei isso publicamente, mas [reveal]..."
-61. "A história por trás de [achievement]"
-62. "[Person] me ligou às [time]. O que ele disse mudou minha [domain] pra sempre."
-63. "[Time] atrás eu jurei que nunca [activity]. Hoje [reverse]..."
+56. "[Time ago], I was [bad state]. Today, [good state]."
+57. "Let me tell you the most [adjective] story from my [domain]."
+58. "In [year], I made the biggest mistake of my life..."
+59. "A client told me something that changed everything..."
+60. "I've never said this publicly, but [reveal]..."
+61. "The story behind [achievement]"
+62. "[Person] called me at [time]. What he said changed my [domain] forever."
+63. "[Time] ago I swore I'd never [activity]. Today [reverse]..."
 
 **Examples:**
-- "3 anos atrás eu estava em burnout. Hoje trabalho 30h/semana e faturo 5x mais."
-- "Em 2024, eu cometi o maior erro como founder: contratei muito rápido."
-- "Eu nunca contei isso publicamente, mas quase fechei a empresa em 2025."
+- "3 years ago I was in burnout. Today I work 30h/week and earn 5x more."
+- "In 2024, I made the biggest founder mistake: I hired too fast."
+- "I've never said this publicly, but I almost shut the company down in 2025."
 
 ---
 
@@ -165,18 +165,18 @@ Stories activate emotional engagement.
 
 Vulnerability + lessons learned = high relatability.
 
-64. "O maior erro que cometi em [topic]"
-65. "Cometi esse erro por [time period]. Não cometa também."
-66. "[N] erros caros que cometi construindo [thing]"
-67. "Eu fui burro por [time]. Aqui está o que mudou."
-68. "Confesso: eu acreditava em [misconception]. Aqui está a verdade."
-69. "Perdi [resource] aprendendo [lesson]"
-70. "Falei a verdade dura pra mim mesmo: [insight]"
+64. "The biggest mistake I made in [topic]"
+65. "I made this mistake for [time period]. Don't make it too."
+66. "[N] expensive mistakes I made building [thing]"
+67. "I was dumb for [time]. Here's what changed."
+68. "Confession: I believed [misconception]. Here's the truth."
+69. "I lost [resource] learning [lesson]"
+70. "I told myself the hard truth: [insight]"
 
 **Examples:**
-- "O maior erro que cometi como CEO foi tentar fazer tudo sozinho."
-- "Perdi 18 meses aprendendo que escala não é sobre fazer mais — é sobre fazer menos."
-- "Confesso: eu odiava fazer carrosséis. Hoje são 70% do meu engajamento."
+- "The biggest mistake I made as CEO was trying to do everything alone."
+- "I lost 18 months learning that scale isn't about doing more — it's about doing less."
+- "Confession: I hated making carousels. Today they drive 70% of my engagement."
 
 ---
 
@@ -184,18 +184,18 @@ Vulnerability + lessons learned = high relatability.
 
 Authenticity wins in 2026. BTS = trust.
 
-71. "Como eu realmente faço [outcome] (BTS sem filtro)"
-72. "Por dentro do meu [process/system]"
-73. "[Activity] na realidade vs [activity] no Instagram"
-74. "Te mostro tudo que eu uso pra [outcome]"
-75. "Minha [routine/setup/stack] em [year]"
-76. "O que ninguém te mostra sobre [topic]"
-77. "Um dia na minha vida como [persona]"
+71. "How I actually do [outcome] (raw BTS)"
+72. "Inside my [process/system]"
+73. "[Activity] in real life vs [activity] on Instagram"
+74. "I'll show you everything I use for [outcome]"
+75. "My [routine/setup/stack] in [year]"
+76. "What nobody shows you about [topic]"
+77. "A day in my life as [persona]"
 
 **Examples:**
-- "Como eu realmente produzo 30 conteúdos por semana (BTS real)"
-- "Minha stack de ferramentas como solo founder em 2026"
-- "O que ninguém te mostra sobre construir um SaaS bootstrapped"
+- "How I actually produce 30 pieces of content per week (real BTS)"
+- "My tool stack as a solo founder in 2026"
+- "What nobody shows you about building a bootstrapped SaaS"
 
 ---
 
@@ -203,17 +203,17 @@ Authenticity wins in 2026. BTS = trust.
 
 Comparisons drive decision-making content.
 
-78. "[A] vs [B]: qual escolher em [year]"
-79. "[A] está morto. [B] é o futuro."
-80. "Por que eu mudei de [A] para [B]"
-81. "[Common tool] vs [niche tool]: o que eu uso e por quê"
-82. "[Approach A] vs [Approach B]: qual funciona em [scenario]"
-83. "Antes eu usava [A]. Hoje uso [B]. Aqui está por quê."
+78. "[A] vs [B]: which to choose in [year]"
+79. "[A] is dead. [B] is the future."
+80. "Why I switched from [A] to [B]"
+81. "[Common tool] vs [niche tool]: what I use and why"
+82. "[Approach A] vs [Approach B]: which works in [scenario]"
+83. "I used to use [A]. Today I use [B]. Here's why."
 
 **Examples:**
-- "Notion vs Obsidian: qual escolher em 2026"
-- "Por que eu mudei de Mailchimp para Resend (e não voltei)"
-- "Buffer vs Postzee: o que eu uso e por quê"
+- "Notion vs Obsidian: which to choose in 2026"
+- "Why I switched from Mailchimp to Resend (and never went back)"
+- "Buffer vs Postzee: what I use and why"
 
 ---
 
@@ -248,9 +248,9 @@ Beyond text, the **visual** in the first second matters as much as the words.
 When unsure, generate 3 hook variations:
 
 ```
-HOOK A — Number + Benefit:    "7 erros que matam carrosséis"
-HOOK B — Pain + Relief:        "Pare de cometer esses erros em carrosséis"
-HOOK C — Curiosity Gap:        "Por que seus carrosséis não bombam"
+HOOK A — Number + Benefit:    "7 mistakes that kill carousels"
+HOOK B — Pain + Relief:        "Stop making these carousel mistakes"
+HOOK C — Curiosity Gap:        "Why your carousels aren't taking off"
 ```
 
 Then pick by:
@@ -259,7 +259,7 @@ Then pick by:
 3. **Brand fit** — matches your tone?
 4. **Predicted save rate** — would you save it?
 
-When in doubt, ask the user: "Tenho 3 hooks possíveis: A) [...] B) [...] C) [...]. Qual ressoa mais com tua marca?"
+When in doubt, ask the user (translated to their language): "I have 3 possible hooks: A) [...] B) [...] C) [...]. Which one resonates with your brand?"
 
 ---
 
@@ -270,49 +270,49 @@ When in doubt, ask the user: "Tenho 3 hooks possíveis: A) [...] B) [...] C) [..
 **Why:** users save reference content for later use
 
 **Templates that work:**
-- "[N] coisas que você precisa saber sobre [topic]"
-- "Os [N] erros que cometi e que você não precisa cometer"
-- "Guia completo de [topic] em [N] passos"
+- "[N] things you need to know about [topic]"
+- "The [N] mistakes I made so you don't have to"
+- "Complete [topic] guide in [N] steps"
 
 ### Goal: Comment / Engagement
 **Best categories:** Polarizing, Question, Story
 **Why:** controversial / personal = forces reaction
 
 **Templates:**
-- "Opinião impopular: [statement]"
-- "Você concorda que [bold claim]?"
-- "Aconteceu comigo: [story setup]"
+- "Unpopular opinion: [statement]"
+- "Do you agree that [bold claim]?"
+- "It happened to me: [story setup]"
 
 ### Goal: Share / Tag
 **Best categories:** Mythbusting, Bold Claim, Pain + Relief
 **Why:** shareable when it validates the audience or surprises
 
 **Templates:**
-- "[Industry standard] está errado"
-- "Marca o [persona] que precisa ver isso"
-- "Pare de [common mistake] — compartilha com quem ainda faz"
+- "[Industry standard] is wrong"
+- "Tag the [persona] who needs to see this"
+- "Stop [common mistake] — share with someone who still does it"
 
 ### Goal: Click / Conversion
 **Best categories:** Curiosity Gap, Time-bound, BAB transformation
 **Why:** promise + prove + push to next step
 
 **Templates:**
-- "[Achievement] em [time]. Aqui está como."
-- "O segredo de [topic] que ninguém te conta. Tudo no link."
-- "[Before state] → [After state]. Te mostro o método."
+- "[Achievement] in [time]. Here's how."
+- "The [topic] secret nobody tells you. Everything in the link."
+- "[Before state] → [After state]. I'll show you the method."
 
 ---
 
 ## Hook anti-patterns (avoid these)
 
-- ❌ "Hoje vou falar sobre..." (zero hook, pure setup)
-- ❌ "Olá pessoal, tudo bem?" (algorithm sees this as filler)
-- ❌ "Confiram esse vídeo!" (commands without payoff)
-- ❌ "Esse é o post mais importante que você vai ler hoje" (over-promising, generic)
-- ❌ "Você sabia que [boring fact]?" (low-energy)
-- ❌ Vague: "Algumas dicas pra melhorar seu marketing"
-- ❌ Self-aggrandizing: "Como eu virei especialista em..."
-- ❌ Long-winded: "Eu queria compartilhar uma coisa que aconteceu comigo essa semana e que..."
+- ❌ "Today I'll talk about..." (zero hook, pure setup)
+- ❌ "Hi everyone, how are you?" (algorithm sees this as filler)
+- ❌ "Check out this video!" (command without payoff)
+- ❌ "This is the most important post you'll read today" (over-promising, generic)
+- ❌ "Did you know [boring fact]?" (low-energy)
+- ❌ Vague: "Some tips to improve your marketing"
+- ❌ Self-aggrandizing: "How I became an expert in..."
+- ❌ Long-winded: "I wanted to share something that happened to me this week and that..."
 
 ---
 

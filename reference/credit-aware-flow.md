@@ -46,8 +46,8 @@ Combined with the **planned action**:
 |-------|----------|
 | `credits.available >= estimatedCredits` | Proceed normally. After generation, ask if they want to post. |
 | `credits.available < estimatedCredits` | **Block. CTA matched credit pack.** See `plans-and-pricing.md` template "credits insufficient". |
-| `credits.available > 0` but `< 200` | Proceed BUT proactively warn: "Você tá com {n} créditos depois disso. Quer que eu sugira um pacote pra não travar?" |
-| `tier === "FREE"` and `credits.available === 0` | They never bought a pack. Welcome flow with the cheapest pack from `POSTZEE_LIST_CREDIT_PACKAGES` (Starter): "Pra começar a criar, recomendo o {Starter.name} (${Starter.priceUSD} = {Starter.credits} créditos) só pra testar." |
+| `credits.available > 0` but `< 200` | Proceed BUT proactively warn: "You'll have {n} credits left after this. Want me to suggest a top-up so you don't stall?" |
+| `tier === "FREE"` and `credits.available === 0` | They never bought a pack. Welcome flow with the cheapest pack from `POSTZEE_LIST_CREDIT_PACKAGES` (Starter): "To start creating, I recommend {Starter.name} (${Starter.priceUSD} = {Starter.credits} credits) just to test." |
 | `storage.percentUsed >= 95` | Block generation. Tell user storage is full and offer upgrade or cleanup. |
 | `storage.percentUsed >= 80` | Proceed but warn. |
 
@@ -105,7 +105,7 @@ This determines `intent` + estimated total credits.
    → If invalid params: fix or change strategy
    → If shortfall: CTA + stop
 3. POSTZEE_ESTIMATE_GENERATION_COST × slide count — confirm total
-4. Show plan to user: "Vou usar {model} pra gerar {N} {type}, custo estimado total: {credits} créditos. Sigo?"
+4. Show plan to user (in their language): "I'll use {model} to generate {N} {type}, estimated total cost: {credits} credits. Shall I proceed?"
 5. If yes → POSTZEE_ENHANCE_PROMPT → POSTZEE_GENERATE_*
 ```
 
@@ -126,13 +126,13 @@ This determines `intent` + estimated total credits.
 → Welcome to Postzee CTA. Recommend `starter` from `POSTZEE_LIST_CREDIT_PACKAGES` (cheapest entry pack) to test. Generate-only flow, no subscription push (yet).
 
 ### "FREE user with credits, wants to post"
-→ Generate IF intent unambiguous. THEN explain: "Gerei tudo. Pra publicar pelo Postzee você precisa de plano. Recomendo STANDARD ($X/mês) que inclui {Y} créditos mensais — vai cobrir mais conteúdo desse tipo. Ou te mando os arquivos pra postar manual."
+→ Generate IF intent unambiguous. THEN explain: "I generated everything. To publish through Postzee you need a paid plan. I recommend {plan.tier} (${plan.monthPriceUSD}/mo) which includes {plan.monthlyCredits} monthly credits — covers more content like this. Or I can send you the files to post manually." (Use live values from `POSTZEE_LIST_PLANS`.)
 
 ### "STANDARD user, low credits"
-→ Generate. Mention credit pack option AFTER, not before — they're already paying. Fetch the right pack from `POSTZEE_LIST_CREDIT_PACKAGES` (typically Basic if low usage, Standard if higher), then quote live `priceUSD` and `credits`: "Top — você ainda tem {N} créditos depois disso. Se for produzir muito mais essa semana, o pack {pack.name} (${pack.priceUSD} = {pack.credits} créditos) cobre bem."
+→ Generate. Mention credit pack option AFTER, not before — they're already paying. Fetch the right pack from `POSTZEE_LIST_CREDIT_PACKAGES` (typically Basic if low usage, Standard if higher), then quote live `priceUSD` and `credits`: "Nice — you'll still have {N} credits after this. If you plan to produce a lot more this week, the {pack.name} pack (${pack.priceUSD} = {pack.credits} credits) covers it well."
 
-### "STANDARD user, hit 400 posts/month"
-→ Block posting. CTA TEAM upgrade. Mention rascunhos podem ficar prontos pra quando o mês virar.
+### "Subscriber hit posts-per-month cap"
+→ Block posting. CTA next-tier upgrade (live values via `POSTZEE_LIST_PLANS`). Mention drafts can be queued for when the month rolls over.
 
 ### "PRO user, missing channels for the platform user wants"
 → Tell them which channel and link. Don't assume they're at limit (PRO has 30 channels, they probably just haven't connected the specific one).
@@ -145,7 +145,7 @@ This determines `intent` + estimated total credits.
 ## Transparency principles
 
 - **Always state cost in credits BEFORE generating.** "Esse vídeo vai custar 600 créditos."
-- **Always explain why you're CTAing.** Not "buy this!" but "porque você quer postar e o FREE não inclui isso, recomendo X".
+- **Always explain why you're CTAing.** Not "buy this!" but "because you want to post and FREE doesn't include that, I recommend X".
 - **Never hide constraints.** If Sora 2 only supports 10 or 15s, say so when user asks for 8s — don't silently round up.
 - **Surface plan period to inform buying decisions.** "Lembra que tem o yearly que sai por X% mais barato — vale considerar se vai usar a longo prazo."
 
@@ -179,10 +179,10 @@ Never burn 60% of someone's monthly credits on day 1 of a "30-day plan" without 
 
 ## When user pushes back on CTA
 
-If the user says "não quero plano agora" / "não vou pagar":
+If the user says "I don't want a plan now" / "I'm not paying" (in any language):
 
 1. Respect immediately. **Don't insist.**
-2. Pivot to what they CAN do: "Sem problema. Posso te entregar os arquivos prontos aqui mesmo, e você posta manual nas redes."
+2. Pivot to what they CAN do: "No problem. I can deliver the finished files here and you post manually on the networks."
 3. Don't bring it up again unless they hit a hard block.
 
 The agent earns trust by knowing when to stop selling.

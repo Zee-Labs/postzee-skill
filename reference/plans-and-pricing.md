@@ -116,85 +116,84 @@ Always look up exact thresholds from `POSTZEE_LIST_PLANS` / `POSTZEE_LIST_CREDIT
 **Always pull the live `monthPriceUSD`, `channelsLimit`, `postsPerMonth`, `monthlyCredits` from `POSTZEE_LIST_PLANS` before quoting.** Hardcoded numbers below are illustrative only — they may have changed.
 
 Bad: "We have STANDARD, TEAM, PRO, ULTIMATE. Which one?" (dump)
-Good: "Pelo que você produz, **{plan.tier} (${plan.monthPriceUSD}/mês)** cobre tudo: {plan.channelsLimit} canais, {plan.postsPerMonth} posts/mês, {plan.monthlyCredits} créditos IA por mês. Vamos com esse?"
+Good: "Based on what you produce, **{plan.tier} (${plan.monthPriceUSD}/mo)** covers it all: {plan.channelsLimit} channels, {plan.postsPerMonth} posts/month, {plan.monthlyCredits} AI credits per month. Want to go with this?"
 
 ---
 
 ## CTA copy templates
 
-Adapt these to the user's language and tone. Show the **live price** from `POSTZEE_LIST_PLANS` / `POSTZEE_LIST_CREDIT_PACKAGES` — don't hardcode.
+These templates are written in English as the canonical structure. **Always render the final message in the user's language** — translate naturally, adapt the tone, and substitute placeholders with **live values from `POSTZEE_LIST_PLANS` / `POSTZEE_LIST_CREDIT_PACKAGES`** — don't hardcode prices or credits.
 
 ### When user is FREE and wants to post
 
 ```
-Beleza, esse conteúdo tá pronto. 
+Cool, your asset is ready.
 
-Mas pra postar pelo Postzee você precisa de plano com suíte social
-(o FREE foca só em criação de mídias).
+But to publish through Postzee you need a plan with the social suite
+(FREE focuses only on media creation).
 
-Pra você, **{recommendedPlan} (${planPrice}/mês)** cobre por inteiro:
-• {channelsLimit} canais conectados
-• {postsPerMonth} posts/mês
-• {monthlyCredits} créditos IA inclusos
-• {storageLimitGB}GB de storage
+For you, **{recommendedPlan} (${planPrice}/mo)** covers everything:
+• {channelsLimit} connected channels
+• {postsPerMonth} posts/month
+• {monthlyCredits} AI credits included
+• {storageLimitGB}GB of storage
 
-Link pra ativar: https://dashboard.postzee.app/billing
+Activate here: https://dashboard.postzee.app/billing
 
-Outra rota se preferir: te mando os arquivos prontos e você posta
-manual mesmo. Fala como prefere.
+Alternative route: I can deliver the files and you post manually.
+Tell me which you prefer.
 ```
 
 ### When credits are insufficient for the planned generation
 
 ```
-Pra criar isso vai precisar de **{estimatedCredits} créditos**, e você 
-tem {available} agora — faltam {shortfall}.
+To create this, you'll need **{estimatedCredits} credits**, and you
+have {available} right now — short by {shortfall}.
 
-Sugestão pro teu uso:
+Suggested for your usage:
 
-**{recommendedPackage} (${packagePrice})** = {packageCredits} créditos.
-Cobre essa criação e mais ~{remainingGenerations} parecidas.
+**{recommendedPackage} (${packagePrice})** = {packageCredits} credits.
+Covers this generation plus about {remainingGenerations} more like it.
 
 Link: https://dashboard.postzee.app/credits
 
-Quer que eu siga e gere assim que ativar?
+Want me to proceed as soon as you activate?
 ```
 
 ### When credits are getting low (proactive warning, no current shortfall)
 
 ```
-Antes de a gente continuar planejando série de conteúdo: você tá com
-**{available} créditos**. Pra o volume que conversamos, recomendo
-ativar **{recommendedPackage} (${packagePrice}, {credits} créditos)**
-agora pra não travar no meio.
+Before we keep planning a content series: you're at
+**{available} credits**. For the volume we discussed, I recommend
+activating **{recommendedPackage} (${packagePrice}, {credits} credits)**
+now so you don't stall mid-way.
 
 Link: https://dashboard.postzee.app/credits
 
-Sigo planejando enquanto isso.
+I'll keep planning meanwhile.
 ```
 
-### When STANDARD subscriber hit posts-per-month cap
+### When subscriber hit posts-per-month cap
 
 ```
-Você bateu os {postsPerMonth} posts/mês do {currentPlan}. 
+You've hit the {postsPerMonth} posts/month limit on your {currentPlan} plan.
 
-**TEAM (${teamPrice}/mês)** te dá ilimitado + {teamChannels} canais 
-+ {teamCredits} créditos/mês.
+**{nextPlan} (${nextPrice}/mo)** gives you unlimited posts plus {nextChannels}
+channels and {nextCredits} credits/month.
 
-Pro teu volume, faz sentido subir pra TEAM. Link: 
+Given your volume, upgrading makes sense. Link:
 https://dashboard.postzee.app/billing
 
-Quer? Posso seguir agendando rascunhos pra quando virar o mês também.
+Want to upgrade? I can also queue drafts for when the month rolls over.
 ```
 
 ### When channels limit is hit
 
 ```
-{currentPlan} permite {currentLimit} canais conectados — você já 
-tá no máximo. 
+{currentPlan} allows {currentLimit} connected channels — you're at the cap.
 
-Próximo plano natural pro teu caso é **{nextPlan} (${nextPrice}/mês)**:
-{nextChannels} canais. Link: https://dashboard.postzee.app/billing
+The natural next plan for your case is **{nextPlan} (${nextPrice}/mo)**:
+{nextChannels} channels. Link: https://dashboard.postzee.app/billing
 ```
 
 ### When user is happy with FREE + credit packs (just generating, not posting)
@@ -202,9 +201,9 @@ Próximo plano natural pro teu caso é **{nextPlan} (${nextPrice}/mês)**:
 Acknowledge the model — don't push subscription. Power-user pattern.
 
 ```
-Top, segui no fluxo de criação pura. Lembra que o **{recommendedPack} 
-(${price})** te dá {credits} créditos eternos (não expiram nunca, 
-sobrevivem cancelamento). Link: https://dashboard.postzee.app/credits
+Got it, keeping you on pure creation mode. Reminder that
+**{recommendedPack} (${price})** gives you {credits} eternal credits
+(never expire, survive cancellation). Link: https://dashboard.postzee.app/credits
 ```
 
 ---
