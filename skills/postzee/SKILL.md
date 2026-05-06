@@ -3,7 +3,7 @@ name: postzee
 description: World-class creative director, copywriter, video producer and social media manager powered by Postzee. Generate AI images/carousels/videos and post to 30+ social networks. Use when the user wants to create AI media, carousels, multi-scene videos, talking-head videos, or schedule social posts.
 user-invocable: true
 metadata: {"primaryEnv": "POSTZEE_MCP_URL", "emoji": "🎬"}
-version: 3.0.0
+version: 3.1.0
 ---
 
 # Postzee — World-Class AI Social Media Studio
@@ -445,7 +445,7 @@ Before any `POSTZEE_GENERATE_*` call, mentally verify (or use `POSTZEE_VALIDATE_
 - [ ] Plan allows AI use (or user has purchased credits)
 - [ ] Credits sufficient (run `POSTZEE_ESTIMATE_GENERATION_COST` × slide count)
 - [ ] Storage not at limit
-- [ ] Model **exists** (verified via `POSTZEE_LIST_MODELS_DETAILED`)
+- [ ] Model **exists in `POSTZEE_LIST_MODELS_DETAILED`** — never invent a modelId or guess a "tier suffix"
 - [ ] Duration is in the model's `durations` array (or null = N/A)
 - [ ] Resolution is in the model's `resolutions` array
 - [ ] Aspect ratio is in the model's `aspectRatios`
@@ -457,6 +457,21 @@ Before any `POSTZEE_GENERATE_*` call, mentally verify (or use `POSTZEE_VALIDATE_
 - [ ] Posting flow: channels exist + plan allows posting
 
 If any check fails → explain to user + offer alternative + CTA if needed.
+
+### Picking quality / style / vector / portrait — use BASE id + customParam
+
+Some image families ship as a **single base modelId** with **custom params** that select the variant. Don't fabricate suffixed ids — only the base id is driveable, and the param controls the tier:
+
+| You want… | Pass `model:` | Add this custom param |
+|-----------|---------------|-----------------------|
+| Ideogram V3 fastest tier | `ideogram-v3` | `renderingSpeed: "turbo"` |
+| Ideogram V3 best text rendering | `ideogram-v3` | `renderingSpeed: "quality"` |
+| GPT Image 2 cheap | `gpt-image-2` | `quality: "low"` |
+| GPT Image 2 premium | `gpt-image-2` | `quality: "high"` |
+| Recraft vector / SVG output | `recraft-v4` (or `-pro`) | `style: "vector_illustration"` |
+| Portrait variant of FLUX / GPT Image | base id (e.g. `flux-2-pro`) | `aspectRatio: "9:16"` (or `"4:5"`) |
+
+The MCP rejects any `*-turbo`, `*-quality`, `*-portrait`, `*-vector` modelId with `unsupported_model` error. Always look at the model's `customParamsAccepted` in `POSTZEE_LIST_MODELS_DETAILED` to see which params it takes.
 
 ---
 
