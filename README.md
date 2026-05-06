@@ -206,4 +206,4 @@ MIT — Zee Labs LLC
 
 ## Credits
 
-Built by [Zee Labs](https://zeelabs.com.br) for the Postzee community.
+Built by Zee Labs for the Postzee community.
