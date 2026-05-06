@@ -16,8 +16,11 @@ Every interaction starts by mapping the user to a state vector:
   plan.canPost: boolean
   plan.postsRemaining: number | null
   credits.available: number
-  channels.connected: number
-  channels.withIssues: number
+  channels.connected: number       // total complete integrations
+  channels.active: number          // ready to post NOW
+  channels.requiresReauth: number  // user must reconnect (token expired)
+  channels.disabled: number        // explicitly disabled (admin/billing)
+  channels.withIssues: number      // legacy = requiresReauth + disabled
   storage.percentUsed: number
 }
 ```
@@ -55,17 +58,18 @@ Run all "generate-only" checks first. THEN add:
 | State | Behavior |
 |-------|----------|
 | `plan.canPost === false` (FREE) | **Critical.** Either: (a) generate the asset and tell user "I generated it, but to publish via Postzee you need a paid plan — recommend STANDARD" with file delivery as fallback. (b) BEFORE generating, check if they care about posting; if yes, propose plan upgrade upfront. Default to (b) for transparency. |
-| `plan.canPost === true` but `channels.connected === 0` | **Block.** Tell user to connect channels first at https://dashboard.postzee.app/channels. Don't generate yet — they'd waste credits. |
-| `plan.postsRemaining === 0` (Standard hit 400 cap) | **Block posting** but allow generation if they have credits. CTA TEAM upgrade. |
-| `channels.withIssues > 0` | Proceed with healthy channels. Mention which one needs reconnection. |
+| `plan.canPost === true` but `channels.active === 0` | **Block.** If `channels.connected === 0` → tell user to connect channels at https://dashboard.postzee.app/channels. If `channels.requiresReauth > 0` → tell them to **reconnect** the expired token. If `channels.disabled > 0` → tell them to **re-enable** (different from reconnect). Don't generate yet — they'd waste credits. |
+| `plan.postsRemaining === 0` (subscriber hit cap) | **Block posting** but allow generation if they have credits. CTA next-tier upgrade (live values via `POSTZEE_LIST_PLANS`). |
+| `channels.requiresReauth > 0` AND `channels.active > 0` | Proceed with active channels. Mention which one needs **reconnection** (use the per-channel `actionMessage` from `POSTZEE_LIST_CHANNELS`). |
+| `channels.disabled > 0` AND `channels.active > 0` | Proceed with active channels. Mention which is **disabled** — re-enable, not reconnect. |
 
 ### Intent: "post-existing" (user already has files / text, just wants to post)
 
 | State | Behavior |
 |-------|----------|
 | `plan.canPost === false` | CTA upgrade. Offer no fallback — they can't post without subscription. |
-| `channels.connected === 0` | Send to /channels first. |
-| `channels.withIssues > 0` | Specify which channel works, which doesn't. |
+| `channels.active === 0` | Block. Branch on `requiresReauth` / `disabled` / `connected === 0` for the right user action. |
+| `channels.requiresReauth > 0` OR `channels.disabled > 0` (but `active > 0`) | Specify which channel works, which doesn't, with the right action verb (reconnect vs re-enable). |
 
 ### Intent: "schedule"
 
@@ -108,7 +112,7 @@ This determines `intent` + estimated total credits.
 ### Moment 4 — Pre-posting
 
 ```
-1. Verify channels.connected > 0
+1. Verify channels.active > 0 (if zero, branch on requiresReauth/disabled/connected)
 2. Verify plan.canPost === true (and postsRemaining > 0 if finite)
 3. POSTZEE_LIST_CHANNELS to confirm specific channel id
 4. POSTZEE_CREATE_POST

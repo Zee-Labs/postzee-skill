@@ -118,10 +118,17 @@ It returns a single payload with everything you need:
     "monthly": number,
     "purchased": number,
     "used": number,
-    "monthlyResetsAt": string | null
+    "lastResetAt": string | null,    // when the latest monthly grant happened
+    "nextResetAt": string | null     // when the next monthly grant will happen — use this when telling the user "your credits reset on …"
   },
   "storage": { "usedGB": number, "limitGB": number, "percentUsed": number },
-  "channels": { "connected": number, "withIssues": number },
+  "channels": {
+    "connected": number,         // total complete integrations (any status)
+    "active": number,            // ready to post right now
+    "requiresReauth": number,    // token expired; user must reconnect
+    "disabled": number,          // explicitly disabled (admin/billing)
+    "withIssues": number         // = requiresReauth + disabled  (kept for v2 compat)
+  },
   "organization": { "id": string, "timezone": string },
   "features": {
     "img2vid": true,
@@ -244,9 +251,11 @@ See `reference/plans-and-pricing.md` for the 5 plans and 5 credit packs. See `re
 | `plan.tier === "FREE"` and user wants to **post** | Generate the asset, but BEFORE generating, propose the right paid plan with persuasive copy. **Fetch live prices via `POSTZEE_LIST_PLANS`** — never hardcode. Offer "I can deliver the file and you post manually" as fallback. |
 | `credits.available < estimatedCredits` | Don't generate. CTA the right credit pack based on use case (live prices via `POSTZEE_LIST_CREDIT_PACKAGES`). Show shortfall in credits. |
 | `credits.available < 200` (very low) | Warn proactively — "You're at X credits. Want me to suggest a top-up before we plan more content?" |
-| `channels.connected === 0` and user wants to post | Stop. Send to https://dashboard.postzee.app/channels first. |
-| `channels.withIssues > 0` | Mention which channel needs reconnection but proceed for healthy ones. |
+| `channels.active === 0` and user wants to post | Stop. If `channels.requiresReauth > 0` → tell user to **reconnect** at https://dashboard.postzee.app/channels. If `channels.disabled > 0` → tell user to **re-enable** (admin/billing action), not reconnect. If `channels.connected === 0` → no channels at all yet. |
+| `channels.requiresReauth > 0` AND `channels.active > 0` | Proceed with active channels. Mention which one needs **reconnection**. Use each channel's `actionMessage` from `POSTZEE_LIST_CHANNELS` for accurate copy. |
+| `channels.disabled > 0` AND `channels.active > 0` | Proceed with active channels. Mention which is **disabled** (re-enable, not reconnect — the actions differ). |
 | `plan.postsRemaining === 0` (subscriber hit cap) | Suggest the next-tier plan (live values via `POSTZEE_LIST_PLANS`). |
+| `storage.percentUsed >= 100` | **Block.** `POSTZEE_VALIDATE_GENERATION` will return an error. Offer to upgrade or clean up before generating. |
 | `storage.percentUsed >= 90` | Warn that generation may fail. Offer to upgrade or clean up. |
 
 **Rule of thumb:** never let the user discover a paywall mid-generation. Always check first.
@@ -393,18 +402,21 @@ For subtitles (Whisper, WhisperX, ASS karaoke styles, burn-in), see `reference/s
 
 ## 12. Posting Workflow
 
-1. **Verify channels** before generating: `context.channels.connected > 0`. If not — stop, send to /channels.
+1. **Verify channels can post right now**: `context.channels.active > 0`.
+   - `channels.connected === 0` → no channels at all; stop, send to /channels
+   - `channels.requiresReauth > 0` → tell user to **reconnect** that channel
+   - `channels.disabled > 0` → tell user to **re-enable** (re-auth won't help)
 2. **Verify plan** allows posting: `context.plan.canPost === true`. If not — CTA upgrade, offer file delivery instead.
-3. List channels: `POSTZEE_LIST_CHANNELS`.
+3. List channels: `POSTZEE_LIST_CHANNELS`. Use each channel's `actionRequired`/`actionMessage`/`actionUrl` for accurate user-facing instructions. Only post to channels where `canPostNow === true`.
 4. Adjust copy per platform (§9).
 5. Call `POSTZEE_CREATE_POST` once per channel:
-   - `type: "now"` — publish immediately
-   - `type: "schedule"` with `date` (ISO UTC) — convert from user's timezone (`context.organization.timezone`) to UTC
-   - `type: "draft"` — save for later
+   - `type: "now"` — publish immediately (date is ignored)
+   - `type: "schedule"` — **date is REQUIRED** (UTC ISO format like `"2026-04-24T15:00:00Z"`). Convert from user's timezone (`context.organization.timezone`) to UTC before sending. **Without `date`, the call returns `error: "date_required"`.**
+   - `type: "draft"` — save for later (date optional)
    - `mediaUrls` — generated URLs **in correct display order** (critical for carousels)
    - `text` — the caption (note: parameter is `text`, not `caption`)
 
-For best schedule times, call `POSTZEE_GET_BEST_POSTING_TIMES` and convert from local windows to ISO UTC.
+For best schedule times, call `POSTZEE_GET_BEST_POSTING_TIMES` and convert each `{time, timezone, nextDateLocal}` window into a UTC ISO string for `date`.
 
 ---
 
@@ -446,16 +458,23 @@ If any check fails → explain to user + offer alternative + CTA if needed.
 
 ## 15. Error Handling
 
-| Error / Situation | Action |
-|-------------------|--------|
-| `POSTZEE_GET_CONTEXT` returns `plan.tier: "FREE"` and user wants to post | Generate (if credits) but CTA Standard plan with conviction |
-| `POSTZEE_VALIDATE_GENERATION` returns `willExceedBalance: true` | Show shortfall + CTA right credit pack |
-| `POSTZEE_VALIDATE_GENERATION` returns `errors: ["Sora 2 only supports durations: 10, 15"]` | Adjust duration to a valid value, re-validate |
-| `POSTZEE_GENERATE_*` fails | Different model OR simpler prompt OR shorter duration |
-| `POSTZEE_CHECK_JOB` polling timeout (>3 min) | Direct user to https://dashboard.postzee.app to check |
-| `POSTZEE_CREATE_POST` returns `error: "subscription_required"` | Show CTA upgrade + offer file delivery |
-| HeyGen returns "not configured" | Direct to https://dashboard.postzee.app/settings |
-| Channel `requiresReauth: true` | Tell user to reconnect at /channels for that platform |
+All write/generate tools return a JSON object with `success: boolean`, and on failure: `error: "<machine_code>"` and `message: "<human readable>"`. Branch on `error` (machine code), narrate in the user's language using `message`.
+
+| `error` code | Source tool | Action |
+|--------------|-------------|--------|
+| `subscription_required` | `POSTZEE_CREATE_POST` | FREE plan or post-cap reached. CTA upgrade (live values via `POSTZEE_LIST_PLANS`) + offer file delivery as fallback. |
+| `date_required` | `POSTZEE_CREATE_POST` | User asked schedule without a date. Compute it (best times + user's timezone) and retry. |
+| `invalid_date` | `POSTZEE_CREATE_POST` | Re-format the date as UTC ISO and retry. |
+| `unsupported_model` | any GENERATE tool | Pick another model from `POSTZEE_LIST_MODELS_DETAILED`. |
+| `organization_not_found` | any tool | Likely auth/MCP misconfiguration — tell user to verify their MCP URL. |
+| `generation_failed` | `POSTZEE_GENERATE_*` | Different model OR simpler prompt OR shorter duration. Re-validate with `POSTZEE_VALIDATE_GENERATION`. |
+| `post_failed` | `POSTZEE_CREATE_POST` | Network/provider issue. Retry once; if persists, surface the `message` and ask user to check the channel. |
+| `valid: false` (validation) | `POSTZEE_VALIDATE_GENERATION` | Inspect `errors[]` (e.g. duration not allowed, model unsupported, plan blocks AI). Fix params and re-validate. |
+| `willExceedBalance: true` (validation) | `POSTZEE_VALIDATE_GENERATION` | CTA the right credit pack from `POSTZEE_LIST_CREDIT_PACKAGES`. |
+| `not_found` | `POSTZEE_CHECK_JOB` | The job id doesn't exist for this org. Re-check the id. |
+| transport / connection error | any tool | MCP not configured. See §1 setup-failure protocol. |
+
+For polling: `POSTZEE_CHECK_JOB` may take 10-60s for images, 30-180s for videos, up to 5min for HeyGen. If it stays `processing` past 3 minutes, direct user to https://dashboard.postzee.app to check.
 
 ---
 
