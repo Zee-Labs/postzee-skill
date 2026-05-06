@@ -125,7 +125,7 @@ This determines `intent` + estimated total credits.
 → Generate IF intent unambiguous. THEN explain: "Gerei tudo. Pra publicar pelo Postzee você precisa de plano. Recomendo STANDARD ($X/mês) que inclui {Y} créditos mensais — vai cobrir mais conteúdo desse tipo. Ou te mando os arquivos pra postar manual."
 
 ### "STANDARD user, low credits"
-→ Generate. Mention credit pack option AFTER, not before — they're already paying. "Top — você ainda tem {N} créditos depois disso. Se for produzir muito mais essa semana, o pack Basic ($10 = 10.000 créditos) cobre bem."
+→ Generate. Mention credit pack option AFTER, not before — they're already paying. Fetch the right pack from `POSTZEE_LIST_CREDIT_PACKAGES` (typically Basic if low usage, Standard if higher), then quote live `priceUSD` and `credits`: "Top — você ainda tem {N} créditos depois disso. Se for produzir muito mais essa semana, o pack {pack.name} (${pack.priceUSD} = {pack.credits} créditos) cobre bem."
 
 ### "STANDARD user, hit 400 posts/month"
 → Block posting. CTA TEAM upgrade. Mention rascunhos podem ficar prontos pra quando o mês virar.

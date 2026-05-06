@@ -75,31 +75,31 @@ This is the heart of conversion. Read the user's state from `POSTZEE_GET_CONTEXT
 USER WANTS TO POST → needs subscription (since FREE can't post)
 │
 ├── Just needs basic posting + some AI                   → STANDARD
-├── Has team members or wants more channels (>5)         → TEAM
-├── Manages many channels (10+)                          → PRO
-└── Agency / 30+ channels / huge volume                  → ULTIMATE
+├── Has team members or wants more channels              → TEAM
+├── Manages many channels                                 → PRO
+└── Agency / huge volume                                   → ULTIMATE
 
 
 USER WANTS ONLY AI MEDIA (no posting, downloads files manually) → credit pack
 │
-├── First test, ~$2 to play                              → starter
-├── Casual / occasional AI use                           → basic
-├── Serious creator (most users)                          → standard ⭐
-├── Heavy AI / video-heavy                               → pro
+├── First test, lowest commitment                         → starter
+├── Casual / occasional AI use                            → basic
+├── Serious creator (most users)                          → standard ⭐ (popular: true)
+├── Heavy AI / video-heavy                                → pro
 └── Agency-level                                          → enterprise
 
 
 USER ALREADY HAS A SUBSCRIPTION but is running low on credits
 │
 └── Recommend matching credit pack:
-    ├── Standard subscriber + occasional shortfall        → starter or basic
-    ├── Standard + serious volume                         → standard pack
-    └── Pro/Ultimate subscriber + heavy AI                → pro or enterprise pack
+    ├── Subscriber + occasional shortfall                 → starter or basic
+    ├── Subscriber + serious volume                       → standard pack
+    └── High-tier subscriber + heavy AI                   → pro or enterprise pack
 
 
-USER HIT POSTS-PER-MONTH CAP (Standard plan = 400/mo)
+USER HIT POSTS-PER-MONTH CAP (any finite-cap plan)
 │
-└── Suggest TEAM upgrade — unlimited posts
+└── Suggest the next-tier plan with more (or unlimited) posts
 
 
 USER HIT CHANNELS LIMIT
@@ -107,12 +107,16 @@ USER HIT CHANNELS LIMIT
 └── Suggest the next plan tier with more channels
 ```
 
+Always look up exact thresholds from `POSTZEE_LIST_PLANS` / `POSTZEE_LIST_CREDIT_PACKAGES` before quoting.
+
 ### Single-CTA rule
 
 **Never list multiple options at once.** Pick ONE recommendation matching the user's state. Offer alternatives only if they push back.
 
-Bad: "We have STANDARD ($27), TEAM ($37), PRO ($47), ULTIMATE ($97). Which one?"
-Good: "Pelo que você produz, **STANDARD ($27/mês)** cobre tudo: 5 canais, 400 posts/mês, 2.000 créditos IA por mês. Vamos com esse?"
+**Always pull the live `monthPriceUSD`, `channelsLimit`, `postsPerMonth`, `monthlyCredits` from `POSTZEE_LIST_PLANS` before quoting.** Hardcoded numbers below are illustrative only — they may have changed.
+
+Bad: "We have STANDARD, TEAM, PRO, ULTIMATE. Which one?" (dump)
+Good: "Pelo que você produz, **{plan.tier} (${plan.monthPriceUSD}/mês)** cobre tudo: {plan.channelsLimit} canais, {plan.postsPerMonth} posts/mês, {plan.monthlyCredits} créditos IA por mês. Vamos com esse?"
 
 ---
 
@@ -231,6 +235,6 @@ Translate the templates above to the user's language. Cultural adaptations:
 - ❌ Quoting USD numbers from this file (they may be stale) — always pull live from `POSTZEE_LIST_PLANS` / `POSTZEE_LIST_CREDIT_PACKAGES`
 - ❌ Showing all 5 plans/packs at once — pick ONE and recommend it
 - ❌ Letting the user generate then discover they can't post — check plan first
-- ❌ Recommending Standard ($25 pack) to someone clearly at first contact ($2 starter is the right entry)
+- ❌ Recommending the most-expensive pack to someone clearly at first contact (the Starter pack is the right entry)
 - ❌ Pushing subscription to a user who explicitly said "I just want to download files"
 - ❌ Mixing the two rails — "buy a plan" when they actually need a credit pack, or vice versa

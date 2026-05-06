@@ -56,18 +56,43 @@ This skill ships pinned to a version (`3.0.0` in this file). Postzee MCP returns
 1. **First message of any session** — call `POSTZEE_GET_CONTEXT` (you would do this anyway for plan/credit awareness, see §2).
 2. Compare `skill.currentVersion` from the response to your installed version (`3.0.0`).
 3. If they differ:
-   - **Tell the user once**, in their language, briefly:
-     > "Hey, há uma nova versão da Postzee Skill disponível ([newVersion] vs a que tenho aqui [oldVersion]). Recomendo atualizar para ter os modelos e capacidades mais recentes. Comando para atualizar: `gh skill update postzee` (ou puxar do repo: [skill.repoUrl]). Posso seguir com a versão atual? Sem problema."
+   - **Tell the user once**, in their language, briefly. Use the update command that matches their client; if unsure, give the universal manual fallback:
+     - **Claude Code:** `gh skill update postzee`
+     - **OpenClaw:** `clawhub update postzee`
+     - **Hermes:** `hermes skills update postzee`
+     - **Manual (any client):** `cd ~/.claude/skills/postzee && git pull` (or wherever the skill was installed)
    - Don't block work — still help. Just inform once and remember not to nag again in this session.
 4. If versions match: silently proceed.
 
 Why this matters: model catalogs, plan limits, and platform specs evolve. A stale skill recommends features the MCP no longer surfaces. Always **trust the MCP response over your local knowledge**.
 
+### What if the very first MCP call fails?
+
+If `POSTZEE_GET_CONTEXT` (or any tool) returns a transport error / 404 / "no MCP available" / connection refused, the user has not configured the MCP yet. Tell them in their language:
+
+> "Pra usar a Postzee Skill, você precisa conectar o MCP HTTP do Postzee primeiro. Pega tua URL em https://dashboard.postzee.app/settings → aba 'API Pública' → seção MCP. Depois, no teu cliente:
+> - **Claude Code:** `claude mcp add postzee <MCP_URL>`
+> - **OpenClaw:** configure via `primaryEnv` / settings file
+> - **Hermes:** adicione em `~/.hermes/config.yaml` em `mcp_servers.postzee.url`
+> 
+> Após configurar, reabre essa conversa que sigo com você."
+
+Don't try to fall back to the REST API — this skill only works through MCP.
+
 ---
 
 ## 2. Mandatory Context Load (always, first call of session)
 
-Before any creative work, call `POSTZEE_GET_CONTEXT`. Cache the result for the session (refresh on plan-related errors). It returns a single payload with everything you need:
+Before any creative work, call `POSTZEE_GET_CONTEXT`. Cache the result for the session.
+
+**When to re-fetch (always):**
+- After every successful generation (credits changed)
+- After `POSTZEE_CREATE_POST` succeeds (postsRemaining changed)
+- If any tool returns `subscription_required`, `insufficient_credits`, or storage errors
+- After ~30 minutes of conversation, even if nothing else triggers it (long sessions drift)
+- Whenever the user mentions they upgraded their plan, bought credits, or connected channels
+
+It returns a single payload with everything you need:
 
 ```json
 {
@@ -215,12 +240,12 @@ See `reference/plans-and-pricing.md` for the 5 plans and 5 credit packs. See `re
 
 | State | Action |
 |-------|--------|
-| `plan.tier === "FREE"` and user wants to **post** | Generate the asset, but BEFORE generating, propose Standard plan ($27/mo) with persuasive copy. Offer "I can deliver the file and you post manually" as fallback. |
-| `credits.available < estimatedCredits` | Don't generate. CTA the right credit pack based on use case. Show shortfall. |
+| `plan.tier === "FREE"` and user wants to **post** | Generate the asset, but BEFORE generating, propose the right paid plan with persuasive copy. **Fetch live prices via `POSTZEE_LIST_PLANS`** — never hardcode. Offer "I can deliver the file and you post manually" as fallback. |
+| `credits.available < estimatedCredits` | Don't generate. CTA the right credit pack based on use case (live prices via `POSTZEE_LIST_CREDIT_PACKAGES`). Show shortfall in credits. |
 | `credits.available < 200` (very low) | Warn proactively — "You're at X credits. Want me to suggest a top-up before we plan more content?" |
 | `channels.connected === 0` and user wants to post | Stop. Send to https://dashboard.postzee.app/channels first. |
 | `channels.withIssues > 0` | Mention which channel needs reconnection but proceed for healthy ones. |
-| `plan.postsRemaining === 0` (Standard hit 400 cap) | Suggest TEAM ($37/mo) — unlimited posts. |
+| `plan.postsRemaining === 0` (subscriber hit cap) | Suggest the next-tier plan (live values via `POSTZEE_LIST_PLANS`). |
 | `storage.percentUsed >= 90` | Warn that generation may fail. Offer to upgrade or clean up. |
 
 **Rule of thumb:** never let the user discover a paywall mid-generation. Always check first.
