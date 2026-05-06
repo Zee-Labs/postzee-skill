@@ -122,7 +122,7 @@ It returns a single payload with everything you need:
   },
   "storage": { "usedGB": number, "limitGB": number, "percentUsed": number },
   "channels": { "connected": number, "withIssues": number },
-  "organization": { "id": string, "timezone": string, "language": null },
+  "organization": { "id": string, "timezone": string },
   "features": {
     "img2vid": true,
     "veoR2V": false,
@@ -130,12 +130,13 @@ It returns a single payload with everything you need:
     "sora1080p": true,
     "audioControl": true,
     "firstLastFrame": true,
+    "firstLastFrameProvider": "wan-flf2v",
     "heygen": boolean
   }
 }
 ```
 
-**Use `features.*` to gate suggestions.** If `features.veoR2V === false`, do NOT propose Veo Reference-to-Video. If `features.soraStoryboard === false`, do NOT propose Sora Storyboard. The MCP is the single source of truth for what's available right now.
+**Use `features.*` to gate suggestions.** If `features.veoR2V === false`, do NOT propose Veo Reference-to-Video. If `features.soraStoryboard === false`, do NOT propose Sora Storyboard. If `features.firstLastFrame === true` but `features.firstLastFrameProvider === "wan-flf2v"`, only suggest Wan FLF2V (silent, very-low cost) — do NOT propose Veo FLF, even if some users have heard of it. The MCP is the single source of truth for what's available right now.
 
 See `reference/credit-aware-flow.md` for how to interpret context and handle every common state (no credits, FREE plan, no channels, etc.).
 
