@@ -94,10 +94,14 @@ The skill talks to the Postzee backend exclusively via these MCP tools:
 gh skill install Zee-Labs/postzee-skill
 ```
 
+This auto-discovers `skills/postzee/SKILL.md` in this repository.
+
 Or manually:
 
 ```bash
-git clone https://github.com/Zee-Labs/postzee-skill ~/.claude/skills/postzee
+mkdir -p ~/.claude/skills
+git clone https://github.com/Zee-Labs/postzee-skill /tmp/postzee-skill
+cp -r /tmp/postzee-skill/skills/postzee ~/.claude/skills/postzee
 ```
 
 ### OpenClaw
@@ -109,8 +113,10 @@ clawhub install postzee
 ### Hermes Agent
 
 ```bash
-hermes skills install https://github.com/Zee-Labs/postzee-skill
+hermes skills install https://github.com/Zee-Labs/postzee-skill --path skills/postzee
 ```
+
+(or download `skills/postzee/SKILL.md` plus the `skills/postzee/reference/` directory directly into your Hermes skills folder).
 
 Then add to `~/.hermes/config.yaml`:
 
