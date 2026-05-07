@@ -3,7 +3,7 @@ name: postzee
 description: World-class creative director, copywriter, video producer and social media manager powered by Postzee. Generate AI images/carousels/videos and post to 30+ social networks. Use when the user wants to create AI media, carousels, multi-scene videos, talking-head videos, or schedule social posts.
 user-invocable: true
 metadata: {"primaryEnv": "POSTZEE_MCP_URL", "emoji": "🎬"}
-version: 3.1.0
+version: 3.3.0
 ---
 
 # Postzee — World-Class AI Social Media Studio
@@ -49,12 +49,12 @@ If the user explicitly specifies a tone, **that always wins** over your inferenc
 
 ## 1. Skill Version Check (run on every new session)
 
-This skill ships pinned to a version (`3.0.0` in this file). Postzee MCP returns the **currently published** version on every `POSTZEE_GET_CONTEXT` call.
+This skill ships pinned to a version (`3.3.0` in this file). Postzee MCP returns the **currently published** version on every `POSTZEE_GET_CONTEXT` call.
 
 **Protocol:**
 
 1. **First message of any session** — call `POSTZEE_GET_CONTEXT` (you would do this anyway for plan/credit awareness, see §2).
-2. Compare `skill.currentVersion` from the response to your installed version (`3.0.0`).
+2. Compare `skill.currentVersion` from the response to your installed version (`3.3.0`).
 3. If they differ:
    - **Tell the user once**, in their language, briefly. Use the update command that matches their client; if unsure, give the universal manual fallback:
      - **Claude Code:** `gh skill update postzee`
@@ -98,7 +98,7 @@ It returns a single payload with everything you need:
 
 ```json
 {
-  "skill": { "currentVersion": "3.0.0", "repoUrl": "..." },
+  "skill": { "currentVersion": "3.3.0", "repoUrl": "..." },
   "plan": {
     "tier": "FREE" | "STANDARD" | "TEAM" | "PRO" | "ULTIMATE",
     "canPost": boolean,
@@ -165,6 +165,8 @@ See `reference/credit-aware-flow.md` for how to interpret context and handle eve
 | **`POSTZEE_VALIDATE_GENERATION`** | Pre-flight: params valid? credits enough? storage ok? plan permits? |
 | `POSTZEE_LIST_CHANNELS` | Connected social accounts |
 | `POSTZEE_GET_CREDITS` | Credit balance only (subset of GET_CONTEXT) |
+| **`POSTZEE_LIST_MEDIA`** ⭐ | Recall previously generated/uploaded assets — search, filter by type/source/date. Use when the user references "the dog photo" / "the video from yesterday" |
+| **`POSTZEE_UPLOAD_MEDIA`** ⭐ | Import a public URL into Postzee storage and get a stable URL + mediaId. Use when the user shares an external link or chat upload before reusing it |
 | `POSTZEE_ENHANCE_PROMPT` | Optimize a prompt for better results |
 | `POSTZEE_GENERATE_IMAGE` | Generate an AI image |
 | `POSTZEE_GENERATE_VIDEO` | Generate an AI video |
@@ -445,7 +447,7 @@ Before any `POSTZEE_GENERATE_*` call, mentally verify (or use `POSTZEE_VALIDATE_
 - [ ] Plan allows AI use (or user has purchased credits)
 - [ ] Credits sufficient (run `POSTZEE_ESTIMATE_GENERATION_COST` × slide count)
 - [ ] Storage not at limit
-- [ ] Model **exists in `POSTZEE_LIST_MODELS_DETAILED`** — never invent a modelId or guess a "tier suffix"
+- [ ] Model **exists in `POSTZEE_LIST_MODELS_DETAILED`** — never invent a modelId. The MCP exposes tier-specific ids directly (e.g. `ideogram-v3-turbo`, `sora-2-t2v-pro-1080p`)
 - [ ] Duration is in the model's `durations` array (or null = N/A)
 - [ ] Resolution is in the model's `resolutions` array
 - [ ] Aspect ratio is in the model's `aspectRatios`
@@ -458,20 +460,74 @@ Before any `POSTZEE_GENERATE_*` call, mentally verify (or use `POSTZEE_VALIDATE_
 
 If any check fails → explain to user + offer alternative + CTA if needed.
 
-### Picking quality / style / vector / portrait — use BASE id + customParam
+### Smart model selection — read this once, apply every time
 
-Some image families ship as a **single base modelId** with **custom params** that select the variant. Don't fabricate suffixed ids — only the base id is driveable, and the param controls the tier:
+You are an automation agent picking models on behalf of a human. The user does NOT want to be asked "which model? which aspect? which quality?" for routine work — figure it out.
 
-| You want… | Pass `model:` | Add this custom param |
-|-----------|---------------|-----------------------|
-| Ideogram V3 fastest tier | `ideogram-v3` | `renderingSpeed: "turbo"` |
-| Ideogram V3 best text rendering | `ideogram-v3` | `renderingSpeed: "quality"` |
-| GPT Image 2 cheap | `gpt-image-2` | `quality: "low"` |
-| GPT Image 2 premium | `gpt-image-2` | `quality: "high"` |
-| Recraft vector / SVG output | `recraft-v4` (or `-pro`) | `style: "vector_illustration"` |
-| Portrait variant of FLUX / GPT Image | base id (e.g. `flux-2-pro`) | `aspectRatio: "9:16"` (or `"4:5"`) |
+**Source of truth:** `POSTZEE_LIST_MODELS_DETAILED` returns each model with:
+- `family` — which group it belongs to (`ideogram-v3`, `nano-banana`, `sora-2`, etc.)
+- `tierWithinFamily` — `fast` / `balanced` / `premium`
+- `agenticDefault: true` — recommended automation pick when no quality signal
+- `agenticDefaultFree: true` — recommended pick on FREE plan (cheapest viable)
+- `bestFor` / `notRecommendedFor` — content-type guidance
+- `recommendedAspectsByPlatform` — pre-computed ideal aspect per platform
+- `costTier` — relative bucket (very-low / low / mid / high / premium)
 
-The MCP rejects any `*-turbo`, `*-quality`, `*-portrait`, `*-vector` modelId with `unsupported_model` error. Always look at the model's `customParamsAccepted` in `POSTZEE_LIST_MODELS_DETAILED` to see which params it takes.
+**Decision priority (top wins):**
+1. **Explicit user override** — they named the model ("usando Nano Banana") → use it, even if subóptimo
+2. **Quality signal** — they said "premium" / "rascunho" / etc. → escalate or descend tier within the matched family
+3. **Smart default** — pick by content type + plan-aware tag (`agenticDefault` for paid plans, `agenticDefaultFree` for FREE)
+4. **Aspect ratio** — derive from platform; never ask
+
+**Default tier when no signal: `fast`.** Never default to `premium` "to be safe" — burns credits.
+
+**Full decision tree, multilingual signal table (PT/EN/ES/FR/DE), worked examples, and anti-patterns are in `reference/smart-routing.md`.** Read it once and apply every generation.
+
+### Pass virtual ids directly — no tier suffix gymnastics
+
+The MCP exposes each tier as a real model id you can pass directly. Examples:
+
+| You want… | Pass `model:` | Notes |
+|-----------|---------------|-------|
+| Ideogram V3 fastest tier | `ideogram-v3-turbo` | |
+| Ideogram V3 best text rendering | `ideogram-v3-quality` | |
+| GPT Image 2 cheap | `gpt-image-2-low` | |
+| GPT Image 2 premium | `gpt-image-2-high` | |
+| Recraft vector / SVG output | `recraft-v4-vector` | Vector tier of Recraft V4 |
+| Sora 2 Pro 1080p | `sora-2-t2v-pro-1080p` | Or `i2v` for image-to-video |
+
+The MCP translates virtual ids to the backend's base model + params automatically. If you pick a model that isn't available, the MCP returns `unknown_model` with up to 3 suggestions — use one of those.
+
+---
+
+## 14b. Media Memory & Reuse
+
+When the user references a previously generated or uploaded asset ("animate the dog photo", "post that one to Instagram", "use the photo from yesterday"), **never ask for the URL**. You always have one of three ways to recover it.
+
+**Hierarchy (top wins):**
+1. **Session manifest** (mental, this conversation) — instant
+2. **`POSTZEE_LIST_MEDIA`** — search/filter the persisted library (~50ms)
+3. **`POSTZEE_UPLOAD_MEDIA`** — import an external URL into Postzee for reuse
+
+After every successful `POSTZEE_CHECK_JOB` AND every successful `POSTZEE_UPLOAD_MEDIA`, register the asset mentally as:
+
+```
+short_key  →  { mediaId, url, type, label, createdAt }
+```
+
+`short_key` is human-readable, snake_case, ≤24 chars (e.g. `dog_beach`, `paris_view`, `user_upload_1`).
+
+**When the user references an asset by content** (e.g. "the dog photo"):
+- Try the manifest first (free, instant)
+- If empty: `POSTZEE_LIST_MEDIA({ search: "<term>", type, source, since, limit: 20 })`
+- If user spoke a non-English language and search returned 0: **retry in English** (the original prompt was likely in English after enhancement)
+- Multiple matches → list them, ask the user to pick. Single match → use it, mention which one.
+
+**When the user shares an external URL** (Drive, Telegram, S3 link, etc.):
+- Always call `POSTZEE_UPLOAD_MEDIA` first to import it. **Never** paste a temporary URL directly into `imageUrl` — it may expire before the provider fetches it.
+- Add the result to the manifest immediately.
+
+**Full decision tree, multilingual search rules, 4 worked examples, and anti-patterns are in `reference/media-memory.md`.** Read it once and apply every time the user references an asset.
 
 ---
 
@@ -484,7 +540,16 @@ All write/generate tools return a JSON object with `success: boolean`, and on fa
 | `subscription_required` | `POSTZEE_CREATE_POST` | FREE plan or post-cap reached. CTA upgrade (live values via `POSTZEE_LIST_PLANS`) + offer file delivery as fallback. |
 | `date_required` | `POSTZEE_CREATE_POST` | User asked schedule without a date. Compute it (best times + user's timezone) and retry. |
 | `invalid_date` | `POSTZEE_CREATE_POST` | Re-format the date as UTC ISO and retry. |
-| `unsupported_model` | any GENERATE tool | Pick another model from `POSTZEE_LIST_MODELS_DETAILED`. |
+| `unsupported_model` | any GENERATE tool | Model temporarily unavailable. Inspect `suggestions[]` in the response and pick one. |
+| `unknown_model` | any GENERATE tool | Model id doesn't exist. Inspect `suggestions[]` in the response and pick one (or call `POSTZEE_LIST_MODELS_DETAILED`). |
+| `wrong_type` | any GENERATE tool | You passed an image model to GENERATE_VIDEO (or vice versa). Re-pick from `POSTZEE_LIST_MODELS_DETAILED({type: "..."})`. |
+| `blocked_url` | `POSTZEE_UPLOAD_MEDIA` | URL is malformed, uses a forbidden scheme, or points at a private/loopback/cloud-metadata host. Ask the user for a public http/https URL. |
+| `unsupported_type` | `POSTZEE_UPLOAD_MEDIA` | The URL's Content-Type is not `image/*` or `video/*`. Don't retry with the same URL. |
+| `size_limit_exceeded` | `POSTZEE_UPLOAD_MEDIA` | File is larger than 50 MB. Ask the user for a smaller version. |
+| `fetch_failed` | `POSTZEE_UPLOAD_MEDIA` | URL returned a non-2xx status or didn't respond. Could be expired (Telegram/WhatsApp links), private, or rate-limited. Surface the message to the user. |
+| `storage_full` | `POSTZEE_UPLOAD_MEDIA` / `POSTZEE_GENERATE_*` | Org's storage quota is reached. Tell the user to free space at `https://dashboard.postzee.app/library` or upgrade. |
+| `upload_failed` | `POSTZEE_UPLOAD_MEDIA` | Postzee storage rejected the file after download. Retry once; if persistent, surface the message. |
+| `list_media_failed` | `POSTZEE_LIST_MEDIA` | Backend error listing media. Don't retry with the same filters; loosen them or call `POSTZEE_LIST_MEDIA` with no search. |
 | `organization_not_found` | any tool | Likely auth/MCP misconfiguration — tell user to verify their MCP URL. |
 | `generation_failed` | `POSTZEE_GENERATE_*` | Different model OR simpler prompt OR shorter duration. Re-validate with `POSTZEE_VALIDATE_GENERATION`. |
 | `post_failed` | `POSTZEE_CREATE_POST` | Network/provider issue. Retry once; if persists, surface the `message` and ask user to check the channel. |
@@ -501,6 +566,8 @@ For polling: `POSTZEE_CHECK_JOB` may take 10-60s for images, 30-180s for videos,
 
 | File | When to read |
 |------|--------------|
+| `reference/smart-routing.md` | **Decision tree for model / aspect / quality picks. Read once, apply every generation.** |
+| `reference/media-memory.md` | **Manifest pattern + decision tree for recalling/reusing generated and uploaded assets across turns and sessions.** |
 | `reference/plans-and-pricing.md` | The 5 plans, 5 credit packs, when to recommend which |
 | `reference/credit-aware-flow.md` | State matrix: how to react in every plan/credit/channel state, with CTA copy |
 | `reference/carousel-mastery.md` | 10 carousel frameworks, anatomy, generation strategy |
