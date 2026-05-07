@@ -1,0 +1,93 @@
+name: Release skill ZIP
+
+# Auto-builds postzee-skill.zip and attaches it as a GitHub Release asset
+# whenever a `v*` tag is pushed. The ZIP is what users upload to Claude
+# Desktop / Claude.ai (clients without a CLI installer) — for Claude Code,
+# OpenClaw and Hermes the install commands clone the repo directly.
+#
+# Layout produced (matching Claude Desktop's expected import format):
+#
+#   postzee-skill.zip
+#   ├── SKILL.md
+#   └── reference/
+#       └── *.md
+#
+# The Postzee dashboard reads `https://api.github.com/repos/Zee-Labs/postzee-skill/releases/latest`
+# (proxied via api.postzee.app/skill/info with 1h cache) so the user-facing
+# version + download URL stays in lockstep with whatever's on GitHub.
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify tag matches SKILL.md frontmatter
+        # Refuses to publish if `git tag v3.4.0` is pushed but SKILL.md still
+        # says `version: 3.3.0`. Forces every release to come with a real
+        # version bump in the source — matches how POSTZEE_GET_CONTEXT.skill
+        # compares "currentVersion" reported by the MCP.
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          SKILL_VERSION=$(grep -E "^version:" skills/postzee/SKILL.md | sed -E 's/version:[[:space:]]*//')
+          if [ "$TAG" != "$SKILL_VERSION" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match SKILL.md version: $SKILL_VERSION"
+            exit 1
+          fi
+          echo "Tag and SKILL.md frontmatter agree on version $TAG"
+
+      - name: Build skill ZIP
+        # ZIP the *contents* of skills/postzee/ (not the folder itself) so
+        # SKILL.md sits at the root — that's what Claude Desktop expects on import.
+        run: |
+          cd skills/postzee
+          zip -r ../../postzee-skill.zip . -x "*.DS_Store"
+          cd ../..
+          ls -lh postzee-skill.zip
+          echo "ZIP contents:"
+          unzip -l postzee-skill.zip
+
+      - name: Compute SHA256
+        id: sha
+        run: echo "sha256=$(sha256sum postzee-skill.zip | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: postzee-skill.zip
+          generate_release_notes: true
+          body: |
+            ### Install
+
+            **Claude Code (CLI):**
+            ```sh
+            gh skill install Zee-Labs/postzee-skill
+            ```
+
+            **Claude Desktop / Claude.ai (web):**
+            Download `postzee-skill.zip` below and import via the client's Skills settings.
+
+            **OpenClaw:**
+            ```sh
+            clawhub install postzee
+            ```
+
+            **Hermes Agent:**
+            ```sh
+            hermes skills install Zee-Labs/postzee-skill
+            ```
+
+            ---
+
+            **SHA256:** `${{ steps.sha.outputs.sha256 }}`
+
+            Full reference: <https://docs.postzee.app/integrations/mcp/skill-overview>
