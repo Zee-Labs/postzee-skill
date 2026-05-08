@@ -283,7 +283,7 @@ POSTZEE_RENDER_CAROUSEL({
 - 1-15 slides per call
 - 256-2160 px per dimension
 - 250 KB max HTML per slide
-- 30 s timeout per slide
+- 45 s timeout per slide
 - All-or-nothing: any failure rolls back the whole carousel
 
 **Returned:**
