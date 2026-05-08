@@ -170,17 +170,41 @@ Don't force it on every carousel. When it fits, it's the strongest single slide.
 
 ---
 
-## E. Iteration playbook — POSTZEE_REPLACE_CAROUSEL_SLIDE
+## E. Iteration playbook — APPEND, REPLACE, REBUILD
 
-Skill v3.4.1+ ships a surgical iteration tool. Use it whenever the user requests a single-slide change after the initial render.
+Skill v3.4.2+ ships THREE carousel tools. Knowing which one to use is the difference between a clean carousel and a polluted gallery.
 
-**When to use REPLACE:**
+```
+                          ┌─────────────────────────────────┐
+User wants slide-by-slide │ Phase 4-B (iterative path):     │
+preview while building?   │  RENDER once with [slide1]      │
+─────────────────────►    │  then APPEND for each next      │
+                          └─────────────────────────────────┘
+
+                          ┌─────────────────────────────────┐
+User wants to change      │ POSTZEE_REPLACE_CAROUSEL_SLIDE  │
+an existing slide?        │  same orderInGroup, new content │
+─────────────────────►    └─────────────────────────────────┘
+
+                          ┌─────────────────────────────────┐
+User wants to add a       │ POSTZEE_APPEND_CAROUSEL_SLIDE   │
+slide AT THE END?         │  next orderInGroup, atomic       │
+─────────────────────►    └─────────────────────────────────┘
+
+                          ┌─────────────────────────────────┐
+User wants to insert in   │ Rebuild via POSTZEE_RENDER_     │
+the middle, reorder, or   │ CAROUSEL with the new sequence  │
+delete a slide?           │ (no insert/reorder primitive)   │
+─────────────────────►    └─────────────────────────────────┘
+```
+
+### REPLACE — change existing slide
+
+**Trigger phrases:**
 - "Change slide 4."
 - "The hook is too soft, make it sharper."
 - "Swap slide 7's background for the green one we generated earlier."
 - "The CTA slide should mention our handle."
-
-**How:**
 
 ```ts
 POSTZEE_REPLACE_CAROUSEL_SLIDE({
@@ -196,21 +220,48 @@ POSTZEE_REPLACE_CAROUSEL_SLIDE({
 3. **Call** the tool. It returns the full updated `mediaUrls` array.
 4. **Confirm** in one line ("Slide 4 atualizado. Os outros 9 estão intactos.").
 
-**Edge cases:**
+### APPEND — add a slide at the end
 
-| Scenario | Resposta |
+**Trigger phrases:**
+- "agora faça o slide N+1"
+- "ok, próximo"
+- "vamos para o slide 7"
+- (general iterative authoring after the first RENDER)
+
+```ts
+POSTZEE_APPEND_CAROUSEL_SLIDE({
+  mediaGroupId: "<from the first POSTZEE_RENDER_CAROUSEL response>",
+  slide: { html: "<!doctype html>...", width: 1080, height: 1350 }
+})
+```
+
+The next `orderInGroup` is computed server-side from the current live-media count. Caps at MAX_SLIDES (15) — refuses if already at the limit.
+
+### REBUILD — structural change
+
+**Trigger phrases:**
+- "insere um slide entre o 4 e o 5"
+- "troca o slide 3 com o 7"
+- "remove o slide 5"
+
+There's no insert/reorder/delete primitive in v1.
+
+1. Confirm with the user that this requires a full rebuild.
+2. Update the script in your scrollback with the structural change.
+3. Call `POSTZEE_RENDER_CAROUSEL` with the new sequence. The old MediaGroup remains in history (user can soft-delete via gallery if they want).
+
+### Edge cases
+
+| Scenario | Response |
 |---|---|
-| User says "insert a new slide between 4 and 5" | No insert primitive in v1. Confirm full rebuild needed → `POSTZEE_RENDER_CAROUSEL` again with the script as the seed. |
-| User says "swap slides 3 and 4" | No reorder primitive. Same as above — rebuild. |
-| User says "delete slide 7" | Same. There's no delete primitive. (The shortcut: render again with 9 slides.) |
-| User wants to change >3 slides | At that point a rebuild is faster than 3+ REPLACE calls. Suggest rebuild. |
-| User already attached the carousel to a draft post, then asks to replace a slide | Replace works, but the draft still references the soft-deleted slide URL. Surface this in your response: "I replaced slide 4. If you've already attached this carousel to a draft post, refresh the attachments." |
+| User wants to change >3 slides | Rebuild is faster than 3+ REPLACE calls. Suggest rebuild. |
+| User attached carousel to a draft post, then wants REPLACE/APPEND | Tool works, but draft still references the previous `mediaUrls`. Tell them to refresh the attachments — or you do it for them by re-issuing `POSTZEE_CREATE_POST`. |
+| User keeps adding slides past 15 | APPEND returns error `Carousel is already at the 15-slide limit`. Politely refuse, explain Instagram allows up to 20 but Postzee caps at 15 for render reliability. Suggest split into a "Part 2" carousel. |
+| First slide was rendered with RENDER, but user now says "ok, faça os outros 9 todos juntos" | Use APPEND **per slide** (9 calls). Do NOT call RENDER again — that creates a second carousel. |
 
-**Why surgical replacement matters:**
-- Cheaper (1/N the compute and time)
-- The other slides keep their URLs/IDs — anything already linking them stays valid
-- Order is structurally preserved — `orderInGroup` is unchanged
-- Cover slide (orderInGroup=0) replacement updates the gallery thumbnail automatically
+### Why this matters
+
+Every carousel that gets fragmented into multiple MediaGroups is gallery clutter the user has to clean up. The tools are there to keep ONE carousel = ONE MediaGroup, regardless of how many iterations the user wants.
 
 ---
 

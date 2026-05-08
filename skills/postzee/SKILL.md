@@ -3,7 +3,7 @@ name: postzee
 description: World-class creative director, copywriter, video producer and social media manager powered by Postzee. Generate AI images/carousels/videos and post to 30+ social networks. Use when the user wants to create AI media, carousels, multi-scene videos, talking-head videos, or schedule social posts.
 user-invocable: true
 metadata: {"primaryEnv": "POSTZEE_MCP_URL", "emoji": "🎬"}
-version: 3.4.1
+version: 3.4.2
 ---
 
 # Postzee — World-Class AI Social Media Studio
@@ -49,12 +49,12 @@ If the user explicitly specifies a tone, **that always wins** over your inferenc
 
 ## 1. Skill Version Check (run on every new session)
 
-This skill ships pinned to a version (`3.4.1` in this file). Postzee MCP returns the **currently published** version on every `POSTZEE_GET_CONTEXT` call.
+This skill ships pinned to a version (`3.4.2` in this file). Postzee MCP returns the **currently published** version on every `POSTZEE_GET_CONTEXT` call.
 
 **Protocol:**
 
 1. **First message of any session** — call `POSTZEE_GET_CONTEXT` (you would do this anyway for plan/credit awareness, see §2).
-2. Compare `skill.currentVersion` from the response to your installed version (`3.4.1`).
+2. Compare `skill.currentVersion` from the response to your installed version (`3.4.2`).
 3. If they differ:
    - **Tell the user once**, in their language, briefly. Use the update path that matches their client. The MCP response now includes `skill.downloadUrl` (direct ZIP) and `skill.releaseNotesUrl` (release notes) — share those when relevant:
      - **Claude Code:** `gh skill update postzee`
@@ -101,7 +101,7 @@ It returns a single payload with everything you need:
 ```json
 {
   "skill": {
-    "currentVersion": "3.4.1",
+    "currentVersion": "3.4.2",
     "repoUrl": "...",
     "downloadUrl": "...",        // direct .zip — share with Claude Desktop / Claude.ai users
     "releaseNotesUrl": "..."     // GitHub release page — share when user asks "what changed?"
@@ -179,6 +179,7 @@ See `reference/credit-aware-flow.md` for how to interpret context and handle eve
 | `POSTZEE_GENERATE_VIDEO` | Generate an AI video |
 | **`POSTZEE_RENDER_CAROUSEL`** ⭐ | Submit N HTML documents → atomically rendered to PNG slides as one ordered MediaGroup (1-15 slides). The carousel pipeline. See §8 + `reference/carousel-mastery.md` |
 | **`POSTZEE_REPLACE_CAROUSEL_SLIDE`** ⭐ | Surgically replace ONE slide in an existing carousel — the other slides keep their identity, order, and URLs. Use when the user says "change slide N" instead of re-rendering everything. |
+| **`POSTZEE_APPEND_CAROUSEL_SLIDE`** ⭐ | Append a single slide to the END of an existing carousel. Use for iterative authoring ("show me slide 1, ok now slide 2…") so slides land in ONE growing MediaGroup instead of N orphan single-slide groups. |
 | `POSTZEE_GENERATE_HEYGEN_VIDEO` | Avatar video with HeyGen (uses HeyGen credits, not Postzee) |
 | `POSTZEE_LIST_HEYGEN_AVATARS` | Available HeyGen avatars |
 | `POSTZEE_LIST_HEYGEN_VOICES` | Available HeyGen voices |
@@ -349,21 +350,28 @@ There are no built-in templates. There is no editor. The HTML is yours, end to e
 ├───────────────────────────────────────────────────────────────────┤
 │ PHASE 4 — RENDER                                                  │
 │   POSTZEE_GET_CONTEXT (validate credits/plan) → compose HTML →    │
-│   POSTZEE_RENDER_CAROUSEL → save mediaGroupId in conversation.    │
+│   choose ONE path:                                                │
+│     A) atomic: POSTZEE_RENDER_CAROUSEL with full slides[]         │
+│     B) iterative: RENDER once with [slide1] then APPEND each next │
+│   Save the returned mediaGroupId — you'll need it for B and 5.    │
+│   ⛔ Never call RENDER more than once for the same carousel.       │
+│   ⛔ Never silently retry on failure — surface error to user.      │
 ├───────────────────────────────────────────────────────────────────┤
-│ PHASE 5 — ITERATE (optional, surgical)                            │
-│   "Change slide N" → POSTZEE_REPLACE_CAROUSEL_SLIDE — only that   │
-│   slide re-renders. The other 9 keep their identity & order.      │
+│ PHASE 5 — ITERATE (after carousel exists)                         │
+│   "Change slide N" → POSTZEE_REPLACE_CAROUSEL_SLIDE                │
+│   "Add slide N+1" → POSTZEE_APPEND_CAROUSEL_SLIDE                  │
+│   Insert/reorder/delete → no primitive; rebuild via RENDER.        │
 ├───────────────────────────────────────────────────────────────────┤
 │ PHASE 6 — PUBLISH                                                 │
 │   POSTZEE_CREATE_POST with mediaUrls (already in display order).  │
 └───────────────────────────────────────────────────────────────────┘
 ```
 
-### 8.1 The two carousel tools
+### 8.1 The three carousel tools
 
 ```ts
-// First-time render of a full carousel:
+// First-time render — the WHOLE carousel atomically (preferred when the
+// user already approved the full script):
 POSTZEE_RENDER_CAROUSEL({
   slides: [
     { html: "<!doctype html>...slide 1...", width: 1080, height: 1350 },
@@ -374,7 +382,16 @@ POSTZEE_RENDER_CAROUSEL({
   name: "10 erros de iniciante" // optional title shown in the gallery
 })
 
-// Surgical iteration after the user reviewed the result:
+// Append a single slide to an existing carousel — ITERATIVE AUTHORING.
+// Use this when the user wants to see slide-by-slide ("show me slide 1, ok,
+// now slide 2…") instead of approving the whole batch at once. EVERY slide
+// after the first goes through APPEND, never through another RENDER call.
+POSTZEE_APPEND_CAROUSEL_SLIDE({
+  mediaGroupId: "<from the first POSTZEE_RENDER_CAROUSEL response>",
+  slide: { html: "<!doctype html>...next slide...", width: 1080, height: 1350 }
+})
+
+// Surgical replacement of an existing slide ("change slide N"):
 POSTZEE_REPLACE_CAROUSEL_SLIDE({
   mediaGroupId: "<from previous RENDER_CAROUSEL response>",
   orderInGroup: 1,             // 0-based — slide 2 → 1
@@ -382,20 +399,23 @@ POSTZEE_REPLACE_CAROUSEL_SLIDE({
 })
 ```
 
-**Hard limits (RENDER_CAROUSEL):**
-- max **15 slides** per call
+**Hard limits (all three tools):**
+- max **15 slides** per carousel total
 - min 256 / max **2160** px per dimension
 - 250 KB max HTML per slide
-- 30 s render timeout per slide
-- All-or-nothing: any slide failure → entire group is rolled back
+- 45 s render timeout per slide
+- RENDER_CAROUSEL is all-or-nothing: any slide failure → entire group is rolled back
+- APPEND fails atomically per call: a failed append leaves the carousel as-is, no partial state
 
-**Order is structural, never temporal.** The array index IS the slide order — Postzee assigns `orderInGroup: i` before any render starts, regardless of which Puppeteer worker finishes first. REPLACE keeps that index unchanged for the targeted slide and never touches the others.
+**Order is structural, never temporal.** The array index IS the slide order in RENDER. APPEND uses `currentCount` as the next index. REPLACE keeps the index unchanged. Slides may render in parallel but order is preserved deterministically.
 
 **RENDER response:**
 ```json
 { "success": true, "mediaGroupId": "uuid", "totalSlides": 10, "aspectRatio": "4:5",
   "mediaUrls": ["https://cdn.../slide-0.png", ..., "https://cdn.../slide-9.png"] }
 ```
+
+**APPEND response:** same shape plus `appendedOrderInGroup` and `newMediaUrl`. `totalSlides` reflects the new size.
 
 **REPLACE response:** same shape plus `replacedOrderInGroup` and `newMediaUrl`. The full updated `mediaUrls` array is returned so you can re-attach to a draft post if needed.
 
@@ -435,23 +455,64 @@ If the user is silent / approves with one word, move on. If they push back, iter
 2. **Background art** (optional): generate Nano Banana backgrounds for slides that need photoreal visuals — `POSTZEE_GENERATE_IMAGE({ model: 'nano-banana', prompt, aspectRatio })` then `POSTZEE_CHECK_JOB`. Use the returned URL as a CSS `background-image`.
 3. **Logo enhancement**: when user has a logo, wrap it with the IG-profile-pic CSS treatment from `reference/carousel-mastery.md` §6 — circular crop, white ring, soft shadow.
 4. **Compose HTML**: one complete `<!doctype html>` per slide, using the design system in `reference/carousel-mastery.md` §5-§8. Inline CSS (no Tailwind utility classes — JS is disabled at render). Google Fonts via `<link>` is fine.
-5. **Render**: `POSTZEE_RENDER_CAROUSEL`. Save the returned `mediaGroupId` in your scrollback — you'll need it for Phase 5.
+5. **Render** — choose ONE of the two paths below.
 6. **Show the user the result** (links + brief summary), then move to Phase 5 or Phase 6.
 
-### 8.6 Phase 5 — Iteration (single-slide replacement)
+#### 8.5.A — Atomic path (preferred when the user approved the full script)
 
-When the user asks "change slide N":
+One call to `POSTZEE_RENDER_CAROUSEL` with the full `slides[]` array. Save the returned `mediaGroupId` in your scrollback. This is the cheapest, fastest path: all slides render in parallel and arrive as one MediaGroup.
 
-1. **Recall** the existing HTML for slide N from your scrollback (you authored it, so you have it).
-2. **Apply the user's instruction** (bigger text, different copy, swap background, etc.) to that one slide.
+#### 8.5.B — Iterative path (when the user wants slide-by-slide previews)
+
+Trigger phrases: *"gere apenas o primeiro slide para vermos como ficará"*, *"agora faça o slide 2"*, *"top, próximo"*.
+
+```
+First slide:        POSTZEE_RENDER_CAROUSEL({ slides: [slide1] })
+                    → returns mediaGroupId, save it.
+Each next slide:    POSTZEE_APPEND_CAROUSEL_SLIDE({ mediaGroupId, slide: slideN })
+                    → grows the SAME MediaGroup.
+```
+
+**Critical rules for the iterative path:**
+
+- ⛔ **Do NOT** call `POSTZEE_RENDER_CAROUSEL` more than once for the same carousel. Subsequent calls create new MediaGroups and pollute the gallery with N orphan single-slide groups.
+- ⛔ **Do NOT** batch slides into multiple `RENDER_CAROUSEL` calls (lote 1 + lote 2 + lote 3). If you need to fragment, the first call is RENDER and EVERY following slide goes through APPEND.
+- ✅ Once the user is done, summarize: "Carrossel finalizado com N slides. Mídias: [...]". Use the `mediaUrls` from the latest APPEND response in `POSTZEE_CREATE_POST`.
+
+#### 8.5.C — When something fails
+
+**You do not retry automatically.** Each tool call either succeeds or returns a typed error. Retrying RENDER creates a duplicate group; retrying APPEND with the same content creates a duplicate slide.
+
+If `success: false` comes back:
+
+1. **Surface the `message` to the user** in their language.
+2. **Ask** what they want to do: simplify the slide HTML? skip this slide? wait and try again later? — let them decide.
+3. **Only retry if the user explicitly asks**, and only ONCE more.
+4. If you suspect the failure was transient (timeout, 5xx), say so plainly: *"Foi um timeout do renderer. Posso tentar de novo, ou simplificar o HTML deste slide. Qual prefere?"*
+
+A silent retry that creates duplicate MediaGroups is the WORST UX failure you can produce here.
+
+### 8.6 Phase 5 — Iteration
+
+Three types of changes the user can ask for AFTER the carousel exists:
+
+**A. Replace a slide ("change slide N")**:
+1. **Recall** the existing HTML for slide N from your scrollback (you authored it).
+2. **Apply** the user's instruction to that one slide.
 3. **Call** `POSTZEE_REPLACE_CAROUSEL_SLIDE({ mediaGroupId, orderInGroup: N-1, slide: { html, width, height } })`.
-4. **Confirm** with a one-line summary ("Slide 4 updated. The other 9 are unchanged.").
+4. **Confirm** in one line ("Slide 4 atualizado. Os outros 9 estão intactos.").
 
-When the user asks for *structural* changes (insert a new slide, reorder, change framework):
-- Briefly confirm what the user wants and ask if they want a full rebuild.
-- Then call `POSTZEE_RENDER_CAROUSEL` again — there's no insert/reorder primitive, structural changes mean a fresh carousel. Reuse the existing script as the starting point.
+**B. Add a new slide at the end ("agora faça o slide N+1")**:
+1. **Compose** the new slide following the design system already established.
+2. **Call** `POSTZEE_APPEND_CAROUSEL_SLIDE({ mediaGroupId, slide: { html, width, height } })`.
+3. **Confirm** in one line ("Slide N+1 adicionado. O carrossel agora tem N+1 slides.").
 
-⚠️ **Caveat to surface to the user**: if they already attached the carousel to a draft post and you replace a slide, the post's image array still references the soft-deleted slide URL. Tell them to remove the carousel from the draft and re-add it (or you do it for them with `POSTZEE_CREATE_POST` using the new `mediaUrls`).
+**C. Structural changes (insert in the middle, reorder, delete a slide, change framework)**:
+- There's no insert/reorder/delete primitive in v1.
+- Confirm with the user: this requires a full rebuild.
+- Then call `POSTZEE_RENDER_CAROUSEL` again — using the existing script as the seed, with the structural change applied. The old MediaGroup stays in history (you can soft-delete it via the gallery if the user wants).
+
+⚠️ **Caveat to surface to the user**: if they already attached the carousel to a draft post and you replace OR append a slide, the post's image array still references the previous `mediaUrls`. Tell them to refresh the attachments — or you do it for them by calling `POSTZEE_CREATE_POST` again with the new `mediaUrls`.
 
 ### 8.7 Phase 6 — Publish
 
@@ -475,8 +536,12 @@ When the user asks for *structural* changes (insert a new slide, reorder, change
 - ❌ **Skip Phase 2-3** and silently render. Even one-word approvals are required.
 - ❌ Generate text-heavy slides via `POSTZEE_GENERATE_IMAGE` hoping the AI model renders text correctly. Use `POSTZEE_RENDER_CAROUSEL`.
 - ❌ Re-render the entire carousel for one-slide tweaks. Use `POSTZEE_REPLACE_CAROUSEL_SLIDE`.
+- ❌ Call `POSTZEE_RENDER_CAROUSEL` more than once for the same carousel. After the first slide is rendered (with RENDER), every following slide goes through `POSTZEE_APPEND_CAROUSEL_SLIDE`. Multiple RENDERs = multiple MediaGroups in the gallery.
+- ❌ Split the script into "lote 1, lote 2, lote 3" and call RENDER three times. That fragments into 3 separate carousels. Either ONE RENDER with all slides, OR one RENDER + N APPENDs.
+- ❌ **Silently retry on failure.** Surface the error, ask the user what to do, retry only if they say so.
 - ❌ Call `POSTZEE_CREATE_POST` with individual image URLs from separate `GENERATE_IMAGE` jobs. Always render the carousel as a MediaGroup.
 - ❌ Include `<script>` tags. JS is disabled in the renderer.
+- ❌ Use Tailwind utility classes (`class="text-2xl"`, `class="bg-green-500"`). Tailwind needs JS to compile, and JS is off. Use inline styles or `<style>` blocks with regular CSS.
 
 ---
 
@@ -697,7 +762,7 @@ For polling: `POSTZEE_CHECK_JOB` may take 10-60s for images, 30-180s for videos,
 | `reference/media-memory.md` | **Manifest pattern + decision tree for recalling/reusing generated and uploaded assets across turns and sessions.** |
 | `reference/plans-and-pricing.md` | The 5 plans, 5 credit packs, when to recommend which |
 | `reference/credit-aware-flow.md` | State matrix: how to react in every plan/credit/channel state, with CTA copy |
-| `reference/carousel-mastery.md` | **v3.4.1** — HTML-render carousel pipeline: design system, logo treatment, script template (Phase 2 deliverable), competitor-analysis playbook, caption variants, meta-proof tactic, single-slide replace iteration playbook |
+| `reference/carousel-mastery.md` | **v3.4.2** — HTML-render carousel pipeline: design system, logo treatment, script template (Phase 2 deliverable), competitor-analysis playbook, caption variants, meta-proof tactic, single-slide replace iteration playbook |
 | `reference/captions-frameworks.md` | AIDA / PAS / BAB / FAB / 4 Ps templates per platform |
 | `reference/hooks-library.md` | 80+ proven hooks by category |
 | `reference/multi-scene-workflow.md` | Multi-scene strategies (gated by `features.*`) |
