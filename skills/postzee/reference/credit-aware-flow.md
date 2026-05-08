@@ -30,11 +30,13 @@ Combined with the **planned action**:
 ```
 {
   intent: "generate-only" | "generate-and-post" | "post-existing" | "schedule"
-  estimatedCredits: number
-  slideCount: number
+  estimatedCredits: number    // total expected, including all items
+  itemCount: number           // batch images (variations of same prompt) — NOT carousel slides
   needsChannel: boolean
 }
 ```
+
+**Carousel cost is NOT modelled by `itemCount`** — `POSTZEE_RENDER_CAROUSEL` has its own compute-side cost. Optional Nano Banana backgrounds you generate for some slides do count individually under image generation.
 
 ---
 
@@ -91,8 +93,8 @@ Same as "generate-and-post" + ensure date is in the future (server uses UTC; con
 ### Moment 2 — Brief building
 
 While building the brief (§5 of SKILL.md), at the end have a sense of:
-- What format will we generate?
-- How many assets? (carousels = N slides)
+- What format will we generate? (single image / video / multi-scene video / **carousel**)
+- How many items? For carousels this is "how many slides" — but cost is computed by `POSTZEE_RENDER_CAROUSEL` itself, not by multiplying image generations.
 - Will they post? Where?
 
 This determines `intent` + estimated total credits.
@@ -104,9 +106,17 @@ This determines `intent` + estimated total credits.
 2. POSTZEE_VALIDATE_GENERATION — pre-flight (FREE — no cost)
    → If invalid params: fix or change strategy
    → If shortfall: CTA + stop
-3. POSTZEE_ESTIMATE_GENERATION_COST × slide count — confirm total
+3. POSTZEE_ESTIMATE_GENERATION_COST per item — confirm total
 4. Show plan to user (in their language): "I'll use {model} to generate {N} {type}, estimated total cost: {credits} credits. Shall I proceed?"
 5. If yes → POSTZEE_ENHANCE_PROMPT → POSTZEE_GENERATE_*
+```
+
+**For carousels**, this Moment is replaced by:
+```
+1. Validate balance via POSTZEE_GET_CONTEXT — confirm credits cover any backgrounds
+   you plan to generate (Nano Banana). Carousel render itself is compute-side.
+2. Compose Phase 2 script (see SKILL.md §8.3 + reference/carousel-mastery.md §A).
+3. After user approval, call POSTZEE_RENDER_CAROUSEL.
 ```
 
 ### Moment 4 — Pre-posting

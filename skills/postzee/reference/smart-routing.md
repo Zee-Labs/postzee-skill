@@ -1,10 +1,10 @@
 # Smart Routing — Picking model, aspect, and quality automatically
 
-When the user says **"create a carousel about productivity for LinkedIn"**, you must NOT ask "which model? which aspect? which quality?" — figure it out yourself.
+When the user says **"create a single image of a cafe for Instagram"**, you must NOT ask "which model? which aspect? which quality?" — figure it out yourself.
 
 When the user says **"create using Nano Banana"**, you must NOT override their explicit choice. Trust them.
 
-This file is the decision engine. Memorize the tree. Reference it when in doubt.
+This file is the decision engine for **single image / single video / multi-scene video** generations. **Carousels do NOT route through this file** — they use `POSTZEE_RENDER_CAROUSEL` (HTML→PNG, no AI image model picked per slide). See SKILL.md §8 + `reference/carousel-mastery.md` for the carousel pipeline.
 
 ---
 
@@ -43,7 +43,7 @@ Always log the four decisions mentally before calling `POSTZEE_GENERATE_*`. If y
 6. If multiple candidates → **ASK THE USER** with up to 3 options. Never guess.
 7. If no candidate → tell the user the model isn't available + show the 3 closest from suggestions.
 
-**Honor the override even when subóptimo.** If the user picks `nano-banana` for a text-heavy carousel, you may briefly note "Nano Banana isn't optimized for text-in-image — want me to use Ideogram V3 Turbo instead, or stick with Nano Banana?" — but **respect their final answer**.
+**Honor the override even when subóptimo.** If the user picks `nano-banana` for a single text-heavy poster image, you may briefly note "Nano Banana isn't optimized for text-in-image — want me to use Ideogram V3 Turbo instead, or stick with Nano Banana?" — but **respect their final answer**. (For carousels with text, prefer `POSTZEE_RENDER_CAROUSEL` — the question doesn't even arise.)
 
 ---
 
@@ -126,11 +126,11 @@ platform == bluesky                         → 1:1
 ## 5. Anti-patterns (do NOT do these)
 
 - ❌ **Default to `premium` tier "to be safe"** — burns user credits unnecessarily. Default = `fast`. Escalate ONLY on signal.
-- ❌ **Mix tiers within the same carousel** — visual inconsistency. Pick a tier once for the whole batch.
+- ❌ **Use this file's tree to pick a model for a CAROUSEL** — carousels go through `POSTZEE_RENDER_CAROUSEL` (HTML→PNG). The only AI image involvement is optional Nano Banana backgrounds composited into the HTML.
 - ❌ **Ignore explicit user override** — even if the model is "wrong" for the use case, the user's named choice wins.
 - ❌ **Switch family mid-flow when a generation stalls** — try the same family at a lower tier first (e.g. `ideogram-v3-quality` slow → try `ideogram-v3-balanced`).
 - ❌ **Hardcode the registry** — always read from `POSTZEE_LIST_MODELS_DETAILED`. The list evolves.
-- ❌ **Generate 10 carousel slides in parallel without checking balance** — call `POSTZEE_ESTIMATE_GENERATION_COST({slideCount: 10})` first; if balance < estimate, propose a tier downgrade or a credit pack BEFORE generating anything.
+- ❌ **Batch-validate cost via `slideCount` for carousels** — that parameter exists for *image batch* generation (N variations of one prompt). Carousel cost is compute-side; for sizing, use `POSTZEE_GET_CONTEXT.credits` against your slide count + any backgrounds you plan to generate via Nano Banana.
 - ❌ **Ask the user a question you could grep** — "what aspect ratio?" is forbidden when you know the platform.
 
 ---
@@ -139,32 +139,34 @@ platform == bluesky                         → 1:1
 
 ### A) Default automation — no signal
 
-> "Crie um carrossel pro LinkedIn sobre produtividade"
+> "Crie uma imagem da minha cafeteria pro Instagram"
 
 - Override? No
 - Quality signal? No
-- Content type? Carousel (text-heavy) → family `ideogram-v3`
-- Plan? STANDARD (assume) → tier `agenticDefault` → `ideogram-v3-turbo`
-- Platform? LinkedIn carousel → 4:5
-- **Decision:** `model: 'ideogram-v3-turbo'`, `aspectRatio: '4:5'`, ~600 credits for 10 slides
+- Content type? Photoreal feed image → family `nano-banana`
+- Plan? STANDARD (assume) → tier `agenticDefault` → `nano-banana-2`
+- Platform? Instagram feed → 4:5
+- **Decision:** `model: 'nano-banana-2'`, `aspectRatio: '4:5'`
 
 ### B) Premium request
 
-> "Quero o melhor carrossel possível pro LinkedIn"
+> "Quero a melhor imagem possível pro feed do LinkedIn — texto grande sobre produtividade"
 
 - "melhor possível" = `premium` signal
-- Family `ideogram-v3` (carousel text-heavy)
+- Content type → text-in-image → family `ideogram-v3`
 - Tier `premium` → `ideogram-v3-quality`
-- **Decision:** `model: 'ideogram-v3-quality'`, `aspectRatio: '4:5'`, ~1.800 credits for 10 slides
+- Platform LinkedIn feed → 1:1
+- **Decision:** `model: 'ideogram-v3-quality'`, `aspectRatio: '1:1'`
+- *(For a real text-heavy carousel, use `POSTZEE_RENDER_CAROUSEL` instead of N image generations.)*
 
 ### C) Explicit override
 
-> "Crie um carrossel usando nano banana"
+> "Crie usando nano banana"
 
 - Override? Yes — `nano-banana` family
 - Disambiguation: 3 entries (`nano-banana`, `nano-banana-2`, `nano-banana-pro`). Default to `popular: true` → `nano-banana-2`
-- Note: "Heads up — Nano Banana is photoreal-tuned, not optimized for in-image text. Want me to use Ideogram V3 Turbo for the text-heavy slides instead?"
-- **If user confirms nano-banana** → proceed with `nano-banana-2`, `aspectRatio: '4:5'`
+- Platform unstated → ask once (or assume IG → 4:5 if context implies)
+- **Decision:** `model: 'nano-banana-2'`
 
 ### D) FREE plan + photoreal
 
@@ -178,16 +180,16 @@ platform == bluesky                         → 1:1
 - Estimate 1 image: ~80 cr — fits in 800 balance
 - **Decision:** `model: 'nano-banana'`, `aspectRatio: '4:5'`
 
-### E) Mixed signal
+### E) Photoreal hero shot for a campaign
 
-> "Carrossel premium pro LinkedIn com fotos realistas dos produtos"
+> "Premium hero shot dos meus produtos pro feed do LinkedIn"
 
 - Override? No
 - Quality signal? "premium" → escalate
-- Content type? Photoreal (not text-heavy — "fotos realistas")
-- Family `nano-banana`, premium tier → `nano-banana-pro`
-- Platform LinkedIn carousel → 4:5
-- **Decision:** `model: 'nano-banana-pro'`, `aspectRatio: '4:5'`
+- Content type? Photoreal → family `nano-banana`
+- Tier `premium` → `nano-banana-pro`
+- Platform LinkedIn feed → 1:1
+- **Decision:** `model: 'nano-banana-pro'`, `aspectRatio: '1:1'`
 
 ### F) Vector logo
 
@@ -213,18 +215,18 @@ If the user later says "for IG feed" → switch to `4:5` if model supports it (V
 
 ---
 
-## 7. Pre-flight ritual (every batch)
+## 7. Pre-flight ritual (every generation)
 
 Before any `POSTZEE_GENERATE_*`:
 
 1. `POSTZEE_GET_CONTEXT` (cached — refresh if stale).
 2. Run the decision tree above, **mentally articulate all 4 decisions**.
-3. `POSTZEE_ESTIMATE_GENERATION_COST` for the **whole batch** (multiply by slideCount).
+3. `POSTZEE_ESTIMATE_GENERATION_COST` for one item (multiply by N if you're batching variations of the same prompt).
 4. If `balance < estimate` → CTA the right credit pack OR propose a lower tier OR reduce count. Do not generate before resolving.
-5. `POSTZEE_VALIDATE_GENERATION` for the chosen model + params.
+5. `POSTZEE_VALIDATE_GENERATION` for the chosen model + params (use `slideCount: N` only for *image batch* — N variations of the same prompt).
 6. Generate.
 
-For carousels: **never parallelize** generations within the same batch. Sequential generation keeps balance accounting correct and lets you abort cleanly if a slide fails.
+**Carousels do not follow this ritual.** They go through `POSTZEE_RENDER_CAROUSEL` after the Phase 2 script approval — see SKILL.md §8 and `reference/carousel-mastery.md`. The only place this file applies inside a carousel run is generating an optional Nano Banana background that you'll composite into a slide's HTML.
 
 ---
 

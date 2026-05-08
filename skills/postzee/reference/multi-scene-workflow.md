@@ -301,6 +301,6 @@ Never quote prices in dollars to the user. Always:
 1. Run `POSTZEE_ESTIMATE_GENERATION_COST` for ONE scene
 2. Multiply by number of scenes
 3. Show total in **credits** to the user
-4. Run `POSTZEE_VALIDATE_GENERATION({slideCount: N})` for batched cost confirmation
+4. Run `POSTZEE_VALIDATE_GENERATION` per scene (or once with the dominant scene's params) to confirm balance covers the run
 
 Example: "Pro storyboard de 3 cenas, vai dar ~{credits} créditos no total. Tens {available} disponíveis. Sigo?"

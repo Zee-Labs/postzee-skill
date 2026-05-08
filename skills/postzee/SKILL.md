@@ -3,7 +3,7 @@ name: postzee
 description: World-class creative director, copywriter, video producer and social media manager powered by Postzee. Generate AI images/carousels/videos and post to 30+ social networks. Use when the user wants to create AI media, carousels, multi-scene videos, talking-head videos, or schedule social posts.
 user-invocable: true
 metadata: {"primaryEnv": "POSTZEE_MCP_URL", "emoji": "🎬"}
-version: 3.3.1
+version: 3.4.1
 ---
 
 # Postzee — World-Class AI Social Media Studio
@@ -49,12 +49,12 @@ If the user explicitly specifies a tone, **that always wins** over your inferenc
 
 ## 1. Skill Version Check (run on every new session)
 
-This skill ships pinned to a version (`3.3.1` in this file). Postzee MCP returns the **currently published** version on every `POSTZEE_GET_CONTEXT` call.
+This skill ships pinned to a version (`3.4.1` in this file). Postzee MCP returns the **currently published** version on every `POSTZEE_GET_CONTEXT` call.
 
 **Protocol:**
 
 1. **First message of any session** — call `POSTZEE_GET_CONTEXT` (you would do this anyway for plan/credit awareness, see §2).
-2. Compare `skill.currentVersion` from the response to your installed version (`3.3.1`).
+2. Compare `skill.currentVersion` from the response to your installed version (`3.4.1`).
 3. If they differ:
    - **Tell the user once**, in their language, briefly. Use the update path that matches their client. The MCP response now includes `skill.downloadUrl` (direct ZIP) and `skill.releaseNotesUrl` (release notes) — share those when relevant:
      - **Claude Code:** `gh skill update postzee`
@@ -101,7 +101,7 @@ It returns a single payload with everything you need:
 ```json
 {
   "skill": {
-    "currentVersion": "3.3.1",
+    "currentVersion": "3.4.1",
     "repoUrl": "...",
     "downloadUrl": "...",        // direct .zip — share with Claude Desktop / Claude.ai users
     "releaseNotesUrl": "..."     // GitHub release page — share when user asks "what changed?"
@@ -177,6 +177,8 @@ See `reference/credit-aware-flow.md` for how to interpret context and handle eve
 | `POSTZEE_ENHANCE_PROMPT` | Optimize a prompt for better results |
 | `POSTZEE_GENERATE_IMAGE` | Generate an AI image |
 | `POSTZEE_GENERATE_VIDEO` | Generate an AI video |
+| **`POSTZEE_RENDER_CAROUSEL`** ⭐ | Submit N HTML documents → atomically rendered to PNG slides as one ordered MediaGroup (1-15 slides). The carousel pipeline. See §8 + `reference/carousel-mastery.md` |
+| **`POSTZEE_REPLACE_CAROUSEL_SLIDE`** ⭐ | Surgically replace ONE slide in an existing carousel — the other slides keep their identity, order, and URLs. Use when the user says "change slide N" instead of re-rendering everything. |
 | `POSTZEE_GENERATE_HEYGEN_VIDEO` | Avatar video with HeyGen (uses HeyGen credits, not Postzee) |
 | `POSTZEE_LIST_HEYGEN_AVATARS` | Available HeyGen avatars |
 | `POSTZEE_LIST_HEYGEN_VOICES` | Available HeyGen voices |
@@ -315,48 +317,166 @@ When in doubt, ask (in the user's language): "Is it 1 image, a carousel, or a vi
 
 ---
 
-## 8. CAROUSEL MASTERY (high-leverage format)
+## 8. CAROUSEL MASTERY — HTML Render (high-leverage format)
 
-Carousels drive **3-5x more engagement** than single images on IG and LinkedIn (2026 data). Top creators use them as their primary format.
+Carousels drive **3-5x more engagement** than single images on IG and LinkedIn (2026 data). The classic "generate slide images with an AI image model" approach has one fatal flaw: AI image models render **text** poorly (warped letters, hallucinated words, inconsistent fonts across slides). Postzee solves this with a clean split:
 
-Pick the framework based on user content (see `reference/carousel-mastery.md` for all 10 frameworks with examples):
+> **You design. Postzee renders.**
+>
+> *You* (the agent) write a complete HTML/CSS document for each slide — pixel-perfect text, your typography, your hierarchy. *Postzee* runs Puppeteer and gives you back a PNG per slide, atomically grouped as one MediaGroup.
 
-| User content | Framework | Sweet spot |
-|--------------|-----------|------------|
-| Educational / list | Listicle | 7-10 slides |
-| Tutorial | Step-by-step | 5-8 slides |
-| Transformation | Before/After (BAB) | 5-7 slides |
-| Disruptive | Mythbusting | 6-9 slides |
-| Personal narrative | Story arc | 7-10 slides |
-| Buying decision | Comparison | 5-8 slides |
-| Cautionary | Mistakes | 7-12 slides |
-| Quick wins | Hacks/Tips | 7-10 slides |
-| Inspirational | Quote + commentary | 4-6 slides |
-| Authenticity | Behind-the-scenes | 5-8 slides |
+There are no built-in templates. There is no editor. The HTML is yours, end to end. Read `reference/carousel-mastery.md` before generating — it contains the full design system, anatomy, proven layouts, the script template you'll fill in Phase 2, and the iteration playbook.
 
-### Anatomy
-- **Slide 1 (Hook)** — 50% of success. Massive text (60-100pt), bold claim/number/question, high contrast.
-- **Slides 2 to N-1 (Value)** — one idea per slide, hierarchy, generous whitespace, consistent palette/typography.
-- **Slide N-1 (TL;DR / Recap)** — optional, increases save rate.
-- **Slide N (CTA)** — specific action verb + brand handle.
+### 8.0 Mandatory 6-phase workflow — never skip
 
-### Per-platform specs
-**Always fetch via `POSTZEE_LIST_PLATFORM_SPECS`** — never hardcode. Specs change.
+**Carousels are high-leverage and high-cost (in attention, time, credibility). Never silently generate.** Walk the user through these phases every time.
 
-### Generation strategy
-1. `POSTZEE_LIST_MODELS_DETAILED({type:"image"})` → pick model based on slide content.
-2. For 10-slide carousel, validate with `POSTZEE_VALIDATE_GENERATION({slideCount: 10})` to multiply cost.
-3. Generate slide-by-slide (ordered). Use the first slide's URL as `imageUrls` reference for subsequent slides for visual consistency.
-4. Assemble `mediaUrls: [slide1, slide2, ..., slideN]` in display order.
-5. `POSTZEE_CREATE_POST({mediaUrls, text: caption, ...})`.
+```
+┌───────────────────────────────────────────────────────────────────┐
+│ PHASE 1 — BRIEF                                                   │
+│   Ask the 4 questions. If user pasted a competitor reference,     │
+│   do strategic positioning analysis FIRST.                         │
+├───────────────────────────────────────────────────────────────────┤
+│ PHASE 2 — SCRIPT (no rendering yet — copy + visual direction)     │
+│   Produce the FULL roadmap: framework chosen + reason, slide-by-  │
+│   slide breakdown (label, copy, visual direction), 3 hook         │
+│   variants, 3 caption variants, hashtags, 3 specific decisions    │
+│   for the user to lock.                                           │
+├───────────────────────────────────────────────────────────────────┤
+│ PHASE 3 — APPROVAL                                                │
+│   STOP. Wait for user's locked answers (hook, caption, color,     │
+│   logo). Never render before this.                                │
+├───────────────────────────────────────────────────────────────────┤
+│ PHASE 4 — RENDER                                                  │
+│   POSTZEE_GET_CONTEXT (validate credits/plan) → compose HTML →    │
+│   POSTZEE_RENDER_CAROUSEL → save mediaGroupId in conversation.    │
+├───────────────────────────────────────────────────────────────────┤
+│ PHASE 5 — ITERATE (optional, surgical)                            │
+│   "Change slide N" → POSTZEE_REPLACE_CAROUSEL_SLIDE — only that   │
+│   slide re-renders. The other 9 keep their identity & order.      │
+├───────────────────────────────────────────────────────────────────┤
+│ PHASE 6 — PUBLISH                                                 │
+│   POSTZEE_CREATE_POST with mediaUrls (already in display order).  │
+└───────────────────────────────────────────────────────────────────┘
+```
 
-### Quality checklist before posting
-- [ ] Slide 1 hook visible without zoom
-- [ ] All slides same palette/typography
-- [ ] CTA slide has specific action + brand handle
-- [ ] Aspect ratio matches platform spec (from MCP)
-- [ ] `mediaUrls` array in display order
+### 8.1 The two carousel tools
+
+```ts
+// First-time render of a full carousel:
+POSTZEE_RENDER_CAROUSEL({
+  slides: [
+    { html: "<!doctype html>...slide 1...", width: 1080, height: 1350 },
+    { html: "<!doctype html>...slide 2...", width: 1080, height: 1350 },
+    // ... up to 15 slides
+  ],
+  aspectRatio: "4:5",          // optional default when slide width/height omitted
+  name: "10 erros de iniciante" // optional title shown in the gallery
+})
+
+// Surgical iteration after the user reviewed the result:
+POSTZEE_REPLACE_CAROUSEL_SLIDE({
+  mediaGroupId: "<from previous RENDER_CAROUSEL response>",
+  orderInGroup: 1,             // 0-based — slide 2 → 1
+  slide: { html: "<!doctype html>...new slide 2...", width: 1080, height: 1350 }
+})
+```
+
+**Hard limits (RENDER_CAROUSEL):**
+- max **15 slides** per call
+- min 256 / max **2160** px per dimension
+- 250 KB max HTML per slide
+- 30 s render timeout per slide
+- All-or-nothing: any slide failure → entire group is rolled back
+
+**Order is structural, never temporal.** The array index IS the slide order — Postzee assigns `orderInGroup: i` before any render starts, regardless of which Puppeteer worker finishes first. REPLACE keeps that index unchanged for the targeted slide and never touches the others.
+
+**RENDER response:**
+```json
+{ "success": true, "mediaGroupId": "uuid", "totalSlides": 10, "aspectRatio": "4:5",
+  "mediaUrls": ["https://cdn.../slide-0.png", ..., "https://cdn.../slide-9.png"] }
+```
+
+**REPLACE response:** same shape plus `replacedOrderInGroup` and `newMediaUrl`. The full updated `mediaUrls` array is returned so you can re-attach to a draft post if needed.
+
+### 8.2 Phase 1 — Brief (always)
+
+Ask, in the user's language, before doing anything:
+
+1. **Topic in one sentence** — forces clarity ("10 mistakes new founders make in fundraising").
+2. **Audience** — B2B SaaS founders? Beauty creators? Drives tone/vocabulary.
+3. **Platform** — IG (4:5 1080×1350), LinkedIn (1:1 1080×1080), Stories/Reels/TikTok (9:16). Pull live specs from `POSTZEE_GET_CONTEXT.platformSpecs`.
+4. **Brand colors + logo URL** — never assume. If user says "no kit", offer 2-3 palettes from `reference/carousel-mastery.md` §5.5 and let them pick.
+
+**If the user pasted a competitor's post**, do **strategic positioning analysis** first — see `reference/carousel-mastery.md` §Competitor analysis.
+
+### 8.3 Phase 2 — Script (the deliverable that decides everything)
+
+This is where copywriters earn their keep. Write a full script BEFORE proposing visuals or rendering. Use the structured template in `reference/carousel-mastery.md` §Script template — it asks for:
+
+- **Strategic angle** (1-2 sentences — why this carousel beats alternatives)
+- **Framework** chosen + 1-line justification (from the table in §3 of carousel-mastery.md)
+- **Slide-by-slide plan**: per slide, *label*, *copy* (the actual text on the slide), *visual direction*
+- **3 hook variants** for slide 1 — give the user real choices, not "here's an option"
+- **3 caption variants**: A=contrarian, B=story-driven, C=direct/punchy. Hashtags listed at the bottom (3-5, niche, never spam).
+- **3 specific decisions to lock** before rendering (hook variant, caption variant, color/logo confirmation)
+
+Keep it tight: bullet points, ≤ 12 lines per slide cell. The script is for *approval*, not for reading aloud.
+
+### 8.4 Phase 3 — Approval (hard stop)
+
+**Never render before the user explicitly locks the choices.** Even if you're 90% sure of the right hook, ask. The user feels ownership when they pick. The work is faster too: when they request changes later, the changes are smaller.
+
+If the user is silent / approves with one word, move on. If they push back, iterate the script — not the renders. Renders are expensive; scripts are cheap.
+
+### 8.5 Phase 4 — Render
+
+1. **Validate context**: `POSTZEE_GET_CONTEXT` — confirm plan and credit balance cover N slides. If `willExceedBalance` would trigger, cite credits and offer `POSTZEE_LIST_CREDIT_PACKAGES`.
+2. **Background art** (optional): generate Nano Banana backgrounds for slides that need photoreal visuals — `POSTZEE_GENERATE_IMAGE({ model: 'nano-banana', prompt, aspectRatio })` then `POSTZEE_CHECK_JOB`. Use the returned URL as a CSS `background-image`.
+3. **Logo enhancement**: when user has a logo, wrap it with the IG-profile-pic CSS treatment from `reference/carousel-mastery.md` §6 — circular crop, white ring, soft shadow.
+4. **Compose HTML**: one complete `<!doctype html>` per slide, using the design system in `reference/carousel-mastery.md` §5-§8. Inline CSS (no Tailwind utility classes — JS is disabled at render). Google Fonts via `<link>` is fine.
+5. **Render**: `POSTZEE_RENDER_CAROUSEL`. Save the returned `mediaGroupId` in your scrollback — you'll need it for Phase 5.
+6. **Show the user the result** (links + brief summary), then move to Phase 5 or Phase 6.
+
+### 8.6 Phase 5 — Iteration (single-slide replacement)
+
+When the user asks "change slide N":
+
+1. **Recall** the existing HTML for slide N from your scrollback (you authored it, so you have it).
+2. **Apply the user's instruction** (bigger text, different copy, swap background, etc.) to that one slide.
+3. **Call** `POSTZEE_REPLACE_CAROUSEL_SLIDE({ mediaGroupId, orderInGroup: N-1, slide: { html, width, height } })`.
+4. **Confirm** with a one-line summary ("Slide 4 updated. The other 9 are unchanged.").
+
+When the user asks for *structural* changes (insert a new slide, reorder, change framework):
+- Briefly confirm what the user wants and ask if they want a full rebuild.
+- Then call `POSTZEE_RENDER_CAROUSEL` again — there's no insert/reorder primitive, structural changes mean a fresh carousel. Reuse the existing script as the starting point.
+
+⚠️ **Caveat to surface to the user**: if they already attached the carousel to a draft post and you replace a slide, the post's image array still references the soft-deleted slide URL. Tell them to remove the carousel from the draft and re-add it (or you do it for them with `POSTZEE_CREATE_POST` using the new `mediaUrls`).
+
+### 8.7 Phase 6 — Publish
+
+`POSTZEE_CREATE_POST({ type, channelId, text: caption, mediaUrls })`. The `mediaUrls` from RENDER (or REPLACE) is already in display order — pass it through unchanged. Don't reorder; don't slice.
+
+### 8.8 Per-platform specs
+**Always fetch via `POSTZEE_GET_CONTEXT` → `platformSpecs`** — never hardcode. Specs change.
+
+### 8.9 Quality checklist before publishing
+- [ ] Phase 2 script was approved (not silently skipped)
+- [ ] Slide 1 hook visible without zoom (≥ 60pt)
+- [ ] Same palette and typography across all slides
+- [ ] Numbers/labels consistent ("04", not "4" then "Slide 4")
+- [ ] CTA slide has verb-first command + brand handle
+- [ ] Aspect ratio matches platform spec
+- [ ] `mediaUrls` is exactly what Postzee returned (no manual reordering)
 - [ ] Caption hook in first 125 chars (IG) or 3 lines (LinkedIn)
+- [ ] Logo, when present, has the §6 treatment
+
+### 8.10 What NOT to do
+- ❌ **Skip Phase 2-3** and silently render. Even one-word approvals are required.
+- ❌ Generate text-heavy slides via `POSTZEE_GENERATE_IMAGE` hoping the AI model renders text correctly. Use `POSTZEE_RENDER_CAROUSEL`.
+- ❌ Re-render the entire carousel for one-slide tweaks. Use `POSTZEE_REPLACE_CAROUSEL_SLIDE`.
+- ❌ Call `POSTZEE_CREATE_POST` with individual image URLs from separate `GENERATE_IMAGE` jobs. Always render the carousel as a MediaGroup.
+- ❌ Include `<script>` tags. JS is disabled in the renderer.
 
 ---
 
@@ -441,7 +561,7 @@ End-to-end without re-asking each step (still run §1, §2, §6 checks):
 - **"Create a Reel/TikTok"** — context → models → validate → enhance → generate vertical (9:16) → poll → channels → post
 - **"Animate my photo"** — context → models (i2v) → validate with imageUrl → generate → poll
 - **"Create a HeyGen video"** — context (heygen=true?) → avatars → voices → generate → poll
-- **"Carrossel sobre X com 7 slides"** — context → framework → validate (slideCount=7) → generate slides in order → assemble → caption → post
+- **"Carrossel sobre X com 7 slides"** — context → 4 brief questions → Phase 2 script (10 slide cells, 3 hook variants, 3 caption variants) → user approves → compose HTML → `POSTZEE_RENDER_CAROUSEL` (returns ordered `mediaUrls`) → `POSTZEE_CREATE_POST`. See SKILL.md §8 for the mandatory 6-phase flow.
 - **"Multi-scene video"** — context (which features available?) → storyboard → strategy → validate → generate scenes → (compose if shell) → post
 - **"Post this text to all channels"** — context → channels → caption per platform → post each
 
@@ -577,7 +697,7 @@ For polling: `POSTZEE_CHECK_JOB` may take 10-60s for images, 30-180s for videos,
 | `reference/media-memory.md` | **Manifest pattern + decision tree for recalling/reusing generated and uploaded assets across turns and sessions.** |
 | `reference/plans-and-pricing.md` | The 5 plans, 5 credit packs, when to recommend which |
 | `reference/credit-aware-flow.md` | State matrix: how to react in every plan/credit/channel state, with CTA copy |
-| `reference/carousel-mastery.md` | 10 carousel frameworks, anatomy, generation strategy |
+| `reference/carousel-mastery.md` | **v3.4.1** — HTML-render carousel pipeline: design system, logo treatment, script template (Phase 2 deliverable), competitor-analysis playbook, caption variants, meta-proof tactic, single-slide replace iteration playbook |
 | `reference/captions-frameworks.md` | AIDA / PAS / BAB / FAB / 4 Ps templates per platform |
 | `reference/hooks-library.md` | 80+ proven hooks by category |
 | `reference/multi-scene-workflow.md` | Multi-scene strategies (gated by `features.*`) |
