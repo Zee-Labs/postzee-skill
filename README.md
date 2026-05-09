@@ -4,6 +4,23 @@ The most complete AI agent skill for social media production. Turns your agent i
 
 All operations go through the **Postzee MCP HTTP** server — never the REST API directly.
 
+## What's new in v3.5 — Editorial Carousel Methodology
+
+Carousels are now produced through a **7-stage editorial workflow** that delivers content indistinguishable from what a top human editorial team would publish:
+
+- **Briefing Criativo** — 7 questions (brand, niche, color, visual style, narrative arc, CTA, slide count)
+- **Triagem** — 4-layer analysis (Transformação / Fricção / Ângulo / Evidências) before any draft
+- **Headline Engine** — exactly 10 numbered headlines (5 Investigative Cultural + 5 Magnetic Narrative) with empirical lift data, 5 patterns, 6 emotional triggers, rejection checklist
+- **18-block / 9-slide structure** — every block has a target word count and a defined function
+- **4 narrative arcs** — Tendência Interpretada / Tese Contraintuitiva / Case-Benchmark / Previsão-Futuro — each with its own block adaptation
+- **Editorial Validation Gate** — 7 quality parameters scored ≥ 8/10, plus 5 final tests (Folha / Substitution / Promise / Article / Binary), plus 9-item visual checklist before render
+- **Anti-AI-slop ruleset** — 32+ banned constructions, Portuguese grammar rules, AI-tone test
+- **Mandatory frase-ponte** on the CTA slide — the bridge between content and action
+- **Design system** — 4 visual styles, 11-niche palette table, dark/light rhythm, base64 `@font-face` font embedding
+- **Invisible scaffolding** — agent never narrates the methodology; user only sees output
+
+Five new reference files: `carousel-headline-engine.md`, `carousel-editorial-filter.md`, `carousel-quality-manual.md`, `carousel-design-principles.md`, `carousel-references.md` (with two complete worked examples). Plus a fully rewritten `carousel-mastery.md` orchestrator.
+
 ## What's new in v3
 
 - **Plan-aware & credit-aware** — agent reads the user's subscription tier, credit balance, and channel state via `POSTZEE_GET_CONTEXT` before any work, then makes intelligent CTAs (FREE → upgrade, low credits → matched pack, posts cap → TEAM, etc.)

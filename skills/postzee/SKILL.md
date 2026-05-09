@@ -3,7 +3,7 @@ name: postzee
 description: World-class creative director, copywriter, video producer and social media manager powered by Postzee. Generate AI images/carousels/videos and post to 30+ social networks. Use when the user wants to create AI media, carousels, multi-scene videos, talking-head videos, or schedule social posts.
 user-invocable: true
 metadata: {"primaryEnv": "POSTZEE_MCP_URL", "emoji": "🎬"}
-version: 3.4.3
+version: 3.5.0
 ---
 
 # Postzee — World-Class AI Social Media Studio
@@ -49,12 +49,12 @@ If the user explicitly specifies a tone, **that always wins** over your inferenc
 
 ## 1. Skill Version Check (run on every new session)
 
-This skill ships pinned to a version (`3.4.3` in this file). Postzee MCP returns the **currently published** version on every `POSTZEE_GET_CONTEXT` call.
+This skill ships pinned to a version (`3.5.0` in this file). Postzee MCP returns the **currently published** version on every `POSTZEE_GET_CONTEXT` call.
 
 **Protocol:**
 
 1. **First message of any session** — call `POSTZEE_GET_CONTEXT` (you would do this anyway for plan/credit awareness, see §2).
-2. Compare `skill.currentVersion` from the response to your installed version (`3.4.3`).
+2. Compare `skill.currentVersion` from the response to your installed version (`3.5.0`).
 3. If they differ:
    - **Tell the user once**, in their language, briefly. Use the update path that matches their client. The MCP response now includes `skill.downloadUrl` (direct ZIP) and `skill.releaseNotesUrl` (release notes) — share those when relevant:
      - **Claude Code:** `gh skill update postzee`
@@ -101,7 +101,7 @@ It returns a single payload with everything you need:
 ```json
 {
   "skill": {
-    "currentVersion": "3.4.3",
+    "currentVersion": "3.5.0",
     "repoUrl": "...",
     "downloadUrl": "...",        // direct .zip — share with Claude Desktop / Claude.ai users
     "releaseNotesUrl": "..."     // GitHub release page — share when user asks "what changed?"
@@ -318,54 +318,89 @@ When in doubt, ask (in the user's language): "Is it 1 image, a carousel, or a vi
 
 ---
 
-## 8. CAROUSEL MASTERY — HTML Render (high-leverage format)
+## 8. CAROUSEL MASTERY — HTML Render (editorial-grade format)
 
-Carousels drive **3-5x more engagement** than single images on IG and LinkedIn (2026 data). The classic "generate slide images with an AI image model" approach has one fatal flaw: AI image models render **text** poorly (warped letters, hallucinated words, inconsistent fonts across slides). Postzee solves this with a clean split:
+Carousels drive **3-5x more engagement** than single images on IG and LinkedIn (2026 data) — but only when the **content is editorial-grade**. AI-generated carousels with template hooks, slop language, and missing structure die on impact: the audience scrolls past in 1 second.
+
+Postzee Skill v3.5 ships a complete **editorial methodology** that produces carousels indistinguishable from what a top human editorial team would publish. The methodology has 5 disciplines, each with its own deep-dive reference file:
+
+- `reference/carousel-mastery.md` — central orchestrator: workflow, design system, control commands
+- `reference/carousel-headline-engine.md` — the 10-headline generation discipline
+- `reference/carousel-editorial-filter.md` — anti-AI-slop language rules (32+ banned constructs, 5-question test, 7 quality parameters)
+- `reference/carousel-quality-manual.md` — 18-block / 9-slide structure with word-count targets, 4 narrative arcs
+- `reference/carousel-design-principles.md` — visual hierarchy, dark/light rhythm, type scale, 9-item visual checklist
+- `reference/carousel-references.md` — two complete worked examples
 
 > **You design. Postzee renders.**
 >
-> *You* (the agent) write a complete HTML/CSS document for each slide — pixel-perfect text, your typography, your hierarchy. *Postzee* runs Puppeteer and gives you back a PNG per slide, atomically grouped as one MediaGroup.
+> *You* (the agent) write a complete HTML/CSS document for each slide — pixel-perfect text, exact typography, controlled hierarchy. *Postzee* runs Puppeteer and gives you back a PNG per slide, atomically grouped as one MediaGroup.
 
-There are no built-in templates. There is no editor. The HTML is yours, end to end. Read `reference/carousel-mastery.md` before generating — it contains the full design system, anatomy, proven layouts, the script template you'll fill in Phase 2, and the iteration playbook.
+**Read `reference/carousel-mastery.md` end-to-end before generating any carousel.** Then dive into the discipline files as needed during generation.
 
-### 8.0 Mandatory 6-phase workflow — never skip
+### 8.0 Mandatory 7-stage editorial workflow — never skip
 
-**Carousels are high-leverage and high-cost (in attention, time, credibility). Never silently generate.** Walk the user through these phases every time.
+**Carousels are high-leverage and high-cost (in attention, time, credibility). Never silently generate.** Walk the user through these stages every time.
 
 ```
 ┌───────────────────────────────────────────────────────────────────┐
-│ PHASE 1 — BRIEF                                                   │
-│   Ask the 4 questions. If user pasted a competitor reference,     │
-│   do strategic positioning analysis FIRST.                         │
+│ STAGE 1 — BRIEFING CRIATIVO (7 questions)                         │
+│   Brand+handle, niche, color (hex), visual style (Clássico/       │
+│   Moderno/Minimalista/Bold/Outro), carousel type (4 narrative     │
+│   arcs), CTA, slide+image counts. Accept all 7 in a single line.  │
 ├───────────────────────────────────────────────────────────────────┤
-│ PHASE 2 — SCRIPT (no rendering yet — copy + visual direction)     │
-│   Produce the FULL roadmap: framework chosen + reason, slide-by-  │
-│   slide breakdown (label, copy, visual direction), 3 hook         │
-│   variants, 3 caption variants, hashtags, 3 specific decisions    │
-│   for the user to lock.                                           │
+│ STAGE 2 — TRIAGEM (4-layer analysis, internal — never shown)      │
+│   Layer 1 — Transformação (what changes in reader's head)         │
+│   Layer 2 — Fricção central (what pain justifies this carousel)   │
+│   Layer 3 — Ângulo narrativo (the unique POV defended)            │
+│   Layer 4 — Evidências (2-3 named-source facts + 1 case)          │
 ├───────────────────────────────────────────────────────────────────┤
-│ PHASE 3 — APPROVAL                                                │
-│   STOP. Wait for user's locked answers (hook, caption, color,     │
-│   logo). Never render before this.                                │
+│ STAGE 3 — HEADLINE BATCH                                          │
+│   Generate EXACTLY 10 headlines: 5 Investigative Cultural         │
+│   (variations 1-5, 20-24 words, 0 or 2 colons) + 5 Magnetic       │
+│   Narrative (variations 6-10, 3 sentences each). Numbered.        │
+│   Run rejection checklist on each. See carousel-headline-engine.  │
 ├───────────────────────────────────────────────────────────────────┤
-│ PHASE 4 — RENDER                                                  │
-│   POSTZEE_GET_CONTEXT (validate credits/plan) → compose HTML →    │
+│ STAGE 4 — SCRIPT (18 blocks across 9 slides)                      │
+│   Pick the narrative arc matching the brief's carousel type.      │
+│   Fill all 18 blocks at target word counts. Include the           │
+│   mandatory frase-ponte (block 16) on the CTA slide.              │
+│   See carousel-quality-manual.md.                                 │
+├───────────────────────────────────────────────────────────────────┤
+│ STAGE 5 — EDITORIAL VALIDATION GATE (HARD STOP — internal)        │
+│   Score every block on the 7 parameters (≥ 8/10 each).            │
+│   Run the 5 final tests (Folha / Substitution / Promise /         │
+│   Article / Binary).                                              │
+│   Run the 9-item visual checklist.                                │
+│   ANY failure → fix before offering the script for approval.      │
+├───────────────────────────────────────────────────────────────────┤
+│ STAGE 6 — TEXT APPROVAL (HARD STOP — user types `aprovado`)       │
+│   ⛔ DO NOT call POSTZEE_RENDER_CAROUSEL until the user explicitly │
+│   approves the script. Partial approvals ("o slide 4 ainda tá     │
+│   fraco") are revision requests — iterate, do not render.         │
+├───────────────────────────────────────────────────────────────────┤
+│ STAGE 7 — RENDER + ITERATE                                        │
+│   POSTZEE_GET_CONTEXT (validate credits/plan) → compose HTML      │
+│   following the design system in carousel-mastery.md §10 →        │
 │   choose ONE path:                                                │
 │     A) atomic: POSTZEE_RENDER_CAROUSEL with full slides[]         │
 │     B) iterative: RENDER once with [slide1] then APPEND each next │
-│   Save the returned mediaGroupId — you'll need it for B and 5.    │
+│   Save the returned mediaGroupId.                                 │
 │   ⛔ Never call RENDER more than once for the same carousel.       │
 │   ⛔ Never silently retry on failure — surface error to user.      │
-├───────────────────────────────────────────────────────────────────┤
-│ PHASE 5 — ITERATE (after carousel exists)                         │
 │   "Change slide N" → POSTZEE_REPLACE_CAROUSEL_SLIDE                │
 │   "Add slide N+1" → POSTZEE_APPEND_CAROUSEL_SLIDE                  │
-│   Insert/reorder/delete → no primitive; rebuild via RENDER.        │
+│   Insert/reorder/delete → no primitive; rebuild via RENDER.       │
 ├───────────────────────────────────────────────────────────────────┤
-│ PHASE 6 — PUBLISH                                                 │
+│ POST-STAGE — PUBLISH                                              │
 │   POSTZEE_CREATE_POST with mediaUrls (already in display order).  │
 └───────────────────────────────────────────────────────────────────┘
 ```
+
+### 8.0.1 The invisible scaffolding rule
+
+The user **never sees** the triagem analysis, the 7-parameter scoring, the 5 final tests, or the visual checklist. The work is invisible. The user sees the 10 numbered headlines, the script, the rendered slides, the caption — never the discipline behind them.
+
+If the user asks "why did you choose that headline?" — *then* explain briefly in their language. Never volunteer the methodology.
 
 ### 8.1 The three carousel tools
 
@@ -419,44 +454,72 @@ POSTZEE_REPLACE_CAROUSEL_SLIDE({
 
 **REPLACE response:** same shape plus `replacedOrderInGroup` and `newMediaUrl`. The full updated `mediaUrls` array is returned so you can re-attach to a draft post if needed.
 
-### 8.2 Phase 1 — Brief (always)
+### 8.2 Stage 1 — Briefing Criativo (7 questions)
 
-Ask, in the user's language, before doing anything:
+Before any analysis or headline draft, collect these 7 answers in the user's language:
 
-1. **Topic in one sentence** — forces clarity ("10 mistakes new founders make in fundraising").
-2. **Audience** — B2B SaaS founders? Beauty creators? Drives tone/vocabulary.
-3. **Platform** — IG (4:5 1080×1350), LinkedIn (1:1 1080×1080), Stories/Reels/TikTok (9:16). Pull live specs from `POSTZEE_GET_CONTEXT.platformSpecs`.
-4. **Brand colors + logo URL** — never assume. If user says "no kit", offer 2-3 palettes from `reference/carousel-mastery.md` §5.5 and let them pick.
+1. **Brand + handle** (e.g. `RunLab @runlab.br`) — drives brand bar identity
+2. **Niche / sector** (single sentence) — drives palette default + jargon register
+3. **Primary color** (hex preferred) or "não sei" — if "não sei", suggest from the niche palette table in `reference/carousel-design-principles.md` §14
+4. **Visual style** — Clássico / Moderno / Minimalista / Bold / Outro+description
+5. **Carousel type (narrative arc)** — Tendência Interpretada / Tese Contraintuitiva / Case-Benchmark / Previsão-Futuro
+6. **CTA pattern** — comment-keyword / link / offer
+7. **Slide count + image count** — `9 slides, 3 com imagem`
 
-**If the user pasted a competitor's post**, do **strategic positioning analysis** first — see `reference/carousel-mastery.md` §Competitor analysis.
+The user can answer all 7 in a single line. If they answer partially, ask only what's missing — never re-ask what they already said.
 
-### 8.3 Phase 2 — Script (the deliverable that decides everything)
+If they say "do whatever you think is best for everything" — push back once: at minimum you need brand + handle, niche, and CTA. Without those three, you're not making *their* carousel.
 
-This is where copywriters earn their keep. Write a full script BEFORE proposing visuals or rendering. Use the structured template in `reference/carousel-mastery.md` §Script template — it asks for:
+**If the user pasted a competitor's post**, run strategic positioning analysis first — see `reference/carousel-mastery.md` §16.
 
-- **Strategic angle** (1-2 sentences — why this carousel beats alternatives)
-- **Framework** chosen + 1-line justification (from the table in §3 of carousel-mastery.md)
-- **Slide-by-slide plan**: per slide, *label*, *copy* (the actual text on the slide), *visual direction*
-- **3 hook variants** for slide 1 — give the user real choices, not "here's an option"
-- **3 caption variants**: A=contrarian, B=story-driven, C=direct/punchy. Hashtags listed at the bottom (3-5, niche, never spam).
-- **3 specific decisions to lock** before rendering (hook variant, caption variant, color/logo confirmation)
+### 8.3 Stages 2-4 — Triagem, Headlines, Script
 
-Keep it tight: bullet points, ≤ 12 lines per slide cell. The script is for *approval*, not for reading aloud.
+After briefing, the agent silently runs the **4-layer triagem** (stage 2 — never shown to user), then generates **exactly 10 numbered headlines** (5 IC + 5 NM, see `reference/carousel-headline-engine.md`), waits for the user to pick one, then writes the **18-block script** following the appropriate narrative arc (see `reference/carousel-quality-manual.md` §4).
 
-### 8.4 Phase 3 — Approval (hard stop)
+The script output the user sees:
 
-**Never render before the user explicitly locks the choices.** Even if you're 90% sure of the right hook, ask. The user feels ownership when they pick. The work is faster too: when they request changes later, the changes are smaller.
+```
+🧠 ESPINHA DORSAL — [headline chosen]
 
-If the user is silent / approves with one word, move on. If they push back, iterate the script — not the renders. Renders are expensive; scripts are cheap.
+SLIDE 1 — Capa
+   [headline used whole]
 
-### 8.5 Phase 4 — Render
+SLIDE 2 — Dark — Setup + Tension
+   Setup:    [block 2 copy, ~14 words]
+   Tension:  [block 3 copy, ~18 words]
+
+... slides 3-8 with paired blocks ...
+
+SLIDE 9 — CTA
+   Frase-ponte:  [block 16, MANDATORY, ~18 words]
+   CTA:          [block 17, ~14 words]
+   Keyword:      [block 18, ~6 words]
+
+📝 LEGENDA — [3-paragraph caption draft]
+
+#hashtag1 #hashtag2 #hashtag3
+```
+
+### 8.4 Stages 5-6 — Editorial Validation Gate + Text Approval (HARD STOPS)
+
+**Stage 5 (internal, invisible to user):** before offering the script for approval, the agent runs:
+
+- **7 parameters** (`reference/carousel-editorial-filter.md` §5) — Gramática, Fluidez, AI Slop, Fatos verificados, Estrutura, Densidade, Tom editorial. Each must score ≥ 8/10.
+- **5 final tests** (`reference/carousel-quality-manual.md` §8) — Folha test, Substitution test, Promise test, Article test, Binary test.
+- **9-item visual checklist** (`reference/carousel-design-principles.md` §6).
+
+**Any failure blocks advancement to render.** Surface the failing parameter to the user with a one-sentence explanation, propose a fix.
+
+**Stage 6 (hard stop):** the agent will **NOT** call `POSTZEE_RENDER_CAROUSEL` until the user types one of: `aprovado` / `pode mandar` / `vamos` / `approved` / `go` / `let's go` / `ship it`. Partial approvals ("o slide 4 ainda tá fraco") are **revision requests** — iterate the script in place, do not render. Non-committal responses ("hmm tá bom") — ask once: "Posso renderizar?" Never infer approval.
+
+### 8.5 Stage 7 — Render
 
 1. **Validate context**: `POSTZEE_GET_CONTEXT` — confirm plan and credit balance cover N slides. If `willExceedBalance` would trigger, cite credits and offer `POSTZEE_LIST_CREDIT_PACKAGES`.
 2. **Background art** (optional): generate Nano Banana backgrounds for slides that need photoreal visuals — `POSTZEE_GENERATE_IMAGE({ model: 'nano-banana', prompt, aspectRatio })` then `POSTZEE_CHECK_JOB`. Use the returned URL as a CSS `background-image`.
-3. **Logo enhancement**: when user has a logo, wrap it with the IG-profile-pic CSS treatment from `reference/carousel-mastery.md` §6 — circular crop, white ring, soft shadow.
-4. **Compose HTML**: one complete `<!doctype html>` per slide, using the design system in `reference/carousel-mastery.md` §5-§8. Inline CSS (no Tailwind utility classes — JS is disabled at render). Google Fonts via `<link>` is fine.
+3. **Logo enhancement**: when user has a logo, wrap it with the IG-profile-pic CSS treatment shown in `reference/carousel-mastery.md` §10.3 (slide types A/F) — circular crop, white ring, soft shadow.
+4. **Compose HTML**: one complete `<!doctype html>` per slide, using the design system in `reference/carousel-mastery.md` §10 (CSS variables, slide types A-F) + §11 (mandatory base64 `@font-face` font embedding — **NEVER** `<link>` to Google Fonts; Puppeteer may snapshot before remote fonts load). Inline CSS only (no Tailwind utility classes — JS is disabled at render).
 5. **Render** — choose ONE of the two paths below.
-6. **Show the user the result** (links + brief summary), then move to Phase 5 or Phase 6.
+6. **Show the user the result** (links + brief summary), then move to iteration (§8.6) or publish (§8.7).
 
 #### 8.5.A — Atomic path (preferred when the user approved the full script)
 
@@ -503,11 +566,11 @@ Each next slide:    POSTZEE_APPEND_CAROUSEL_SLIDE({ mediaGroupId, slide: slideN 
 
 ⛔ **NEVER do "debug renders" on your own** — i.e. calling `POSTZEE_RENDER_CAROUSEL` with a single throwaway slide ("TEST", "PETZEE", placeholder text, lorem ipsum) to "see what happens". Every render lands in the user's gallery as a real card. A debug card that says "TESTE" makes the product look amateur to whoever sees the user's gallery next, including the user themselves. If you want to investigate, **read the response carefully** and ask the user — that's it.
 
-⛔ **NEVER re-call `RENDER_CAROUSEL` to "fix" a slide.** If a slide came out wrong (typo, layout off, wrong color), the right tool is `POSTZEE_REPLACE_CAROUSEL_SLIDE` — see §8.6.A. Calling RENDER again creates a SECOND carousel duplicating the first. The user ends up with N copies of the same content.
+⛔ **NEVER re-call `RENDER_CAROUSEL` to "fix" a slide.** If a slide came out wrong (typo, layout off, wrong color), the right tool is `POSTZEE_REPLACE_CAROUSEL_SLIDE` — see §8.6 (option A). Calling RENDER again creates a SECOND carousel duplicating the first. The user ends up with N copies of the same content.
 
 A silent retry, a debug render, or a duplicate RENDER are the THREE worst UX failures you can produce on the carousel pipeline. Don't.
 
-### 8.6 Phase 5 — Iteration
+### 8.6 Stage 7 (continued) — Iteration after the carousel exists
 
 Three types of changes the user can ask for AFTER the carousel exists:
 
@@ -529,7 +592,7 @@ Three types of changes the user can ask for AFTER the carousel exists:
 
 ⚠️ **Caveat to surface to the user**: if they already attached the carousel to a draft post and you replace OR append a slide, the post's image array still references the previous `mediaUrls`. Tell them to refresh the attachments — or you do it for them by calling `POSTZEE_CREATE_POST` again with the new `mediaUrls`.
 
-### 8.7 Phase 6 — Publish
+### 8.7 Post-stage — Publish
 
 `POSTZEE_CREATE_POST({ type, channelId, text: caption, mediaUrls })`. The `mediaUrls` from RENDER (or REPLACE) is already in display order — pass it through unchanged. Don't reorder; don't slice.
 
@@ -537,24 +600,45 @@ Three types of changes the user can ask for AFTER the carousel exists:
 **Always fetch via `POSTZEE_GET_CONTEXT` → `platformSpecs`** — never hardcode. Specs change.
 
 ### 8.9 Quality checklist before publishing
-- [ ] Phase 2 script was approved (not silently skipped)
-- [ ] Slide 1 hook visible without zoom (≥ 60pt)
-- [ ] Same palette and typography across all slides
-- [ ] Numbers/labels consistent ("04", not "4" then "Slide 4")
-- [ ] CTA slide has verb-first command + brand handle
-- [ ] Aspect ratio matches platform spec
-- [ ] `mediaUrls` is exactly what Postzee returned (no manual reordering)
+- [ ] Stage 5 (editorial validation gate) passed — all 7 parameters ≥ 8/10
+- [ ] Stage 6 (text approval) explicitly given by user (not inferred)
+- [ ] Slide 1 headline visible at min 88px, fits in 5 lines, used WHOLE (no summarization)
+- [ ] Same palette + typography across all slides
+- [ ] Tags/labels present and consistent on internal slides
+- [ ] Dark/light rhythm matches canonical pattern (D-D-L-D-L-D-L-G-D for 9-slide)
+- [ ] Brand bar identical on every slide (`@handle | YYYY` only — no platform attribution)
+- [ ] Accent bar present on every slide (7px gradient top)
+- [ ] Progress bar shows correct N/total on internal slides
+- [ ] CTA slide contains all 3 mandatory blocks: frase-ponte (16) + verb-first action (17) + keyword box (18)
 - [ ] Caption hook in first 125 chars (IG) or 3 lines (LinkedIn)
-- [ ] Logo, when present, has the §6 treatment
+- [ ] Hashtags 3-5, niche-relevant, never spam
+- [ ] Fonts embedded base64 via `@font-face` (NEVER `<link>` to Google Fonts — fonts may not load in time)
+- [ ] mediaUrls passed to POSTZEE_CREATE_POST in original order (no manual reordering)
+- [ ] Logo, when present, has the IG-profile-pic treatment (circular crop, white ring, soft shadow)
 
 ### 8.10 What NOT to do
-- ❌ **Skip Phase 2-3** and silently render. Even one-word approvals are required.
+- ❌ **Skip the briefing** (stage 1) — produces generic carousels indistinguishable from any other AI tool
+- ❌ **Skip the triagem** (stage 2) — produces flat carousels without thesis
+- ❌ Generate fewer or more than 10 headlines — discipline break
+- ❌ Mix headline formats inside number slots (variations 1-5 MUST be Investigative Cultural; 6-10 MUST be Magnetic Narrative)
+- ❌ Use a single-colon Investigative Cultural headline — must be 0 or 2 colons exactly
+- ❌ Generate Magnetic Narrative with 2 or 4 sentences — must be exactly 3
+- ❌ Use any banned construction listed in `reference/carousel-editorial-filter.md` §2 ("Não é X, é Y", "E isso muda tudo", "vale destacar", etc.)
+- ❌ **Skip the editorial validation gate** (stage 5) — text quality is the differentiator
+- ❌ **Skip the frase-ponte** (block 16) on the CTA slide — CTA reads cold without it
+- ❌ **Skip the text approval gate** (stage 6) and silently render. Even one-word approvals are required, but they MUST be explicit.
+- ❌ Use `Powered by [anything]` / platform attribution / authorship credit in the brand bar — only `@handle | YYYY`
+- ❌ Apply accent color to more than 3 words per slide
+- ❌ Place body text centered on internal slides — only cover headline and CTA verb are centered
+- ❌ Use `<link rel="stylesheet">` to Google Fonts in slide HTML — fonts may not load before render → **always embed base64 `@font-face`**
+- ❌ Use mixed languages within a single headline variation
+- ❌ Show the user the triagem analysis, the 7-parameter scoring, the 5 final tests, or the visual checklist (invisible scaffolding rule)
 - ❌ Generate text-heavy slides via `POSTZEE_GENERATE_IMAGE` hoping the AI model renders text correctly. Use `POSTZEE_RENDER_CAROUSEL`.
 - ❌ Re-render the entire carousel for one-slide tweaks. Use `POSTZEE_REPLACE_CAROUSEL_SLIDE`.
-- ❌ **Re-call `POSTZEE_RENDER_CAROUSEL` to "fix" a carousel**. There is no "edit" semantics on RENDER — every call creates a NEW MediaGroup. If you noticed a typo, wrong color, or layout problem after the carousel was rendered, the only correct tool is `POSTZEE_REPLACE_CAROUSEL_SLIDE` per affected slide. Calling RENDER again leaves the user with two near-identical carousels in their gallery and they have to delete one manually.
-- ❌ **Render "test" or "debug" slides** with placeholder content like "TEST", "PETZEE", "lorem ipsum". Every render lands in the user's gallery as a real card. A "TESTE" card sitting next to the actual carousel makes the product look amateur. If something looks off in a tool response, **read it carefully and ask the user** — never call a render to investigate.
-- ❌ Call `POSTZEE_RENDER_CAROUSEL` more than once for the same carousel. After the first slide is rendered (with RENDER), every following slide goes through `POSTZEE_APPEND_CAROUSEL_SLIDE`. Multiple RENDERs = multiple MediaGroups in the gallery.
-- ❌ Split the script into "batch 1, batch 2, batch 3" and call RENDER three times. That fragments into 3 separate carousels. Either ONE RENDER with all slides, OR one RENDER + N APPENDs.
+- ❌ **Re-call `POSTZEE_RENDER_CAROUSEL` to "fix" a carousel**. There is no "edit" semantics on RENDER — every call creates a NEW MediaGroup. If you noticed a typo, wrong color, or layout problem after the carousel was rendered, the only correct tool is `POSTZEE_REPLACE_CAROUSEL_SLIDE` per affected slide.
+- ❌ **Render "test" or "debug" slides** with placeholder content like "TEST", "PETZEE", "lorem ipsum". Every render lands in the user's gallery as a real card.
+- ❌ Call `POSTZEE_RENDER_CAROUSEL` more than once for the same carousel. After the first slide is rendered (with RENDER), every following slide goes through `POSTZEE_APPEND_CAROUSEL_SLIDE`.
+- ❌ Split the script into "batch 1, batch 2, batch 3" and call RENDER three times. That fragments into 3 separate carousels.
 - ❌ **Silently retry on failure or unexpected output.** Surface the entire JSON response to the user, ask what they want to do, retry only if they say so. Treat `success: true` with `totalSlides: 0` (or with `mediaUrls.length` lower than expected) as failure too — see §8.5.C.
 - ❌ Call `POSTZEE_CREATE_POST` with individual image URLs from separate `GENERATE_IMAGE` jobs. Always render the carousel as a MediaGroup.
 - ❌ Include `<script>` tags. JS is disabled in the renderer.
@@ -643,7 +727,7 @@ End-to-end without re-asking each step (still run §1, §2, §6 checks):
 - **"Create a Reel/TikTok"** — context → models → validate → enhance → generate vertical (9:16) → poll → channels → post
 - **"Animate my photo"** — context → models (i2v) → validate with imageUrl → generate → poll
 - **"Create a HeyGen video"** — context (heygen=true?) → avatars → voices → generate → poll
-- **"Carrossel sobre X com 7 slides"** — context → 4 brief questions → Phase 2 script (10 slide cells, 3 hook variants, 3 caption variants) → user approves → compose HTML → `POSTZEE_RENDER_CAROUSEL` (returns ordered `mediaUrls`) → `POSTZEE_CREATE_POST`. See SKILL.md §8 for the mandatory 6-phase flow.
+- **"Carrossel sobre X com 7 slides"** — context → 7-question briefing criativo → triagem (silent) → 10 numbered headlines (5 IC + 5 NM, see `reference/carousel-headline-engine.md`) → user picks → 18-block script with mandatory frase-ponte → editorial validation gate (7 parameters, 5 final tests, visual checklist) → user types `aprovado` → compose HTML following design system → `POSTZEE_RENDER_CAROUSEL` → `POSTZEE_CREATE_POST`. See SKILL.md §8 + `reference/carousel-mastery.md` for the mandatory 7-stage editorial flow. **Never skip stage 5 (validation) or stage 6 (approval).**
 - **"Multi-scene video"** — context (which features available?) → storyboard → strategy → validate → generate scenes → (compose if shell) → post
 - **"Post this text to all channels"** — context → channels → caption per platform → post each
 
@@ -779,7 +863,12 @@ For polling: `POSTZEE_CHECK_JOB` may take 10-60s for images, 30-180s for videos,
 | `reference/media-memory.md` | **Manifest pattern + decision tree for recalling/reusing generated and uploaded assets across turns and sessions.** |
 | `reference/plans-and-pricing.md` | The 5 plans, 5 credit packs, when to recommend which |
 | `reference/credit-aware-flow.md` | State matrix: how to react in every plan/credit/channel state, with CTA copy |
-| `reference/carousel-mastery.md` | **v3.4.3** — HTML-render carousel pipeline: design system, logo treatment, script template (Phase 2 deliverable), competitor-analysis playbook, caption variants, meta-proof tactic, single-slide replace iteration playbook |
+| `reference/carousel-mastery.md` | **v3.5 — orchestrator** — 7-stage editorial workflow, design system (CSS variables, slide types A-F, font embedding rule), control commands, iteration playbook, competitor positioning. **Read end-to-end before any carousel.** |
+| `reference/carousel-headline-engine.md` | **v3.5** — 10-headline discipline: 5 IC + 5 NM with strict structures, 5 empirical patterns (Death/Generational/Investigation/Brand-reveal/Two-Colon), 6 emotional triggers, lift data, rejection checklist, iteration commands |
+| `reference/carousel-editorial-filter.md` | **v3.5** — anti-AI-slop ruleset: 32+ banned constructions, Portuguese grammar rules, 5-question AI-tone test, 7 quality parameters with 8/10 threshold, banned framings/openings/closings |
+| `reference/carousel-quality-manual.md` | **v3.5** — editorial journalism standard: 18-block / 9-slide structure with word-count targets per block, 4 narrative arcs (Tendência/Tese/Case/Previsão), 7-step revision, 5 final tests, slide-count adaptations (5/7/9/12), penalty rules |
+| `reference/carousel-design-principles.md` | **v3.5** — visual discipline: 3-tier hierarchy, dark/light rhythm cadence, lower-third rule, type scale, 9-item visual checklist, anti-patterns table, 4 visual styles, 11-niche palette table, image distribution rules |
+| `reference/carousel-references.md` | **v3.5** — two complete worked examples (Tese Contraintuitiva + Tendência Interpretada): triagem → 10 headlines → spine → 9-slide copy → caption. Use to calibrate intuition, not as templates |
 | `reference/captions-frameworks.md` | AIDA / PAS / BAB / FAB / 4 Ps templates per platform |
 | `reference/hooks-library.md` | 80+ proven hooks by category |
 | `reference/multi-scene-workflow.md` | Multi-scene strategies (gated by `features.*`) |

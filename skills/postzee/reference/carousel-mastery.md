@@ -1,721 +1,1081 @@
-# Carousel Mastery — HTML Render Edition
+# Carousel Mastery — The Editorial Carousel System
 
-Skill v3.4+ uses a single carousel pipeline: **you compose HTML, Postzee renders to PNG.** This file has two roles:
+This is the **central reference** for the carousel pipeline. Skill v3.5 ships an editorial-grade carousel methodology built on five disciplines, each with its own deep-dive file:
 
-1. **The design system** you draw from when crafting HTML (§5-§8 below).
-2. **The workflow playbook** for everything that happens *around* the rendering — the script you write before generating, the strategic positioning when there's a competitor, the iteration tools when the user asks for changes (§A-§E below).
+- `carousel-headline-engine.md` — the 10-headline generation discipline
+- `carousel-editorial-filter.md` — anti-IA-slop language rules
+- `carousel-quality-manual.md` — 18-block / 9-slide structure with word counts
+- `carousel-design-principles.md` — visual hierarchy, dark/light rhythm, anti-patterns
+- `carousel-references.md` — two complete worked examples
 
-The mandatory 6-phase workflow lives in SKILL.md §8.0. Don't skip it. Below are the artifacts each phase produces.
+This file (carousel-mastery.md) is the orchestrator: it defines the workflow that runs all five together, the design-system CSS + HTML scaffolding for each slide type, the iteration playbook, and the control commands the user can issue.
 
----
-
-## 0. Why HTML render
-
-| Old way (deprecated) | New way (Skill v3.4) |
-|---|---|
-| Generate slide images via `POSTZEE_GENERATE_IMAGE` and hope the AI model renders text correctly | Author HTML + CSS for each slide; Postzee renders pixel-perfect PNGs via headless Chrome |
-| Each slide a separate Media → manual ordering, easy to lose | One MediaGroup with `orderInGroup` baked in by Postzee — order is **structural, not temporal** |
-| Inconsistent fonts/colors across slides | Same CSS = same look, every slide |
-| Up to ~30s per AI image × 10 slides | Typical 10-slide render: 5-30s total, parallel rendering |
-| Cost = N image generations | Cost = compute, not generation (much cheaper for text-heavy slides) |
-
-**Use `POSTZEE_GENERATE_IMAGE` only for** photo-realistic background images (Nano Banana). Composite them into HTML as `background-image: url(...)`.
+> **Hard rule:** before generating any carousel for a user, read this file end-to-end. Then dive into the discipline files only as needed during generation.
 
 ---
 
-## A. Script template — the Phase 2 deliverable
+## 0. Why this exists
 
-Phase 2 produces a structured plan the user reviews. Keep it tight; don't over-explain. Adapt the labels to the user's language but keep the structure.
+Carousels are the highest-leverage format on Instagram and LinkedIn (2026): 3-5x the engagement of single images, 2-3x the save rate. But they only work when the **content is editorial-grade**. AI-generated carousels with template hooks, slop language, and missing structure die on impact — the audience scrolls past in 1 second.
 
-```
-🎯 Strategic angle (1-2 sentences)
-   Why this carousel beats alternatives. If there's a competitor reference,
-   name the gap you're attacking.
+The system in this file produces carousels that **pass an editor's red pen**: specific, opinionated, evidence-led, designed with rhythm, written in a register that doesn't read as machine-translated.
 
-🧠 Framework — <name>
-   1-line justification (which framework from §3 and why it fits this topic).
-
-📜 Roadmap (10 slides)
-
-   SLIDE 1 — Hook
-   Copy:    "<the actual on-slide text>"
-   Visual:  "<typography size, layout, color block, any image needed>"
-
-   SLIDE 2 — <label, e.g. "Acknowledge the news">
-   Copy:    "<…>"
-   Visual:  "<…>"
-
-   ... slides 3-9 ...
-
-   SLIDE 10 — CTA
-   Copy:    "<verb-first command + brand handle>"
-   Visual:  "<…>"
-
-🪝 Hook variants for slide 1 (pick one to lock)
-   1. <variant>
-   2. <variant>
-   3. <variant>
-
-✍️ Caption variants for the post body (pick one to lock)
-
-   Variant A — Contrarian (sharper, more aggressive opening)
-   <120-180 word caption with hook in first 125 chars>
-
-   Variant B — Story-driven (lighter, narrative)
-   <120-180 word caption>
-
-   Variant C — Direct (punchy, no fluff)
-   <60-100 word caption>
-
-   Hashtags (3-5, niche-relevant, never spam):
-   #example #example #example
-
-🎨 Visual decisions to lock
-   1. Hook variant (1, 2 or 3)?
-   2. Caption variant (A, B, C)?
-   3. Brand color confirmed? Logo URL? <or — if no kit — propose 2-3 palettes>
-
-✅ Once you confirm those 3, I render the 10 slides.
-```
-
-This is the artifact, not a checklist. Fill it for real, then send to the user. If the user is silent or signs off briefly, advance to Phase 4. If they push back, edit the SCRIPT — never the renders.
+The promise: every carousel that comes out of Postzee is *indistinguishable from* — not in the style of — what a top-tier human editorial team would ship.
 
 ---
 
-## B. Competitor analysis (when user pasted a reference)
+## 1. The pipeline (split: agent vs Postzee)
 
-When the user pastes a competitor post or article, Phase 1 expands. Don't just copy their angle. Position differentiated.
+> **You design. Postzee renders.**
+>
+> *You* (the agent) write a complete HTML/CSS document for each slide — pixel-perfect text, exact typography, controlled hierarchy. *Postzee* runs Puppeteer and gives you back PNGs, atomically grouped as one MediaGroup.
 
-Template:
+The 3 carousel tools (see SKILL.md §8.1):
+- `POSTZEE_RENDER_CAROUSEL` — atomic render of N slides as one MediaGroup
+- `POSTZEE_APPEND_CAROUSEL_SLIDE` — append one slide to existing MediaGroup
+- `POSTZEE_REPLACE_CAROUSEL_SLIDE` — surgical replacement of one slide
 
-```
-📰 What the reference does well
-   - <specificity numérica? framing? narrative?>
-   - <…>
-   - <…>
-
-🕳 The gap (where they fall short)
-   <The single sentence that defines our angle. The narrower, the better.>
-
-🎯 Our position
-   <How we frame Postzee differently. NOT "we also do X." Always "the next
-   move that they didn't make.">
-
-🔥 The angle for the carousel
-   <One sentence the carousel will earn over 10 slides.>
-```
-
-Real example (the post about Higgsfield connecting 30 models to Claude):
-
-```
-📰 What it does well
-   - Specificity (30 models, 4K, named: Sora 2, Kling, Flux, Veo)
-   - "Structural change" framing — emotional weight
-   - Before/after narrative
-
-🕳 The gap
-   It only solves *generation*. The real creative flow is: brief → script →
-   generate → adapt → caption → schedule → publish to N networks.
-   Generation is one step.
-
-🎯 Our position
-   Generation is becoming commodity. The next move is the *whole flow*
-   collapsed into a single conversation — including publishing.
-
-🔥 The angle
-   "Generation in Claude went mainstream this week.
-   The bigger move — distribution inside Claude — nobody's covering."
-```
-
-The angle becomes the slide-1 hook. The reveal slide names Postzee. The closer is the meta-proof (§D).
+**Hard limits:**
+- 1-15 slides per carousel total
+- 256-2160 px per dimension
+- 250 KB max HTML per slide
+- 45s render timeout per slide
+- All-or-nothing: any slide failure rolls back the whole RENDER call
 
 ---
 
-## C. Caption variants — write all three, every time
+## 2. The 7-stage workflow
 
-Don't ask the user "what tone?". Write three real variants and let them pick. The exercise sharpens the copy.
+Every carousel goes through these 7 stages. Skipping any stage produces a worse carousel. **Never skip the editorial validation gate (stage 5).**
 
-| Variant | Voice | When to recommend |
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ STAGE 1 — BRIEFING CRIATIVO (7 questions)                       │
+│   Brand, niche, color, style, type, CTA, slide count            │
+├─────────────────────────────────────────────────────────────────┤
+│ STAGE 2 — TRIAGEM (4-layer analysis)                            │
+│   Transformação, Fricção, Ângulo, Evidências                    │
+├─────────────────────────────────────────────────────────────────┤
+│ STAGE 3 — HEADLINE BATCH (10 variations)                        │
+│   5 IC + 5 NM, numbered, rejection-checklist passed             │
+│   See carousel-headline-engine.md                               │
+├─────────────────────────────────────────────────────────────────┤
+│ STAGE 4 — SCRIPT (18 blocks across 9 slides)                    │
+│   Per-block copy, density per word-count targets                │
+│   See carousel-quality-manual.md                                │
+├─────────────────────────────────────────────────────────────────┤
+│ STAGE 5 — EDITORIAL VALIDATION GATE (hard stop)                 │
+│   7 parameters ≥ 8/10 each + 5 final tests + visual checklist   │
+│   See carousel-editorial-filter.md §5 + carousel-quality-       │
+│   manual.md §7-§8 + carousel-design-principles.md §6            │
+├─────────────────────────────────────────────────────────────────┤
+│ STAGE 6 — TEXT APPROVAL (hard stop, user types `aprovado`)      │
+│   Do NOT call POSTZEE_RENDER_CAROUSEL until this happens.       │
+├─────────────────────────────────────────────────────────────────┤
+│ STAGE 7 — RENDER + ITERATE                                      │
+│   POSTZEE_RENDER_CAROUSEL → review → REPLACE / APPEND on demand │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+SKILL.md §8.0 references the same 7 stages — single shared terminology, no translation table needed.
+
+---
+
+## 3. Stage 1 — Briefing Criativo (7 questions)
+
+Before the agent does anything else — **including any analysis or headline draft** — collect these 7 answers.
+
+| # | Question | Why |
 |---|---|---|
-| **A — Contrarian** | Disagree with the prevailing take. Hard hook in first sentence. Builds tension before the reveal. | Topic is debate-able / has a popular but flawed framing. Best for LinkedIn / X. |
-| **B — Story-driven** | "Last week I…", "I was about to…". Personal, narrative, lower-stakes. | Lifestyle / process content. Reels-friendly. Best for IG. |
-| **C — Direct** | Short, punchy, almost zero adjectives. 60-100 words max. | Crowded feeds. When the carousel image already carries 80% of the punch. |
+| 1 | **Brand + handle** (e.g. `RunLab @runlab.br`) | Drives brand bar and identity |
+| 2 | **Niche / sector** (single sentence) | Drives palette default + jargon register |
+| 3 | **Primary color** (hex preferred) — or "não sei" | Drives CSS variables. If "não sei" → suggest from niche palette table (`carousel-design-principles.md` §14) |
+| 4 | **Visual style** — Clássico / Moderno / Minimalista / Bold / Outro+descrição | Drives font pairing and accent treatment |
+| 5 | **Carousel type** — Tendência Interpretada / Tese Contraintuitiva / Case-Benchmark / Previsão-Futuro | Drives the narrative arc (`carousel-quality-manual.md` §4) |
+| 6 | **CTA pattern** — comment-keyword, link, offer | Drives slide 9 |
+| 7 | **Slide count + image count** — `9 slides, 3 com imagem` | Drives layout adaptation (`carousel-quality-manual.md` §6) |
 
-Length:
-- **IG**: 120-180 words. Hook in the first 125 chars (the visible part before "...mais").
-- **LinkedIn**: 200-350 words. Generous line breaks (3-line paragraphs).
-- **TikTok / X**: 60-150 words. Punch first, no warm-up.
+The user can answer all 7 in a single line:
+```
+RunLab @runlab.br, corrida e saúde mental, #1A1A2E, Bold,
+Tendência Interpretada, Comenta CORRIDA, 9 slides 3 com imagem
+```
 
-Hashtags: **3-5**, niche-relevant. More than 5 is a 2026 spam signal on LinkedIn and IG.
+If the user answers partially, ask only what's missing — never re-ask what they already said.
 
-Every caption ends with one of these:
-- A save CTA ("Salva esse post.")
-- A comment-trigger CTA ("Comenta WORD que mando o link.")
-- An arrow indicator ("Arrasta ⤵") for Phase 1 of the post
+If the user says "do whatever you think is best for everything" — push back once: at minimum, you need brand + handle, niche, and CTA. Without those three, you're not making *their* carousel — you're making a generic one.
 
 ---
 
-## D. Meta-proof — the recursive sales pitch
+## 4. Stage 2 — Triagem (4-layer analysis)
 
-When the carousel is *about* AI / no-code / creative tools, slide 8 or 9 can be the meta-proof:
+Before generating headlines, do this analysis. Never skip — it's what separates editorial from generic.
 
-> "This carousel — script, illustrations, copy, caption, hashtags, scheduling — was made inside a single Claude conversation using Postzee. You're seeing the proof happen."
+### Layer 1 — Transformação
 
-It only works when:
-- The topic is creative / AI / marketing tooling
-- The carousel actually *was* made with Postzee end-to-end (it will be, if you're doing your job)
-- The user's audience cares about HOW the work was made
+**Question:** What changes in the reader's head after they finish this carousel? (Single sentence.)
 
-Don't force it on every carousel. When it fits, it's the strongest single slide.
+If the answer is "they learn 5 tips" — the carousel will be generic. The transformation should be specific: a belief flipped, a frame replaced, a name added to their vocabulary.
+
+### Layer 2 — Fricção central
+
+**Question:** What pain, contradiction, or absurdity justifies this carousel existing right now? (Single sentence.)
+
+Without this, the carousel has no urgency. The friction is the reason the reader can't keep scrolling.
+
+### Layer 3 — Ângulo narrativo
+
+**Question:** What is the unique point-of-view this carousel defends? (Single sentence — usually contrarian or angled.)
+
+The angle is the slide-1 hook in seed form.
+
+### Layer 4 — Evidências
+
+**Question:** What 2-3 facts (with named sources) and 1 specific case anchor the thesis?
+
+Every carousel must hit the fact-density floor (`carousel-quality-manual.md` §11). If the user can't supply evidence, either ask for it, search the web (if available), or document the placeholder.
+
+The triagem produces a 4-line memo. The agent uses it internally to drive stages 3-4. **Don't show it to the user.** The user sees the *output* (headlines + script), not the analysis.
 
 ---
 
-## E. Iteration playbook — APPEND, REPLACE, REBUILD
+## 5. Stage 3 — Headline Batch (10 variations)
 
-Skill v3.4.2+ ships THREE carousel tools. Knowing which one to use is the difference between a clean carousel and a polluted gallery.
+Run the headline engine. Always 10. Always numbered. Always 5 IC + 5 NM.
+
+**Full discipline:** `carousel-headline-engine.md`.
+
+Output format the user sees:
 
 ```
-                          ┌─────────────────────────────────┐
-User wants slide-by-slide │ Phase 4-B (iterative path):     │
-preview while building?   │  RENDER once with [slide1]      │
-─────────────────────►    │  then APPEND for each next      │
-                          └─────────────────────────────────┘
+Aqui estão 10 ideias para essa headline:
 
-                          ┌─────────────────────────────────┐
-User wants to change      │ POSTZEE_REPLACE_CAROUSEL_SLIDE  │
-an existing slide?        │  same orderInGroup, new content │
-─────────────────────►    └─────────────────────────────────┘
+INVESTIGATIVE CULTURAL (1-5)
+VARIAÇÃO 1 — [headline]
+VARIAÇÃO 2 — [headline]
+VARIAÇÃO 3 — [headline]
+VARIAÇÃO 4 — [headline]
+VARIAÇÃO 5 — [headline]
 
-                          ┌─────────────────────────────────┐
-User wants to add a       │ POSTZEE_APPEND_CAROUSEL_SLIDE   │
-slide AT THE END?         │  next orderInGroup, atomic       │
-─────────────────────►    └─────────────────────────────────┘
+MAGNETIC NARRATIVE (6-10)
+VARIAÇÃO 6 — [headline]
+VARIAÇÃO 7 — [headline]
+VARIAÇÃO 8 — [headline]
+VARIAÇÃO 9 — [headline]
+VARIAÇÃO 10 — [headline]
 
-                          ┌─────────────────────────────────┐
-User wants to insert in   │ Rebuild via POSTZEE_RENDER_     │
-the middle, reorder, or   │ CAROUSEL with the new sequence  │
-delete a slide?           │ (no insert/reorder primitive)   │
-─────────────────────►    └─────────────────────────────────┘
+Qual te chama mais? Pode dizer "a 3", "mistura a 2 com a 7",
+"refazer headlines", ou "a 5 com ângulo brasileiro".
 ```
 
-### REPLACE — change existing slide
+**Wait for the user to pick** before moving on.
 
-**Trigger phrases:**
-- "Change slide 4."
-- "The hook is too soft, make it sharper."
-- "Swap slide 7's background for the green one we generated earlier."
-- "The CTA slide should mention our handle."
+---
 
-```ts
-POSTZEE_REPLACE_CAROUSEL_SLIDE({
-  mediaGroupId: "<from your scrollback — the ID from POSTZEE_RENDER_CAROUSEL>",
-  orderInGroup: 3,                  // zero-based — slide 4 → 3
-  slide: { html: "<!doctype html>...new slide HTML...", width: 1080, height: 1350 }
-})
+## 6. Stage 4 — Script (18 blocks)
+
+Once the user picks a headline, generate the 18-block script following:
+
+- The 4 narrative arcs (`carousel-quality-manual.md` §4 — pick the arc matching the brief's carousel type)
+- Block-by-block word count targets (`carousel-quality-manual.md` §2)
+- Tone/register rules (`carousel-editorial-filter.md`)
+
+Output format:
+
+```
+🧠 ESPINHA DORSAL — [headline chosen]
+
+SLIDE 1 — Capa
+   [the headline, used whole]
+
+SLIDE 2 — Dark — Setup + Tension
+   Setup:    [block 2 copy, ~14 words]
+   Tension:  [block 3 copy, ~18 words]
+
+SLIDE 3 — Light — Data + Reading
+   Data:     [block 4, ~12 words]
+   Reading:  [block 5, ~22 words]
+
+... (continue for slides 4-8) ...
+
+SLIDE 9 — CTA
+   Frase-ponte:  [block 16, ~18 words]
+   CTA:          [block 17, ~14 words]
+   Keyword:      [block 18, ~6 words]
+
+📝 LEGENDA — [3-paragraph caption draft]
+
+#hashtag1 #hashtag2 #hashtag3
 ```
 
-**Workflow:**
-1. **Recall** the existing HTML for that slide from your scrollback. You authored it; you have it.
-2. **Apply** the user's instruction to that one slide. Don't rewrite the others.
-3. **Call** the tool. It returns the full updated `mediaUrls` array.
-4. **Confirm** in one line ("Slide 4 atualizado. Os outros 9 estão intactos.").
+The script is shown to the user. Wait for feedback.
 
-### APPEND — add a slide at the end
+---
 
-**Trigger phrases:**
-- "agora faça o slide N+1"
-- "ok, próximo"
-- "vamos para o slide 7"
-- (general iterative authoring after the first RENDER)
+## 7. Stage 5 — Editorial Validation Gate
 
-```ts
-POSTZEE_APPEND_CAROUSEL_SLIDE({
-  mediaGroupId: "<from the first POSTZEE_RENDER_CAROUSEL response>",
-  slide: { html: "<!doctype html>...", width: 1080, height: 1350 }
-})
-```
+**Before offering the script for approval, the agent runs the gate internally.** All checks must pass.
 
-The next `orderInGroup` is computed server-side from the current live-media count. Caps at MAX_SLIDES (15) — refuses if already at the limit.
+### 7.1 The 7 parameters (each must score ≥ 8/10)
 
-### REBUILD — structural change
+See `carousel-editorial-filter.md` §5 for full definitions:
 
-**Trigger phrases:**
-- "insere um slide entre o 4 e o 5"
-- "troca o slide 3 com o 7"
-- "remove o slide 5"
+1. Gramática
+2. Fluidez
+3. AI Slop (banned constructions absent)
+4. Fatos verificados
+5. Estrutura
+6. Densidade
+7. Tom editorial
 
-There's no insert/reorder/delete primitive in v1.
+### 7.2 The 5 final tests
 
-1. Confirm with the user that this requires a full rebuild.
-2. Update the script in your scrollback with the structural change.
-3. Call `POSTZEE_RENDER_CAROUSEL` with the new sequence. The old MediaGroup remains in history (user can soft-delete via gallery if they want).
+See `carousel-quality-manual.md` §8 for full definitions:
 
-### Edge cases
+1. Folha test
+2. Substitution test
+3. Promise test
+4. Article test
+5. Binary test
 
-| Scenario | Response |
+### 7.3 The 9-item visual checklist
+
+See `carousel-design-principles.md` §6.
+
+### 7.4 If anything fails
+
+Surface to the user:
+> "Detectei [N] pontos a ajustar antes de gerar:
+> - Slide [X]: [what failed, in one sentence]
+> - Slide [Y]: [what failed]
+> Quer que eu ajuste agora?"
+
+Only when all checks pass — offer the script for approval.
+
+---
+
+## 8. Stage 6 — Text Approval (hard stop)
+
+**The agent will not call `POSTZEE_RENDER_CAROUSEL` until the user explicitly types one of:**
+
+| Language | Approval phrases |
 |---|---|
-| User wants to change >3 slides | Rebuild is faster than 3+ REPLACE calls. Suggest rebuild. |
-| User attached carousel to a draft post, then wants REPLACE/APPEND | Tool works, but draft still references the previous `mediaUrls`. Tell them to refresh the attachments — or you do it for them by re-issuing `POSTZEE_CREATE_POST`. |
-| User keeps adding slides past 15 | APPEND returns error `Carousel is already at the 15-slide limit`. Politely refuse, explain Instagram allows up to 20 but Postzee caps at 15 for render reliability. Suggest split into a "Part 2" carousel. |
-| First slide was rendered with RENDER, but user now says "ok, faça os outros 9 todos juntos" | Use APPEND **per slide** (9 calls). Do NOT call RENDER again — that creates a second carousel. |
+| PT | aprovado / pode mandar / pode renderizar / fechado / vamos / segue |
+| EN | approved / go / render it / let's go / ship it / good to go |
+| ES | aprobado / puedes ir / dale / adelante |
+| FR | approuvé / vas-y / on lance |
 
-### Why this matters
+If the user gives a *partial* approval ("o slide 4 ainda tá fraco, ajusta") — that's a revision request, not an approval. Iterate the script in place. Don't render.
 
-Every carousel that gets fragmented into multiple MediaGroups is gallery clutter the user has to clean up. The tools are there to keep ONE carousel = ONE MediaGroup, regardless of how many iterations the user wants.
+If the user gives a *non-committal* response ("hmm tá bom") — ask once: "Posso renderizar?" Don't infer approval.
+
+**Why this matters:** RENDER costs credits and creates a MediaGroup that lives in the gallery. A premature render = the user has to clean up + re-do. Slow down here and save effort downstream.
 
 ---
 
-## 1. The single tool
+## 9. Stage 7 — Render + Iterate
+
+### 9.1 Render path A — Atomic (preferred)
+
+User approved the full script → one call:
 
 ```ts
 POSTZEE_RENDER_CAROUSEL({
   slides: [
-    { html: "<!doctype html>...", width: 1080, height: 1350 },
-    { html: "<!doctype html>...", width: 1080, height: 1350 },
-    // ...
+    { html: "<!doctype html>...slide 1 capa...", width: 1080, height: 1350 },
+    { html: "<!doctype html>...slide 2 dark...", width: 1080, height: 1350 },
+    // ... 9 total
   ],
   aspectRatio: "4:5",
-  name: "10 erros que matam um pitch"
+  name: "Por que o tema que você mais domina é o que menos viraliza"
 })
 ```
 
-**Hard limits:**
-- 1-15 slides per call
-- 256-2160 px per dimension
-- 250 KB max HTML per slide
-- 45 s timeout per slide
-- All-or-nothing: any failure rolls back the whole carousel
+Save the returned `mediaGroupId` — you need it for any subsequent iteration call.
 
-**Returned:**
-```json
-{ "success": true, "mediaGroupId": "uuid", "totalSlides": 10,
-  "mediaUrls": ["https://cdn.../slide-0.png", ..., "https://cdn.../slide-9.png"] }
+### 9.2 Render path B — Iterative (slide-by-slide)
+
+User wants to see each slide before moving on:
+
+```ts
+// Slide 1 only
+POSTZEE_RENDER_CAROUSEL({ slides: [slide1], ... })
+  → returns mediaGroupId, save it.
+
+// Slide 2 onwards
+POSTZEE_APPEND_CAROUSEL_SLIDE({ mediaGroupId, slide: slide2 })
+POSTZEE_APPEND_CAROUSEL_SLIDE({ mediaGroupId, slide: slide3 })
+...
 ```
 
-`mediaUrls` is already in display order — feed it directly into `POSTZEE_CREATE_POST`.
+⛔ Never call RENDER more than once for the same carousel.
+
+### 9.3 Iteration tools
+
+| User asks | Tool |
+|---|---|
+| "muda o slide 4" | `POSTZEE_REPLACE_CAROUSEL_SLIDE({ mediaGroupId, orderInGroup: 3, slide })` |
+| "agora faça o slide N+1" | `POSTZEE_APPEND_CAROUSEL_SLIDE({ mediaGroupId, slide })` |
+| "insere um slide entre 4 e 5" | No primitive — full rebuild via `POSTZEE_RENDER_CAROUSEL` |
+| "remove o slide 5" | No primitive — full rebuild |
+| "troca a ordem dos slides" | No primitive — full rebuild |
+
+### 9.4 Failure handling
+
+See SKILL.md §8.5.C — never silently retry, surface raw response, ask user.
 
 ---
 
-## 2. Brief — 4 questions you ALWAYS ask first
+## 10. The design system
 
-Don't generate without these answers. Skip = generic, off-brand carousel.
+### 10.1 CSS variables (always include in every slide)
 
-1. **Topic in one sentence.** Forces clarity. ("10 mistakes new founders make in fundraising.")
-2. **Audience.** Who reads this? B2B SaaS founders? Beauty creators? Determines tone, references, vocabulary.
-3. **Platform.** Instagram (4:5 1080×1350), Stories/Reels (9:16 1080×1920), LinkedIn (1:1 1080×1080), TikTok photo mode (9:16). Different specs, different reading patterns.
-4. **Brand colors + logo.** Always ask — never assume. Acceptable answers:
-   - "Primary `#6C5CE7`, secondary `#E84393`, logo at https://..."
-   - "I have no brand kit — pick something for me." (Then you propose 2-3 palettes and let user choose.)
-
-If user has no logo: skip the logo step. If user has one: see §6 (Logo enhancement).
-
----
-
-## 3. Frameworks (pick one before composing)
-
-| User content | Framework | Sweet spot |
-|---|---|---|
-| Educational / list | Listicle | 7-10 slides |
-| Tutorial | Step-by-step | 5-8 slides |
-| Transformation | Before/After (BAB) | 5-7 slides |
-| Disruptive | Mythbusting | 6-9 slides |
-| Personal narrative | Story arc | 7-10 slides |
-| Buying decision | Comparison | 5-8 slides |
-| Cautionary | Mistakes | 7-12 slides |
-| Quick wins | Hacks/Tips | 7-10 slides |
-| Inspirational | Quote + commentary | 4-6 slides |
-| Authenticity | Behind-the-scenes | 5-8 slides |
-
----
-
-## 4. Anatomy of a high-performing carousel
-
-```
-┌────────────────────────────────────────────────────────────────┐
-│ SLIDE 1 — HOOK (50% of success)                                │
-│ Massive text (60-100pt), bold claim/number/question, high      │
-│ contrast. Reader must understand the value in <1 second.       │
-├────────────────────────────────────────────────────────────────┤
-│ SLIDES 2…N-1 — VALUE                                           │
-│ One idea per slide. Big number/word + supporting line.         │
-│ Same palette/typography/grid throughout.                       │
-├────────────────────────────────────────────────────────────────┤
-│ SLIDE N-1 (optional) — TL;DR / RECAP                           │
-│ List or summary card. Increases save rate.                     │
-├────────────────────────────────────────────────────────────────┤
-│ SLIDE N — CTA                                                  │
-│ Specific action verb + brand handle. "Save this." "Comment X." │
-└────────────────────────────────────────────────────────────────┘
+```css
+:root {
+  --P:        #7C3AED;      /* primary brand color */
+  --PL:       #A78BFA;      /* primary light variant */
+  --PD:       #5B21B6;      /* primary dark variant */
+  --LB:       #FAFAF9;      /* light background */
+  --LR:       #1F2937;      /* light-mode body text */
+  --DB:       #0F172A;      /* dark background */
+  --G:        linear-gradient(135deg, var(--P), #06B6D4);
+  --F-HEAD:   'Inter', sans-serif;
+  --F-BODY:   'Inter', sans-serif;
+}
 ```
 
----
+The agent fills `--P`, `--LB`, `--DB`, `--F-HEAD`, `--F-BODY` based on the briefing answers. The other variables derive.
 
-## 5. Design system — defaults that just work
-
-These are the defaults to use unless the user asks otherwise. Variations welcome — the HTML is yours — but start here.
-
-### 5.1 Canvas
-
-| Aspect ratio | Width × Height | Use for |
-|---|---|---|
-| 4:5  | 1080×1350 | Instagram feed (best engagement zone) |
-| 1:1  | 1080×1080 | LinkedIn, generic |
-| 9:16 | 1080×1920 | Stories, Reels, TikTok photo mode |
-
-### 5.2 Type scale (for 1080×1350)
-
-| Role | Size | Weight | Color (light bg) | Color (dark bg) |
-|---|---|---|---|---|
-| Slide-1 hook | 80-110 px | 900 | `#0F172A` | `#FFFFFF` |
-| Card title | 56-72 px | 800 | `#0F172A` | `#FFFFFF` |
-| Body / explanation | 28-36 px | 500 | `#475569` | `rgba(255,255,255,0.85)` |
-| Caption / label | 18-22 px | 600 | brand-primary | brand-primary |
-| Footer / handle | 16-20 px | 500 | `#94A3B8` | `rgba(255,255,255,0.65)` |
-
-Letter-spacing: `-0.02em` for hooks/titles, `0` for body, `0.04em` uppercase for labels.
-
-### 5.3 Spacing
-
-Outer padding: **80-100px**. Generous whitespace beats decoration.
-
-Vertical rhythm: 24px small, 40px medium, 80px section break.
-
-### 5.4 Fonts (Google Fonts CDN — load only what you use)
-
-**Sans (default):** Inter (300, 500, 700, 800, 900) — neutral, premium.
-**Display alternatives:** Plus Jakarta Sans, Sora, Manrope (modern), Playfair Display (editorial), Bebas Neue (bold display).
-**Serif (warmth/luxury):** Lora, Crimson Text, EB Garamond.
-**Mono (code/dev content):** JetBrains Mono, Fira Code.
-
-**Pairing rule:** one display + one body (or just one). Never 3 fonts in a carousel.
-
-### 5.5 Color palettes (when user has no preference)
-
-| Vibe | Primary | Secondary | Bg | Text |
-|---|---|---|---|---|
-| Modern SaaS | `#6366F1` | `#A855F7` | `#0F172A` | `#FFFFFF` |
-| Soft pastel | `#F472B6` | `#FCD34D` | `#FEF3C7` | `#1F2937` |
-| Premium dark | `#FBBF24` | `#F59E0B` | `#0A0A0A` | `#FFFFFF` |
-| Editorial print | `#1F2937` | `#DC2626` | `#FAFAF9` | `#1F2937` |
-| Bold gradient | `#FF006E` | `#8338EC` | gradient | `#FFFFFF` |
-| Earthy / wellness | `#84CC16` | `#22D3EE` | `#FFFBEB` | `#1F2937` |
-
-Always confirm with user before using.
-
----
-
-## 6. Logo enhancement — circle, ring, drop-shadow
-
-Most user logos are **square PNGs with transparent or unkind backgrounds**. Drop them raw and the carousel looks amateur. Apply this default treatment everywhere a logo appears (corner badge, header, sign-off):
-
-```html
-<div style="
-  width: 96px; height: 96px;
-  border-radius: 50%;
-  overflow: hidden;
-  background: #ffffff;
-  border: 4px solid #ffffff;
-  box-shadow:
-    0 8px 24px rgba(0,0,0,0.18),
-    0 0 0 1px rgba(0,0,0,0.04);
-  display: flex; align-items: center; justify-content: center;
-">
-  <img src="USER_LOGO_URL"
-       alt="Brand logo"
-       crossorigin="anonymous"
-       style="width: 100%; height: 100%; object-fit: cover;">
-</div>
-```
-
-Why each line:
-- **`border-radius: 50%`** — circular crop, like an Instagram profile pic. Hides square edges, instantly looks designed.
-- **`overflow: hidden`** + **`object-fit: cover`** — no white gaps inside the circle, even if the logo isn't square.
-- **`background: #ffffff`** behind the image — when the logo has transparent background, the circle stays a clean white disk on dark slides.
-- **`border: 4px solid #fff`** + **`box-shadow`** — separates the badge from any background, keeps it readable on busy hero images.
-- **`crossorigin="anonymous"`** — required so Puppeteer can load it without CORS errors when the user logo lives on a different CDN.
-
-**Variations** (pick by context):
-- **On dark hero**: keep white background. Strong separation.
-- **On light card**: drop the white border, keep just the shadow. Soft and tactile.
-- **As a corner sign-off**: 64-72px instead of 96. Position bottom-right, 32px from edges.
-- **As big hero brand mark**: 200-260px, no border, light shadow only.
-
-If the user's logo is wordmark-style (long, not square): drop the circle and use the wordmark inline at sensible height (40-56px), letting the wordmark's own shape be the brand.
-
----
-
-## 7. Slide HTML — the spine
-
-Every slide is a complete `<!doctype html>` document. JavaScript is **disabled at render** — anything dynamic must be CSS. Here's the spine:
+### 10.2 The slide skeleton (every slide is built from this)
 
 ```html
 <!doctype html>
-<html>
+<html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700;800;900&display=swap" rel="stylesheet">
   <style>
-    :root {
-      --brand-primary: #6366F1;
-      --brand-secondary: #A855F7;
-      --brand-text: #FFFFFF;
-      --brand-bg: #0F172A;
-    }
+    /* Embedded fonts via @font-face base64 — see §11 */
+    /* CSS variables — see §10.1 */
+    /* Slide-type-specific styles */
+
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { width: 1080px; height: 1350px; overflow: hidden; }
-    body { font-family: 'Inter', sans-serif; color: var(--brand-text); background: var(--brand-bg); }
+    html, body {
+      width: 1080px;
+      height: 1350px;
+      overflow: hidden;
+    }
+    body {
+      font-family: var(--F-BODY);
+      position: relative;
+      /* bg set per slide type */
+    }
+
+    /* Accent bar — top of every slide */
+    .accent-bar {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 7px;
+      background: var(--G);
+      z-index: 10;
+    }
+
+    /* Brand bar — bottom of every slide */
+    .brand-bar {
+      position: absolute;
+      bottom: 36px; left: 0; right: 0;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      opacity: 0.5;
+    }
   </style>
 </head>
 <body>
+  <div class="accent-bar"></div>
   <!-- slide content -->
+  <div class="brand-bar">@USER_HANDLE | YYYY</div>
 </body>
 </html>
 ```
 
-**Tailwind CDN note**: it can work, but Tailwind runs at *runtime via JS* and JS is disabled in the renderer. Use **inline `style`** attributes or a `<style>` block with regular CSS. Do not rely on Tailwind utility classes for production-grade slides.
+### 10.3 Slide types — CSS + HTML
 
----
-
-## 8. Layout patterns — copy & adapt
-
-### 8.1 Hook slide (slide 1)
+#### A. Capa (slide 1)
 
 ```html
-<div style="
-  width:1080px;height:1350px;
-  display:flex;flex-direction:column;justify-content:flex-end;
-  padding:100px;
-  background:linear-gradient(180deg,#0F172A 0%,#312E81 100%);
+<body style="
+  background: linear-gradient(180deg,
+    rgba(0,0,0,0.10) 0%,
+    rgba(0,0,0,0.55) 40%,
+    rgba(0,0,0,0.85) 100%
+  ), url('PHOTO_URL') center/cover, var(--DB);
+  color: #fff;
 ">
-  <div style="font-size:24px;letter-spacing:0.12em;text-transform:uppercase;
-              color:var(--brand-primary);font-weight:700;margin-bottom:32px;">
-    GUIA RÁPIDO · INSTAGRAM 2026
-  </div>
-  <div style="font-size:96px;font-weight:900;line-height:1.05;
-              letter-spacing:-0.025em;color:#fff;">
-    10 erros<br>que matam<br>seu engajamento
-  </div>
-  <div style="font-size:28px;color:rgba(255,255,255,0.7);
-              margin-top:40px;font-weight:500;line-height:1.4;max-width:80%;">
-    O #4 é o mais sutil — e o que mais aparece em contas que estagnam.
-  </div>
-</div>
-```
+  <div class="accent-bar"></div>
 
-### 8.2 Numbered card (slides 2-N)
-
-```html
-<div style="
-  width:1080px;height:1350px;
-  display:flex;flex-direction:column;justify-content:center;
-  padding:120px;
-  background:#FAFAF9;color:#0F172A;
-">
-  <div style="font-size:240px;font-weight:900;line-height:1;
-              color:var(--brand-primary);letter-spacing:-0.04em;">
-    04
-  </div>
-  <div style="font-size:64px;font-weight:800;line-height:1.1;
-              margin-top:24px;letter-spacing:-0.02em;">
-    Postar sem<br>variar formato
-  </div>
-  <div style="font-size:28px;color:#475569;margin-top:32px;
-              line-height:1.5;font-weight:500;max-width:85%;">
-    O algoritmo recompensa diversidade. Alterne carrossel, reel e foto na mesma semana — não escolha uma só.
-  </div>
-</div>
-```
-
-### 8.3 Quote slide
-
-```html
-<div style="
-  width:1080px;height:1350px;
-  display:flex;flex-direction:column;justify-content:center;align-items:center;
-  padding:120px 100px;text-align:center;
-  background:linear-gradient(135deg,#F472B6,#FCD34D);color:#1F2937;
-">
-  <div style="font-family:'Playfair Display',serif;font-size:140px;
-              line-height:0.5;opacity:0.4;margin-bottom:40px;">
-    "
-  </div>
-  <div style="font-family:'Playfair Display',serif;font-size:52px;
-              line-height:1.3;font-weight:600;font-style:italic;max-width:85%;">
-    A consistência derrota o talento quando o talento não é consistente.
-  </div>
-  <div style="font-size:20px;letter-spacing:0.16em;text-transform:uppercase;
-              margin-top:48px;font-weight:700;">
-    @yourbrand
-  </div>
-</div>
-```
-
-### 8.4 CTA slide (last)
-
-```html
-<div style="
-  width:1080px;height:1350px;
-  display:flex;flex-direction:column;justify-content:space-between;
-  padding:100px;
-  background:#0F172A;color:#fff;
-">
-  <div>
-    <div style="font-size:32px;letter-spacing:0.1em;text-transform:uppercase;
-                color:var(--brand-primary);font-weight:700;">
-      Próximo passo
-    </div>
-    <div style="font-size:88px;font-weight:900;line-height:1.05;
-                margin-top:32px;letter-spacing:-0.025em;">
-      Salva este post<br>antes do próximo<br>algoritmo<br>te trair.
-    </div>
-  </div>
-  <div style="display:flex;align-items:center;gap:24px;">
-    <!-- ↓↓ Logo treatment from §6 ↓↓ -->
-    <div style="width:88px;height:88px;border-radius:50%;overflow:hidden;
-                background:#fff;border:4px solid #fff;
-                box-shadow:0 8px 24px rgba(0,0,0,0.3);
-                display:flex;align-items:center;justify-content:center;">
+  <!-- Brand handle top-right -->
+  <div style="
+    position: absolute; top: 56px; right: 56px;
+    display: flex; align-items: center; gap: 16px; z-index: 5;
+  ">
+    <div style="
+      width: 72px; height: 72px; border-radius: 50%; overflow: hidden;
+      background: #fff; border: 3px solid #fff;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.3);
+    ">
       <img src="USER_LOGO_URL" crossorigin="anonymous"
            style="width:100%;height:100%;object-fit:cover;" alt="">
     </div>
-    <div>
-      <div style="font-size:28px;font-weight:800;">@yourbrand</div>
-      <div style="font-size:18px;color:rgba(255,255,255,0.6);
-                  font-weight:500;margin-top:4px;">
-        yourbrand.com
-      </div>
+    <div style="font-size: 22px; font-weight: 700; letter-spacing: 0.02em;">
+      @USER_HANDLE
     </div>
   </div>
-</div>
+
+  <!-- Headline at lower-third -->
+  <div style="
+    position: absolute;
+    bottom: 140px; left: 80px; right: 80px;
+    z-index: 3;
+  ">
+    <div style="
+      font-family: var(--F-HEAD);
+      font-size: 96px;
+      font-weight: 900;
+      line-height: 1.05;
+      letter-spacing: -0.025em;
+      color: #fff;
+    ">
+      [HEADLINE — full, untruncated]
+    </div>
+  </div>
+
+  <div class="brand-bar" style="color: rgba(255,255,255,0.6);">
+    @USER_HANDLE | 2026
+  </div>
+</body>
 ```
 
-### 8.5 Background image + overlay (composed slide)
-
-When you generated a Nano Banana background and want text over it:
+#### B. Dark internal slide
 
 ```html
-<div style="
-  width:1080px;height:1350px;position:relative;overflow:hidden;
-  font-family:'Inter',sans-serif;
-">
-  <img src="https://cdn.../nano-banana-bg.jpg" crossorigin="anonymous"
-       style="position:absolute;inset:0;width:100%;height:100%;
-              object-fit:cover;z-index:0;" alt="">
-  <!-- legibility overlay -->
-  <div style="position:absolute;inset:0;
-              background:linear-gradient(180deg,rgba(0,0,0,0.1) 0%,rgba(0,0,0,0.7) 80%);
-              z-index:1;"></div>
-  <!-- content -->
-  <div style="position:absolute;inset:0;display:flex;flex-direction:column;
-              justify-content:flex-end;padding:100px;color:#fff;z-index:2;">
-    <div style="font-size:80px;font-weight:900;line-height:1.1;
-                letter-spacing:-0.02em;">
-      Onde a história começa.
-    </div>
-    <div style="font-size:24px;color:rgba(255,255,255,0.8);
-                margin-top:24px;font-weight:500;">
-      Coffee Roasters · since 2019
-    </div>
+<body style="background: var(--DB); color: rgba(255,255,255,0.85);">
+  <div class="accent-bar"></div>
+
+  <!-- Tag/label at top of content area -->
+  <div style="
+    position: absolute; top: 100px; left: 100px;
+    display: flex; align-items: center; gap: 12px;
+  ">
+    <span style="
+      font-size: 13px; font-weight: 700;
+      letter-spacing: 0.24em; text-transform: uppercase;
+      color: var(--P);
+    ">CASE</span>
+    <span style="opacity: 0.4;">→</span>
+    <span style="
+      font-size: 13px; font-weight: 600;
+      opacity: 0.7;
+    ">SLIDE 06 / 09</span>
   </div>
-</div>
+
+  <!-- Content lower-third -->
+  <div style="
+    position: absolute;
+    left: 100px; right: 100px;
+    bottom: 140px;
+    display: flex; flex-direction: column; gap: 32px;
+  ">
+    <h2 style="
+      font-family: var(--F-HEAD);
+      font-size: 76px;
+      font-weight: 800;
+      line-height: 1.08;
+      letter-spacing: -0.02em;
+      color: #fff;
+    ">
+      [HEADING — block A from quality-manual table]
+    </h2>
+    <p style="
+      font-size: 38px;
+      font-weight: 500;
+      line-height: 1.45;
+      max-width: 90%;
+    ">
+      [BODY — block B]
+    </p>
+  </div>
+
+  <!-- Progress bar -->
+  <div style="
+    position: absolute; bottom: 80px; left: 100px; right: 100px;
+    height: 3px;
+    background: rgba(255,255,255,0.12);
+    border-radius: 2px;
+    overflow: hidden;
+  ">
+    <div style="
+      width: calc(100% * (6 / 9));
+      height: 100%;
+      background: var(--P);
+    "></div>
+  </div>
+
+  <div class="brand-bar" style="color: rgba(255,255,255,0.5);">
+    @USER_HANDLE | 2026
+  </div>
+</body>
 ```
 
-**Always include `crossorigin="anonymous"`** on `<img>` tags — without it Puppeteer cannot capture the canvas if the image is on a different origin.
+#### C. Light internal slide (with border-left card)
+
+```html
+<body style="background: var(--LB); color: var(--LR);">
+  <div class="accent-bar"></div>
+
+  <div style="
+    position: absolute; top: 100px; left: 100px;
+    display: flex; align-items: center; gap: 12px;
+  ">
+    <span style="
+      font-size: 13px; font-weight: 700;
+      letter-spacing: 0.24em; text-transform: uppercase;
+      color: var(--P);
+    ">DADO</span>
+    <span style="opacity: 0.4;">→</span>
+    <span style="
+      font-size: 13px; font-weight: 600;
+      opacity: 0.7;
+    ">SLIDE 03 / 09</span>
+  </div>
+
+  <div style="
+    position: absolute;
+    left: 100px; right: 100px;
+    bottom: 140px;
+    display: flex; flex-direction: column; gap: 32px;
+  ">
+    <!-- Card with border-left primary -->
+    <div style="
+      border-left: 7px solid var(--P);
+      padding-left: 32px;
+    ">
+      <h2 style="
+        font-family: var(--F-HEAD);
+        font-size: 68px;
+        font-weight: 800;
+        line-height: 1.08;
+        letter-spacing: -0.02em;
+        color: var(--LR);
+      ">
+        [HEADING]
+      </h2>
+    </div>
+    <p style="
+      font-size: 38px;
+      font-weight: 500;
+      line-height: 1.5;
+      color: #475569;
+      max-width: 90%;
+    ">
+      [BODY]
+    </p>
+    <p style="
+      font-size: 18px;
+      font-weight: 600;
+      color: #94A3B8;
+      letter-spacing: 0.04em;
+    ">
+      Fonte: [SOURCE NAME, YEAR]
+    </p>
+  </div>
+
+  <div style="
+    position: absolute; bottom: 80px; left: 100px; right: 100px;
+    height: 3px;
+    background: rgba(0,0,0,0.08);
+    border-radius: 2px;
+    overflow: hidden;
+  ">
+    <div style="
+      width: calc(100% * (3 / 9));
+      height: 100%;
+      background: var(--P);
+    "></div>
+  </div>
+
+  <div class="brand-bar" style="color: rgba(15,23,42,0.5);">
+    @USER_HANDLE | 2026
+  </div>
+</body>
+```
+
+#### D. Big-stat light slide
+
+```html
+<body style="background: var(--LB); color: var(--LR);">
+  <div class="accent-bar"></div>
+
+  <div style="
+    position: absolute; top: 100px; left: 100px;
+    font-size: 13px; font-weight: 700;
+    letter-spacing: 0.24em; text-transform: uppercase;
+    color: var(--P);
+  ">
+    NÚMERO
+  </div>
+
+  <div style="
+    position: absolute;
+    left: 100px; right: 100px;
+    top: 50%; transform: translateY(-50%);
+    text-align: left;
+  ">
+    <div style="
+      font-family: var(--F-HEAD);
+      font-size: 220px;
+      font-weight: 900;
+      line-height: 0.95;
+      letter-spacing: -0.04em;
+      color: var(--P);
+    ">
+      +187%
+    </div>
+    <div style="
+      font-size: 36px;
+      font-weight: 600;
+      line-height: 1.3;
+      margin-top: 24px;
+      max-width: 80%;
+      color: var(--LR);
+    ">
+      [Implication paragraph from block 9]
+    </div>
+  </div>
+
+  <!-- progress bar + brand bar same as type C -->
+</body>
+```
+
+#### E. Gradient slide (slide 8)
+
+```html
+<body style="
+  background: linear-gradient(135deg, var(--P) 0%, #06B6D4 100%);
+  color: #fff;
+">
+  <div class="accent-bar" style="background: rgba(255,255,255,0.5);"></div>
+
+  <div style="
+    position: absolute; top: 100px; left: 100px;
+    font-size: 13px; font-weight: 700;
+    letter-spacing: 0.24em; text-transform: uppercase;
+    color: rgba(255,255,255,0.85);
+  ">
+    DIREÇÃO
+  </div>
+
+  <div style="
+    position: absolute;
+    left: 100px; right: 100px;
+    bottom: 140px;
+    display: flex; flex-direction: column; gap: 36px;
+  ">
+    <h2 style="
+      font-family: var(--F-HEAD);
+      font-size: 78px;
+      font-weight: 800;
+      line-height: 1.08;
+      letter-spacing: -0.02em;
+    ">
+      [Block 14 — future direction]
+    </h2>
+    <p style="
+      font-size: 36px;
+      font-weight: 500;
+      line-height: 1.4;
+      color: rgba(255,255,255,0.9);
+      max-width: 90%;
+    ">
+      [Block 15 — trade-off]
+    </p>
+  </div>
+
+  <!-- progress + brand bar -->
+</body>
+```
+
+#### F. CTA slide (slide 9)
+
+```html
+<body style="background: var(--DB); color: #fff;">
+  <div class="accent-bar"></div>
+
+  <!-- Logo top-left -->
+  <div style="
+    position: absolute; top: 80px; left: 80px;
+    display: flex; align-items: center; gap: 16px;
+  ">
+    <div style="
+      width: 64px; height: 64px; border-radius: 50%; overflow: hidden;
+      background: #fff; border: 3px solid #fff;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    ">
+      <img src="USER_LOGO_URL" crossorigin="anonymous"
+           style="width:100%;height:100%;object-fit:cover;" alt="">
+    </div>
+    <div style="font-size: 22px; font-weight: 700;">
+      @USER_HANDLE
+    </div>
+  </div>
+
+  <!-- Frase-ponte (block 16) at upper-mid -->
+  <div style="
+    position: absolute;
+    top: 280px;
+    left: 80px; right: 80px;
+  ">
+    <p class="cta-bridge" style="
+      font-size: 38px;
+      font-weight: 500;
+      line-height: 1.4;
+      color: rgba(255,255,255,0.85);
+      max-width: 92%;
+    ">
+      [Block 16 — frase-ponte]
+    </p>
+  </div>
+
+  <!-- CTA action (block 17) -->
+  <div style="
+    position: absolute;
+    left: 80px; right: 80px;
+    bottom: 220px;
+    display: flex; flex-direction: column; gap: 28px;
+  ">
+    <h2 class="cta-action" style="
+      font-family: var(--F-HEAD);
+      font-size: 64px;
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+    ">
+      [Block 17 — verb-first CTA]
+    </h2>
+
+    <!-- Keyword box (block 18) -->
+    <div class="cta-kbox" style="
+      display: inline-block;
+      align-self: flex-start;
+      background: var(--P);
+      color: #fff;
+      padding: 24px 40px;
+      border-radius: 12px;
+      font-size: 36px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+    ">
+      [BLOCK 18 — KEYWORD]
+    </div>
+  </div>
+
+  <div class="brand-bar" style="color: rgba(255,255,255,0.5);">
+    @USER_HANDLE | 2026
+  </div>
+</body>
+```
 
 ---
 
-## 9. Order — never lost
+## 11. Font embedding rule (critical for Puppeteer)
 
-When you call `POSTZEE_RENDER_CAROUSEL`, the array index = `orderInGroup` for each rendered slide. Postzee assigns `orderInGroup: 0…N-1` BEFORE any worker starts; your slides land in the gallery in submission order, not finish order.
+**Never use `<link rel="stylesheet" href="https://fonts.googleapis.com/...">`** in slide HTML. The headless browser may render the slide before the font has loaded — leading to fallback typography in the PNG.
 
-What this means for you:
-- **Always submit slides in display order.** Slide 1 → first array entry. Slide N → last.
-- **Never** try to re-order after the fact. There's no API for it.
-- The returned `mediaUrls` is already ordered. Pass it through unchanged to `POSTZEE_CREATE_POST`.
+Instead, **embed fonts as base64 `@font-face`** inside the `<style>` block:
+
+```html
+<style>
+@font-face {
+  font-family: 'Inter';
+  font-weight: 700;
+  font-style: normal;
+  src: url(data:font/woff2;base64,d09GMgABAA...) format('woff2');
+  font-display: block;
+}
+@font-face {
+  font-family: 'Inter';
+  font-weight: 800;
+  ...
+}
+</style>
+```
+
+### 11.1 Pre-approved font set
+
+To keep HTML size under 250KB after embedding, restrict to these fonts (each weight is ~30-50KB base64):
+
+| Style | Display | Body |
+|---|---|---|
+| Clássico | Playfair Display 700/800/900 | Inter 500/700 |
+| Moderno | Bricolage Grotesque 700/800 | Inter 500/700 |
+| Minimalista | Inter 700/800/900 | Inter 500 |
+| Bold | Anton 700 | Inter 500/700 |
+
+Maximum weights per slide: **5**. Beyond that, embedded payload pushes near the 250KB limit.
+
+### 11.2 If fonts fail to embed
+
+If the agent doesn't have access to base64 font payloads (and can't generate them), fall back to a system-stack fallback: `font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;`. The slide will still render — it just loses brand fidelity. Surface this to the user: "I rendered with system fonts because I couldn't embed [Font]. If you have the file, I can embed it for the next render."
 
 ---
 
-## 10. Quality checklist (run before posting)
+## 12. Control commands
 
-- [ ] Slide 1 hook visible without zoom (≥ 60pt)
-- [ ] All slides share the same palette + typography
-- [ ] Numbers/labels consistent (slide 4 always says "04", not "4" then "Slide 4")
-- [ ] CTA slide has a verb-first command + brand handle
-- [ ] Aspect ratio matches platform spec (`POSTZEE_GET_CONTEXT.platformSpecs`)
-- [ ] Logo, when present, has been visually upgraded (not raw)
-- [ ] Caption hook in first 125 chars (IG) or 3 lines (LinkedIn)
-- [ ] No `<script>` tags (would be ignored anyway, but signals you understand)
-- [ ] No external HTTP fetches that could hit private/internal hosts (Postzee blocks them, but cleaner HTML = faster render)
+The user can issue these at any stage. Map their phrases to actions.
 
----
+### 12.1 Briefing stage
 
-## 11. Common mistakes — avoid
-
-| Mistake | Fix |
+| User phrase | Action |
 |---|---|
-| Tiny text on slide 1 | Bump to 80-110px. Reader is scrolling — they need 1 second of clarity |
-| Different font per slide | Pick one display + one body across all slides |
-| Raw square logo on every slide | Apply §6 treatment |
-| Generating slides via `POSTZEE_GENERATE_IMAGE` because "the model has good text rendering" | No. AI image models still butcher text under load. Use `POSTZEE_RENDER_CAROUSEL` |
-| Calling `POSTZEE_RENDER_CAROUSEL` once per slide and trying to assemble manually | The point of the tool is one call = one MediaGroup. Submit all slides at once |
-| `<script>` inside the HTML | Inert. Use CSS instead |
-| External URL pointing to a private/internal host | Blocked by Postzee SSRF guard. Use `POSTZEE_GENERATE_IMAGE` for backgrounds, then reference the returned R2 URL |
+| `pula o briefing, usa o que sabe` | Refuse politely. At minimum need brand + handle, niche, CTA. |
+| `usa minha cor padrão` | If the user has past carousels in the session, reuse. Otherwise ask. |
+
+### 12.2 Headline stage
+
+| User phrase | Action |
+|---|---|
+| `refazer headlines` | Generate fresh batch of 10 |
+| `ajusta a [N]` | Rewrite only variation N, keep other 9 |
+| `mistura a [N] com a [M]` | Synthesize N's hook + M's payoff (or strongest blend) |
+| `a [N] mais provocativa` | Stronger tension lever, same format slot |
+| `a [N] com ângulo brasileiro` | Add regional anchor (lift +155%) |
+| `a [N] mais curta` | Trim within format limits |
+| `usa a [N] na capa` | Lock that variation as the headline |
+
+### 12.3 Script stage
+
+| User phrase | Action |
+|---|---|
+| `ajusta o slide [N]` | Revise slide N's blocks, keep others |
+| `os títulos internos estão genéricos` | Re-run quality-manual §10 across all slide titles |
+| `troca a tabela do slide [N] por [data]` | Replace block 8's stat with provided data |
+| `mais denso no slide [N]` | Push that block toward upper word-count tolerance |
+| `mais leve no slide [N]` | Push toward lower word-count tolerance |
+
+### 12.4 Approval / render stage
+
+| User phrase | Action |
+|---|---|
+| `aprovado` | Advance to render |
+| `pode mandar` / `vamos` | Same |
+| `o slide [N] ainda tá fraco` | Revision request, NOT approval — iterate slide N |
+| `gera só o slide 1 pra ver` | Iterative path B (RENDER with [slide1] only) |
+| `próximo` after slide 1 was rendered | APPEND slide 2 |
+
+### 12.5 Post-render iteration
+
+| User phrase | Action |
+|---|---|
+| `troca o slide [N]` | `POSTZEE_REPLACE_CAROUSEL_SLIDE` |
+| `troca a imagem da capa` | REPLACE slide 1 with new background image |
+| `adiciona um slide` | `POSTZEE_APPEND_CAROUSEL_SLIDE` |
+| `inverte a ordem` / `move o slide 4 pro 7` | No primitive — confirm and full rebuild |
+| `reiniciar` / `começa de novo` | Clear session script, re-do briefing |
+| `exporta` / `salva` | The slides are already in the user's gallery — point them to the dashboard |
 
 ---
 
-## 12. Captions
+## 13. The invisible scaffolding rule
 
-The carousel image is 60-70% of conversion. The caption is the rest.
+The user never sees:
 
-- **Instagram**: hook in first 125 chars (the visible part before "...mais"). Use BAB or PAS framework. End with a save CTA.
-- **LinkedIn**: long form welcome. AIDA structure, 3-line paragraphs, generous line breaks.
-- **TikTok photo mode**: short, punchy, complement the image text — never duplicate.
+- The triagem analysis (Layer 1-4)
+- The 7-parameter scoring
+- The 5 final tests
+- The visual checklist
+- "I generated using the Two-Colon formula"
+- "I optimized for the +155% lift pattern"
+- "I verified that the dark/light rhythm follows the canonical pattern"
 
-See `reference/captions-frameworks.md` for templates.
+The work is invisible. The user sees:
+
+- The 10 numbered headlines
+- The script (or its output: the rendered slides)
+- The caption + hashtags
+- Surgical iteration responses
+
+If the user asks why something was chosen — *then* explain, briefly, in their language. Never volunteer.
 
 ---
 
-## 13. Sample full call
+## 14. The 4 narrative arcs — quick reference
+
+Full block-by-block adaptation is in `carousel-quality-manual.md` §4.
+
+| Arc | When to use | Cover hook angle |
+|---|---|---|
+| **Tendência Interpretada** | News-cycle / cultural shift / fresh data point | Investigation pattern, regional anchor |
+| **Tese Contraintuitiva** | Challenging consensus / breaking a default belief | Contrarian declaration, Brand-reveal |
+| **Case / Benchmark** | Specific success / failure with data | Named entity + counterintuitive result |
+| **Previsão / Futuro** | Forward-looking projection (12-36 months) | Future-tense headline, trend convergence |
+
+Pick one in stage 1 (briefing). Don't switch mid-script — if the user wants a different arc, restart from stage 2 (triagem).
+
+---
+
+## 15. The frase-ponte rule (CTA slide block 16)
+
+**Mandatory.** The CTA slide cannot land cold. Block 16 bridges the carousel's content to the action being requested.
+
+Examples:
+
+| Context | Example frase-ponte |
+|---|---|
+| Carousel about creator economy | "A próxima virada do mercado vai ser invisível pra quem não está prestando atenção." |
+| Tese contraintuitiva on productivity | "Quem ainda mede produtividade em horas vai assistir o jogo terminar de fora." |
+| Case-study carousel | "A diferença entre quem replica e quem só admira é uma decisão por semana." |
+
+If you can't write a frase-ponte that connects the carousel's thesis to the CTA — the carousel doesn't have a thesis yet. Re-do stage 2 (triagem).
+
+---
+
+## 16. The competitor-analysis playbook
+
+If the user pastes a competitor's post or article in the brief, expand stage 2 with strategic positioning:
+
+```
+📰 What the reference does well
+   - <one specific strength>
+   - <another>
+
+🕳 The gap
+   <The single sentence defining where they fall short>
+
+🎯 Our position
+   <How this carousel positions differently — never "we also do X",
+    always "the next move they didn't make">
+
+🔥 The angle for the carousel
+   <One sentence the carousel will earn over 9 slides>
+```
+
+Then run stage 3 with the angle locked.
+
+---
+
+## 17. The competitor-naming rule
+
+Naming a competitor explicitly in the carousel is allowed only if:
+1. The user has the data to back the claim against them
+2. There's no defamation risk
+3. The naming is genuinely instructive, not merely combative
+
+When in doubt, refer obliquely ("a maior fintech brasileira") rather than naming. Editorial quality survives without naming; the audience often respects restraint.
+
+---
+
+## 18. Image distribution — when the user provides photos
+
+| Photos provided | Where they go |
+|---|---|
+| 0 | Typography-only carousel. Type carries identity. |
+| 1 | Cover only (full-bleed photo + gradient + headline) |
+| 2 | Cover + slide 6 (case slide, full-bleed dark) |
+| 3 | Cover + slide 4 (friction, dark full-bleed) + slide 6 (case, dark full-bleed) |
+| 4-5 | Cover + dark slides + one .img-box on a light slide |
+| 6+ | Distribute one per non-CTA, non-cover slide |
+
+If a photo doesn't fit the slide context — drop it. Forced photo placement looks worse than typographic clarity.
+
+---
+
+## 19. Quality checklist before publishing
+
+- [ ] Stage 5 (editorial validation gate) passed
+- [ ] Stage 6 (text approval) explicitly given by user
+- [ ] Slide 1 headline visible at min 88px, fits in 5 lines
+- [ ] Same palette + typography across all 9 slides
+- [ ] Tags/labels present and consistent on internal slides
+- [ ] Dark/light rhythm matches canonical pattern (D-D-L-D-L-D-L-G-D)
+- [ ] Brand bar identical on every slide
+- [ ] Accent bar present on every slide (7px gradient top)
+- [ ] Progress bar shows correct N/9 on internal slides
+- [ ] CTA slide contains: frase-ponte (block 16) + verb-first action (17) + keyword box (18)
+- [ ] Caption draft has hook in first 125 chars (IG) or first 3 lines (LinkedIn)
+- [ ] Hashtags 3-5, niche-relevant, not spam
+- [ ] Fonts embedded base64 (not `<link>` to Google Fonts)
+- [ ] mediaUrls passed to POSTZEE_CREATE_POST in original order
+
+---
+
+## 20. What NOT to do
+
+- ❌ Skip the briefing — generic carousel is the result
+- ❌ Skip the triagem — flat carousel
+- ❌ Generate fewer than 10 headlines (or more) — discipline break
+- ❌ Mix headline formats inside a single number slot (variation 1-5 must be IC; 6-10 must be NM)
+- ❌ Use a single-colon Investigative Cultural — must be 0 or 2 colons
+- ❌ Generate a Magnetic Narrative with 2 or 4 sentences — must be exactly 3
+- ❌ Use the "Powered by Postzee" / any platform attribution in the brand bar — only `@handle | YYYY`
+- ❌ Use any banned construction from `carousel-editorial-filter.md` §2
+- ❌ Skip the editorial validation gate — text quality is the differentiator
+- ❌ Skip the frase-ponte (block 16) on slide 9 — CTA reads cold
+- ❌ Render before stage 6 (explicit approval) — wastes credits + clutters gallery
+- ❌ Re-render to "fix" — use REPLACE per slide
+- ❌ Use `<link>` to Google Fonts in slide HTML — fonts may not load in time → use base64 @font-face
+- ❌ Place body text centered on internal slides — only cover and CTA verb are centered
+- ❌ Apply accent color to more than 3 words per slide
+- ❌ Show the user the triagem, the 7-parameter scoring, or the visual checklist — invisible scaffolding rule
+
+---
+
+## 21. Sample full RENDER call
 
 ```ts
 const slides = [
-  // Slide 1: hook
   {
-    width: 1080, height: 1350,
-    html: `<!doctype html><html><head>...</head>
-      <body><div style="...hook layout...">10 erros...</div></body></html>`,
+    width: 1080,
+    height: 1350,
+    html: `<!doctype html>...slide 1 capa with full-bleed photo + gradient + headline at lower-third...`,
   },
-  // Slide 2: card #1
   {
-    width: 1080, height: 1350,
-    html: `<!doctype html>...numbered card layout...`,
+    width: 1080,
+    height: 1350,
+    html: `<!doctype html>...slide 2 dark with setup + tension blocks at lower-third...`,
   },
-  // ... slides 3-9 ...
-  // Slide 10: CTA
-  {
-    width: 1080, height: 1350,
-    html: `<!doctype html>...cta layout with logo treatment...`,
-  },
+  // ... 9 total
 ];
 
 const result = await POSTZEE_RENDER_CAROUSEL({
   slides,
   aspectRatio: "4:5",
-  name: "10 erros que matam o engajamento — IG 2026",
+  name: "Por que o tema que você mais domina é o que menos viraliza",
 });
 
-if (!result.success) {
-  // Surface the error to the user, suggest retry / simplification
+if (!result.success || result.totalSlides !== 9) {
+  // Surface raw response to user, ask, do not retry silently
   return;
 }
 
+// Save mediaGroupId for any subsequent iteration
+const mediaGroupId = result.mediaGroupId;
+
+// Then publish:
 await POSTZEE_CREATE_POST({
   type: "schedule",
-  date: "2026-05-08T14:00:00Z",
+  date: "2026-05-12T13:00:00Z",
   channelId: "<from POSTZEE_LIST_CHANNELS>",
-  text: "<caption with hook in first 125 chars>",
-  mediaUrls: result.mediaUrls, // already in order
+  text: "[caption with hook in first 125 chars + 3-5 hashtags]",
+  mediaUrls: result.mediaUrls,
 });
 ```
+
+---
+
+## 22. The bar
+
+Every carousel that ships from this system should be **indistinguishable from** what a top human editorial team would publish — not "in the style of", but "actually equivalent". If a slide reads as AI-generated, the system failed. If a headline reads as templated, the system failed. If the visual rhythm feels random, the system failed.
+
+The discipline is the difference. Run all 7 stages. Don't skip the gate. Wait for explicit approval. Use REPLACE for fixes, not RENDER. Embed fonts. Show only the result, never the scaffolding.
+
+That's the bar. Ship at the bar.
