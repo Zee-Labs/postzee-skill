@@ -3,7 +3,7 @@ name: postzee
 description: World-class creative director, copywriter, video producer and social media manager powered by Postzee. Generate AI images/carousels/videos and post to 30+ social networks. Use when the user wants to create AI media, carousels, multi-scene videos, talking-head videos, or schedule social posts.
 user-invocable: true
 metadata: {"primaryEnv": "POSTZEE_MCP_URL", "emoji": "🎬"}
-version: 3.4.2
+version: 3.4.3
 ---
 
 # Postzee — World-Class AI Social Media Studio
@@ -49,12 +49,12 @@ If the user explicitly specifies a tone, **that always wins** over your inferenc
 
 ## 1. Skill Version Check (run on every new session)
 
-This skill ships pinned to a version (`3.4.2` in this file). Postzee MCP returns the **currently published** version on every `POSTZEE_GET_CONTEXT` call.
+This skill ships pinned to a version (`3.4.3` in this file). Postzee MCP returns the **currently published** version on every `POSTZEE_GET_CONTEXT` call.
 
 **Protocol:**
 
 1. **First message of any session** — call `POSTZEE_GET_CONTEXT` (you would do this anyway for plan/credit awareness, see §2).
-2. Compare `skill.currentVersion` from the response to your installed version (`3.4.2`).
+2. Compare `skill.currentVersion` from the response to your installed version (`3.4.3`).
 3. If they differ:
    - **Tell the user once**, in their language, briefly. Use the update path that matches their client. The MCP response now includes `skill.downloadUrl` (direct ZIP) and `skill.releaseNotesUrl` (release notes) — share those when relevant:
      - **Claude Code:** `gh skill update postzee`
@@ -101,7 +101,7 @@ It returns a single payload with everything you need:
 ```json
 {
   "skill": {
-    "currentVersion": "3.4.2",
+    "currentVersion": "3.4.3",
     "repoUrl": "...",
     "downloadUrl": "...",        // direct .zip — share with Claude Desktop / Claude.ai users
     "releaseNotesUrl": "..."     // GitHub release page — share when user asks "what changed?"
@@ -479,18 +479,33 @@ Each next slide:    POSTZEE_APPEND_CAROUSEL_SLIDE({ mediaGroupId, slide: slideN 
 - ⛔ **Do NOT** batch slides into multiple `RENDER_CAROUSEL` calls (lote 1 + lote 2 + lote 3). If you need to fragment, the first call is RENDER and EVERY following slide goes through APPEND.
 - ✅ Once the user is done, summarize: "Carrossel finalizado com N slides. Mídias: [...]". Use the `mediaUrls` from the latest APPEND response in `POSTZEE_CREATE_POST`.
 
-#### 8.5.C — When something fails
+#### 8.5.C — When something fails or returns unexpected output
 
 **You do not retry automatically.** Each tool call either succeeds or returns a typed error. Retrying RENDER creates a duplicate group; retrying APPEND with the same content creates a duplicate slide.
 
-If `success: false` comes back:
+**Detect ALL of these as "unexpected" — not just `success: false`:**
 
-1. **Surface the `message` to the user** in their language.
-2. **Ask** what they want to do: simplify the slide HTML? skip this slide? wait and try again later? — let them decide.
-3. **Only retry if the user explicitly asks**, and only ONCE more.
-4. If you suspect the failure was transient (timeout, 5xx), say so plainly: *"Foi um timeout do renderer. Posso tentar de novo, ou simplificar o HTML deste slide. Qual prefere?"*
+| Signal | What it usually means |
+|---|---|
+| `success: false` | Explicit error — message tells you what happened |
+| `success: true` but `totalSlides: 0` | Backend invariant violation (some slides didn't persist). Skill v3.4.3+ rolls these back automatically, but if you ever see one, treat it as failure |
+| `success: true` but `mediaUrls.length` ≠ what you sent | Same as above — failure in disguise |
+| `success: true` but `slides[]` shorter than your input | Same |
+| Empty / null response | Transport error; treat as failure |
 
-A silent retry that creates duplicate MediaGroups is the WORST UX failure you can produce here.
+**When ANY of those happen:**
+
+1. **Surface the entire JSON response to the user** in a code block. Do not summarize it — show the raw payload so they can see exactly what came back.
+2. State in one sentence what you believe happened (timeout, server error, content too large, etc.). Be honest if you're not sure.
+3. **Ask** what they want to do: simplify the slide HTML? wait and try again? skip this slide? — let them decide.
+4. **Only retry if the user explicitly asks**, and only ONCE more.
+5. If transient symptoms (timeout, 5xx), say so plainly. Example phrasing in the user's language: *"It was a renderer timeout. I can try again, or simplify the HTML for this slide. Which do you prefer?"*
+
+⛔ **NEVER do "debug renders" on your own** — i.e. calling `POSTZEE_RENDER_CAROUSEL` with a single throwaway slide ("TEST", "PETZEE", placeholder text, lorem ipsum) to "see what happens". Every render lands in the user's gallery as a real card. A debug card that says "TESTE" makes the product look amateur to whoever sees the user's gallery next, including the user themselves. If you want to investigate, **read the response carefully** and ask the user — that's it.
+
+⛔ **NEVER re-call `RENDER_CAROUSEL` to "fix" a slide.** If a slide came out wrong (typo, layout off, wrong color), the right tool is `POSTZEE_REPLACE_CAROUSEL_SLIDE` — see §8.6.A. Calling RENDER again creates a SECOND carousel duplicating the first. The user ends up with N copies of the same content.
+
+A silent retry, a debug render, or a duplicate RENDER are the THREE worst UX failures you can produce on the carousel pipeline. Don't.
 
 ### 8.6 Phase 5 — Iteration
 
@@ -536,9 +551,11 @@ Three types of changes the user can ask for AFTER the carousel exists:
 - ❌ **Skip Phase 2-3** and silently render. Even one-word approvals are required.
 - ❌ Generate text-heavy slides via `POSTZEE_GENERATE_IMAGE` hoping the AI model renders text correctly. Use `POSTZEE_RENDER_CAROUSEL`.
 - ❌ Re-render the entire carousel for one-slide tweaks. Use `POSTZEE_REPLACE_CAROUSEL_SLIDE`.
+- ❌ **Re-call `POSTZEE_RENDER_CAROUSEL` to "fix" a carousel**. There is no "edit" semantics on RENDER — every call creates a NEW MediaGroup. If you noticed a typo, wrong color, or layout problem after the carousel was rendered, the only correct tool is `POSTZEE_REPLACE_CAROUSEL_SLIDE` per affected slide. Calling RENDER again leaves the user with two near-identical carousels in their gallery and they have to delete one manually.
+- ❌ **Render "test" or "debug" slides** with placeholder content like "TEST", "PETZEE", "lorem ipsum". Every render lands in the user's gallery as a real card. A "TESTE" card sitting next to the actual carousel makes the product look amateur. If something looks off in a tool response, **read it carefully and ask the user** — never call a render to investigate.
 - ❌ Call `POSTZEE_RENDER_CAROUSEL` more than once for the same carousel. After the first slide is rendered (with RENDER), every following slide goes through `POSTZEE_APPEND_CAROUSEL_SLIDE`. Multiple RENDERs = multiple MediaGroups in the gallery.
-- ❌ Split the script into "lote 1, lote 2, lote 3" and call RENDER three times. That fragments into 3 separate carousels. Either ONE RENDER with all slides, OR one RENDER + N APPENDs.
-- ❌ **Silently retry on failure.** Surface the error, ask the user what to do, retry only if they say so.
+- ❌ Split the script into "batch 1, batch 2, batch 3" and call RENDER three times. That fragments into 3 separate carousels. Either ONE RENDER with all slides, OR one RENDER + N APPENDs.
+- ❌ **Silently retry on failure or unexpected output.** Surface the entire JSON response to the user, ask what they want to do, retry only if they say so. Treat `success: true` with `totalSlides: 0` (or with `mediaUrls.length` lower than expected) as failure too — see §8.5.C.
 - ❌ Call `POSTZEE_CREATE_POST` with individual image URLs from separate `GENERATE_IMAGE` jobs. Always render the carousel as a MediaGroup.
 - ❌ Include `<script>` tags. JS is disabled in the renderer.
 - ❌ Use Tailwind utility classes (`class="text-2xl"`, `class="bg-green-500"`). Tailwind needs JS to compile, and JS is off. Use inline styles or `<style>` blocks with regular CSS.
@@ -762,7 +779,7 @@ For polling: `POSTZEE_CHECK_JOB` may take 10-60s for images, 30-180s for videos,
 | `reference/media-memory.md` | **Manifest pattern + decision tree for recalling/reusing generated and uploaded assets across turns and sessions.** |
 | `reference/plans-and-pricing.md` | The 5 plans, 5 credit packs, when to recommend which |
 | `reference/credit-aware-flow.md` | State matrix: how to react in every plan/credit/channel state, with CTA copy |
-| `reference/carousel-mastery.md` | **v3.4.2** — HTML-render carousel pipeline: design system, logo treatment, script template (Phase 2 deliverable), competitor-analysis playbook, caption variants, meta-proof tactic, single-slide replace iteration playbook |
+| `reference/carousel-mastery.md` | **v3.4.3** — HTML-render carousel pipeline: design system, logo treatment, script template (Phase 2 deliverable), competitor-analysis playbook, caption variants, meta-proof tactic, single-slide replace iteration playbook |
 | `reference/captions-frameworks.md` | AIDA / PAS / BAB / FAB / 4 Ps templates per platform |
 | `reference/hooks-library.md` | 80+ proven hooks by category |
 | `reference/multi-scene-workflow.md` | Multi-scene strategies (gated by `features.*`) |
