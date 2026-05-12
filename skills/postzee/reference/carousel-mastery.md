@@ -35,12 +35,37 @@ The 3 carousel tools (see SKILL.md §8.1):
 - `POSTZEE_APPEND_CAROUSEL_SLIDE` — append one slide to existing MediaGroup
 - `POSTZEE_REPLACE_CAROUSEL_SLIDE` — surgical replacement of one slide
 
-**Hard limits:**
+**Hard limits (render pipeline):**
 - 1-15 slides per carousel total
 - 256-2160 px per dimension
 - 250 KB max HTML per slide
 - 45s render timeout per slide
 - All-or-nothing: any slide failure rolls back the whole RENDER call
+
+**Platform limits (where the carousel will be published):**
+
+Postzee renders up to 15 slides, but each social network has its own ceiling. Always pick a slide count that fits **all** target platforms — or split the publication.
+
+| Network | Min | Max | Notes |
+|---|---|---|---|
+| Instagram (all variants) | 2 | **10** | Hardest constraint — design around this |
+| Facebook Page | 2 | 10 | Same as IG |
+| LinkedIn (Personal + Page) | 2 | 20 | More room for long-form |
+| TikTok | 2 | 35 | Photo carousel mode |
+| Threads | 2 | 20 | — |
+| X (Twitter) | 1 | **4** | Multi-media tweet — not a true carousel UX |
+| Pinterest | 2 | 5 | Carousel pin |
+| Bluesky / Mastodon | 1 | 4 | Multi-attachment post |
+| Reddit | 2 | 20 | Gallery post |
+| Telegram / VK | 2 | 10 | Media group |
+| Discord | 1 | 10 | Attachments per message |
+| Warpcast | 1 | 2 | Frame embeds |
+
+**Rules:**
+- If the user picks Instagram + LinkedIn → cap at **10** (the IG limit). Don't propose 12 just because LinkedIn allows it.
+- If the user wants 13 slides on LinkedIn only → 13 is fine.
+- If the user wants 13 slides on Instagram → push back: *"Instagram supports max 10 slides per carousel. Want me to merge two slides, or shall I render 13 and publish to LinkedIn only?"*
+- Postzee enforces these limits server-side and will reject the post **before** calling the social API, with a translated error message — but catching it at brief time saves the user a failed publish.
 
 ---
 
@@ -93,7 +118,7 @@ Before the agent does anything else — **including any analysis or headline dra
 | 4 | **Visual style** — Clássico / Moderno / Minimalista / Bold / Outro+descrição | Drives font pairing and accent treatment |
 | 5 | **Carousel type** — Tendência Interpretada / Tese Contraintuitiva / Case-Benchmark / Previsão-Futuro | Drives the narrative arc (`carousel-quality-manual.md` §4) |
 | 6 | **CTA pattern** — comment-keyword, link, offer | Drives slide 9 |
-| 7 | **Slide count + image count** — `9 slides, 3 com imagem` | Drives layout adaptation (`carousel-quality-manual.md` §6) |
+| 7 | **Slide count + image count** — `9 slides, 3 com imagem` | Drives layout adaptation (`carousel-quality-manual.md` §6). **Must fit the destination platform** (see §1 Platform limits) — if the user says "12 slides" but is targeting Instagram, cap at 10 and explain why. |
 
 The user can answer all 7 in a single line:
 ```
@@ -302,13 +327,15 @@ User wants to see each slide before moving on:
 POSTZEE_RENDER_CAROUSEL({ slides: [slide1], ... })
   → returns mediaGroupId, save it.
 
-// Slide 2 onwards
-POSTZEE_APPEND_CAROUSEL_SLIDE({ mediaGroupId, slide: slide2 })
-POSTZEE_APPEND_CAROUSEL_SLIDE({ mediaGroupId, slide: slide3 })
+// Slide 2 onwards — ONE AT A TIME, always awaited.
+await POSTZEE_APPEND_CAROUSEL_SLIDE({ mediaGroupId, slide: slide2 })
+await POSTZEE_APPEND_CAROUSEL_SLIDE({ mediaGroupId, slide: slide3 })
 ...
 ```
 
-⛔ Never call RENDER more than once for the same carousel.
+⛔ **Never parallelise APPEND on the same `mediaGroupId`.** Two concurrent appends race on `MAX(orderInGroup) + 1`; the loser's render is discarded server-side and surfaces as an invariant-violation error to the agent — which then panics and retries, compounding the problem. Always await the previous append before issuing the next. Mutations on different groups parallelise fine.
+
+⛔ Never call RENDER more than once for the same carousel. Postzee deduplicates identical RENDER payloads via a 1-hour idempotency cache, but the right answer is: don't re-issue RENDER at all — use REPLACE / APPEND for changes. See SKILL.md §8.5.D.
 
 ### 9.3 Iteration tools
 

@@ -347,6 +347,9 @@ Postzee Skill v3.5 ships a complete **editorial methodology** that produces caro
 │   Brand+handle, niche, color (hex), visual style (Clássico/       │
 │   Moderno/Minimalista/Bold/Outro), carousel type (4 narrative     │
 │   arcs), CTA, slide+image counts. Accept all 7 in a single line.  │
+│   ⚠️ slide count MUST fit destination platform: Instagram/        │
+│   Facebook max 10; X max 4; Pinterest max 5; Bluesky/Mastodon     │
+│   max 4. See carousel-mastery.md §1 Platform limits.              │
 ├───────────────────────────────────────────────────────────────────┤
 │ STAGE 2 — TRIAGEM (4-layer analysis, internal — never shown)      │
 │   Layer 1 — Transformação (what changes in reader's head)         │
@@ -569,6 +572,52 @@ Each next slide:    POSTZEE_APPEND_CAROUSEL_SLIDE({ mediaGroupId, slide: slideN 
 ⛔ **NEVER re-call `RENDER_CAROUSEL` to "fix" a slide.** If a slide came out wrong (typo, layout off, wrong color), the right tool is `POSTZEE_REPLACE_CAROUSEL_SLIDE` — see §8.6 (option A). Calling RENDER again creates a SECOND carousel duplicating the first. The user ends up with N copies of the same content.
 
 A silent retry, a debug render, or a duplicate RENDER are the THREE worst UX failures you can produce on the carousel pipeline. Don't.
+
+#### 8.5.D — REPLACE / APPEND specific failure playbook
+
+REPLACE and APPEND have different failure modes than RENDER and need their own playbook. Treat this section as load-bearing — production audit (2026-05) confirmed real users hitting both classes of failure.
+
+**Hard rule for APPEND_CAROUSEL_SLIDE — sequential only:**
+
+⛔ NEVER issue more than one `POSTZEE_APPEND_CAROUSEL_SLIDE` at a time for the same `mediaGroupId`. Always `await` the previous append before issuing the next.
+
+```
+// ❌ NEVER do this:
+await Promise.all([
+  POSTZEE_APPEND_CAROUSEL_SLIDE({ mediaGroupId, slide: slide2 }),
+  POSTZEE_APPEND_CAROUSEL_SLIDE({ mediaGroupId, slide: slide3 }),
+  POSTZEE_APPEND_CAROUSEL_SLIDE({ mediaGroupId, slide: slide4 }),
+]);
+
+// ✅ Always sequential:
+for (const slide of remainingSlides) {
+  await POSTZEE_APPEND_CAROUSEL_SLIDE({ mediaGroupId, slide });
+}
+```
+
+Why: APPEND computes `nextOrder = MAX(orderInGroup) + 1` against the live group. Two concurrent appends both read the same `MAX`, both target the same `nextOrder`, and the loser's render is discarded by the de-dup. Postzee now serialises this server-side with a per-group Redis lock — concurrent calls return `Carousel busy, retry` instead of corrupting state — but the right answer is: **don't issue concurrent appends in the first place**.
+
+Mutations on **different** `mediaGroupId`s parallelise normally. The rule is only "one in-flight per group".
+
+**When REPLACE_CAROUSEL_SLIDE fails:**
+
+1. **Read the error.** Common shapes:
+   - `Carousel busy with another concurrent mutation` → another REPLACE/APPEND on the same group is still finishing. Wait 2-3 seconds and retry **once**.
+   - `No active slide at orderInGroup=N` → the slot doesn't exist (slide already removed, or off-by-one). Confirm the target index with the user; do NOT guess.
+   - `Slide replacement failed: <timeout / worker error>` → transient. Surface to the user, ask if they want to retry.
+2. ⛔ **NEVER call `POSTZEE_RENDER_CAROUSEL` to recover from a failed REPLACE.** RENDER creates a new MediaGroup. The user ends up with two carousels in their gallery — the original plus the "fix". This is exactly the duplication bug §8.5.C warns about, just reached from a different entry point.
+3. Surface the raw error JSON + one-sentence interpretation + ask the user: *"Replace failed (busy / timeout / etc.). Want me to retry, or skip this slide?"*
+
+**When APPEND_CAROUSEL_SLIDE fails:**
+
+1. **First failure**: surface the error, ask user. Do NOT auto-retry.
+2. **User asks to retry**: try once more, **sequentially**. If it fails again with the same error, stop.
+3. **Two consecutive failures**: abandon the append. Tell the user the carousel has N slides as-is and offer alternatives (compose them as a separate post; reduce the planned slide count; investigate the HTML).
+4. ⛔ **NEVER fall back to `RENDER_CAROUSEL`** to "redo the whole thing because append keeps failing". Same duplication trap.
+
+**Common confusion: "Postzee has a slide limit per RENDER call"**
+
+It doesn't. The 15-slide hard cap is **per carousel total**, not per dispatch. Don't split a 12-slide carousel into "lote 1 (5) + lote 2 (5) + lote 3 (2)" — that creates three MediaGroups. If you genuinely need to build slide-by-slide, the pattern is: RENDER with `slides: [slide1]`, then APPEND each remaining slide sequentially using the returned `mediaGroupId`.
 
 ### 8.6 Stage 7 (continued) — Iteration after the carousel exists
 
@@ -849,6 +898,13 @@ All write/generate tools return a JSON object with `success: boolean`, and on fa
 | `valid: false` (validation) | `POSTZEE_VALIDATE_GENERATION` | Inspect `errors[]` (e.g. duration not allowed, model unsupported, plan blocks AI). Fix params and re-validate. |
 | `willExceedBalance: true` (validation) | `POSTZEE_VALIDATE_GENERATION` | CTA the right credit pack from `POSTZEE_LIST_CREDIT_PACKAGES`. |
 | `not_found` | `POSTZEE_CHECK_JOB` | The job id doesn't exist for this org. Re-check the id. |
+| `Carousel busy with another concurrent mutation` | `POSTZEE_REPLACE_CAROUSEL_SLIDE`, `POSTZEE_APPEND_CAROUSEL_SLIDE` | A previous mutation on the same `mediaGroupId` is still in flight (Postzee serialises per group). Wait 2-3 seconds, retry **once**. If it persists, surface the error and ask the user. |
+| `No active slide at orderInGroup=N` | `POSTZEE_REPLACE_CAROUSEL_SLIDE` | The target slot doesn't exist — slide already removed or wrong index. Confirm the target with the user; do NOT call RENDER as a fallback (creates duplicate). |
+| `Slide replacement failed: <reason>` | `POSTZEE_REPLACE_CAROUSEL_SLIDE` | Transient render error (timeout, worker). Surface the error + ask user; ⛔ never call RENDER to "fix" — it creates a duplicate carousel. See §8.5.D. |
+| `Slide append failed: <reason>` | `POSTZEE_APPEND_CAROUSEL_SLIDE` | Same as above for APPEND. Surface + ask; do not parallelise retries (APPEND is sequential-only per group). |
+| `Append finished at the queue level but slide at order N did not persist` | `POSTZEE_APPEND_CAROUSEL_SLIDE` | Invariant violation — render said done, DB says no. Almost always a leftover from a race (now fixed server-side). Surface to the user; one retry is OK. |
+| `Carousel is already at the 15-slide limit` | `POSTZEE_APPEND_CAROUSEL_SLIDE` | Hard cap reached. Tell the user; offer to render a fresh carousel for the extra slides instead. |
+| `Carousel rendered N/M slides after waiting Xms` | `POSTZEE_RENDER_CAROUSEL` | Partial render — Postzee preserved the group with `renderStatus: "partial"`. Retry missing slides via `POSTZEE_REPLACE_CAROUSEL_SLIDE`; do NOT re-render the whole thing. |
 | transport / connection error | any tool | MCP not configured. See §1 setup-failure protocol. |
 
 For polling: `POSTZEE_CHECK_JOB` may take 10-60s for images, 30-180s for videos, up to 5min for HeyGen. If it stays `processing` past 3 minutes, direct user to https://dashboard.postzee.app to check.
