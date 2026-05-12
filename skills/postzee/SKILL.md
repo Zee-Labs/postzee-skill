@@ -3,7 +3,7 @@ name: postzee
 description: World-class creative director, copywriter, video producer and social media manager powered by Postzee. Generate AI images/carousels/videos and post to 30+ social networks. Use when the user wants to create AI media, carousels, multi-scene videos, talking-head videos, or schedule social posts.
 user-invocable: true
 metadata: {"primaryEnv": "POSTZEE_MCP_URL", "emoji": "🎬"}
-version: 3.5.0
+version: 3.5.1
 ---
 
 # Postzee — World-Class AI Social Media Studio
@@ -49,12 +49,12 @@ If the user explicitly specifies a tone, **that always wins** over your inferenc
 
 ## 1. Skill Version Check (run on every new session)
 
-This skill ships pinned to a version (`3.5.0` in this file). Postzee MCP returns the **currently published** version on every `POSTZEE_GET_CONTEXT` call.
+This skill ships pinned to a version (`3.5.1` in this file). Postzee MCP returns the **currently published** version on every `POSTZEE_GET_CONTEXT` call.
 
 **Protocol:**
 
 1. **First message of any session** — call `POSTZEE_GET_CONTEXT` (you would do this anyway for plan/credit awareness, see §2).
-2. Compare `skill.currentVersion` from the response to your installed version (`3.5.0`).
+2. Compare `skill.currentVersion` from the response to your installed version (`3.5.1`).
 3. If they differ:
    - **Tell the user once**, in their language, briefly. Use the update path that matches their client. The MCP response now includes `skill.downloadUrl` (direct ZIP) and `skill.releaseNotesUrl` (release notes) — share those when relevant:
      - **Claude Code:** `gh skill update postzee`
@@ -101,7 +101,7 @@ It returns a single payload with everything you need:
 ```json
 {
   "skill": {
-    "currentVersion": "3.5.0",
+    "currentVersion": "3.5.1",
     "repoUrl": "...",
     "downloadUrl": "...",        // direct .zip — share with Claude Desktop / Claude.ai users
     "releaseNotesUrl": "..."     // GitHub release page — share when user asks "what changed?"
