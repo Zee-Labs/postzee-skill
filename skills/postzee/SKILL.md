@@ -3,7 +3,7 @@ name: postzee
 description: World-class creative director, copywriter, video producer and social media manager powered by Postzee. Generate AI images/carousels/videos and post to 30+ social networks. Use when the user wants to create AI media, carousels, multi-scene videos, talking-head videos, or schedule social posts.
 user-invocable: true
 metadata: {"primaryEnv": "POSTZEE_MCP_URL", "emoji": "🎬"}
-version: 3.5.1
+version: 3.5.2
 ---
 
 # Postzee — World-Class AI Social Media Studio
@@ -49,12 +49,12 @@ If the user explicitly specifies a tone, **that always wins** over your inferenc
 
 ## 1. Skill Version Check (run on every new session)
 
-This skill ships pinned to a version (`3.5.1` in this file). Postzee MCP returns the **currently published** version on every `POSTZEE_GET_CONTEXT` call.
+This skill ships pinned to a version (`3.5.2` in this file). Postzee MCP returns the **currently published** version on every `POSTZEE_GET_CONTEXT` call.
 
 **Protocol:**
 
 1. **First message of any session** — call `POSTZEE_GET_CONTEXT` (you would do this anyway for plan/credit awareness, see §2).
-2. Compare `skill.currentVersion` from the response to your installed version (`3.5.1`).
+2. Compare `skill.currentVersion` from the response to your installed version (`3.5.2`).
 3. If they differ:
    - **Tell the user once**, in their language, briefly. Use the update path that matches their client. The MCP response now includes `skill.downloadUrl` (direct ZIP) and `skill.releaseNotesUrl` (release notes) — share those when relevant:
      - **Claude Code:** `gh skill update postzee`
@@ -101,7 +101,7 @@ It returns a single payload with everything you need:
 ```json
 {
   "skill": {
-    "currentVersion": "3.5.1",
+    "currentVersion": "3.5.2",
     "repoUrl": "...",
     "downloadUrl": "...",        // direct .zip — share with Claude Desktop / Claude.ai users
     "releaseNotesUrl": "..."     // GitHub release page — share when user asks "what changed?"
@@ -522,7 +522,7 @@ SLIDE 9 — CTA
 3. **Logo enhancement**: when user has a logo, wrap it with the IG-profile-pic CSS treatment shown in `reference/carousel-mastery.md` §10.3 (slide types A/F) — circular crop, white ring, soft shadow.
 4. **Compose HTML**: one complete `<!doctype html>` per slide, using the design system in `reference/carousel-mastery.md` §10 (CSS variables, slide types A-F) + §11 (mandatory base64 `@font-face` font embedding — **NEVER** `<link>` to Google Fonts; Puppeteer may snapshot before remote fonts load). Inline CSS only (no Tailwind utility classes — JS is disabled at render).
 5. **Render** — choose ONE of the two paths below.
-6. **Show the user the result** (links + brief summary), then move to iteration (§8.6) or publish (§8.7).
+6. **Apply the Display Contract (§8.6.D)** — show ALL slides of the current carousel, never just the latest. Then **offer the Proactive Publish CTA (§8.7.A)** if the carousel is complete (atomic RENDER finished, or final APPEND of an iterative sequence).
 
 #### 8.5.A — Atomic path (preferred when the user approved the full script)
 
@@ -627,12 +627,14 @@ Three types of changes the user can ask for AFTER the carousel exists:
 1. **Recall** the existing HTML for slide N from your scrollback (you authored it).
 2. **Apply** the user's instruction to that one slide.
 3. **Call** `POSTZEE_REPLACE_CAROUSEL_SLIDE({ mediaGroupId, orderInGroup: N-1, slide: { html, width, height } })`.
-4. **Confirm** in one line ("Slide 4 atualizado. Os outros 9 estão intactos.").
+4. **Apply Display Contract (§8.6.D)** — show all N slides of the carousel with slide N highlighted as the one that was just replaced. Never confirm only the modified slide; the user can't see your scrollback and has no way to verify the rest is intact without you showing them.
+5. **Apply Proactive Publish CTA (§8.7.A)** — replacing a slide usually means the carousel just reached the user's bar. Offer publication.
 
 **B. Add a new slide at the end ("agora faça o slide N+1")**:
 1. **Compose** the new slide following the design system already established.
 2. **Call** `POSTZEE_APPEND_CAROUSEL_SLIDE({ mediaGroupId, slide: { html, width, height } })`.
-3. **Confirm** in one line ("Slide N+1 adicionado. O carrossel agora tem N+1 slides.").
+3. **Apply Display Contract (§8.6.D)** — show ALL N+1 slides, not just the new one. See the cost-aware optimization for iterative APPEND in §8.6.D below.
+4. **Apply Proactive Publish CTA (§8.7.A)** when the user signals the carousel is complete (says "pronto", "fechou", "perfeito", "done", or hit the originally-planned slide count).
 
 **C. Structural changes (insert in the middle, reorder, delete a slide, change framework)**:
 - There's no insert/reorder/delete primitive in v1.
@@ -641,9 +643,115 @@ Three types of changes the user can ask for AFTER the carousel exists:
 
 ⚠️ **Caveat to surface to the user**: if they already attached the carousel to a draft post and you replace OR append a slide, the post's image array still references the previous `mediaUrls`. Tell them to refresh the attachments — or you do it for them by calling `POSTZEE_CREATE_POST` again with the new `mediaUrls`.
 
+### 8.6.D — Display contract (after RENDER / APPEND / REPLACE)
+
+After every successful RENDER, APPEND, or REPLACE call, the agent MUST show the user the **complete current state** of the carousel — never just the most recent or modified slide.
+
+**Why it matters**: the user can't see your scrollback. If you only show "slide 4 was replaced", they have no way to confirm the other 8 are intact without opening the gallery manually. Showing ALL N slides every time the carousel changes lets them verify the whole composition at a glance — and catches accidental regressions immediately (wrong slide replaced, font swapped, color drift) when they're cheap to fix.
+
+**Source of truth**: the `mediaUrls` array returned by RENDER / APPEND / REPLACE is already in display order. Pass it through unchanged. Never reconstruct from scrollback.
+
+#### Three display formats — pick the richest your client supports
+
+**Tier 1 — Artifact / Canvas / Board** (Claude Desktop and other clients that support inline rich previews).
+Render an HTML grid with all slides as a single artifact. The user sees the whole carousel without leaving the conversation, the layout matches the eventual social-network preview, and there's no scrolling through 10 markdown images.
+
+```html
+<!doctype html>
+<html><head><style>
+  body { margin:0; padding:16px; background:#0a0a0a; font:13px/1.4 system-ui; }
+  .grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+  figure { margin:0; }
+  img { width:100%; display:block; border-radius:8px; background:#1a1a1a; }
+  figcaption { color:#aaa; margin-top:6px; }
+  figcaption.changed { color:#a78bfa; font-weight:600; }
+</style></head><body>
+<div class="grid">
+  <figure><img src="{slide0_url}" alt="Slide 1"><figcaption>1 — Capa</figcaption></figure>
+  <figure><img src="{slide1_url}" alt="Slide 2"><figcaption>2 — Hook</figcaption></figure>
+  <!-- ... all N slides ... -->
+  <figure><img src="{slide3_url}" alt="Slide 4"><figcaption class="changed">4 — substituído</figcaption></figure>
+  <!-- ... -->
+</div></body></html>
+```
+
+**Tier 2 — Markdown inline images** (most other clients — Cursor, ChatGPT with MCP, terminal markdown renderers).
+Each URL becomes a previewable image. Headless clients see it as plain markdown.
+
+```
+✅ Carrossel atualizado — 9 slides:
+
+![Slide 1 — Capa](https://cdn.../slide-0.png)
+![Slide 2 — Hook](https://cdn.../slide-1.png)
+...
+![Slide 9 — CTA](https://cdn.../slide-8.png)
+
+Slide modificado: 4
+```
+
+**Tier 3 — Plain URL list** (automation, headless agents, n8n, REST API consumers).
+
+```
+✅ Carrossel atualizado — 9 slides:
+1. https://cdn.../slide-0.png
+2. https://cdn.../slide-1.png
+...
+9. https://cdn.../slide-8.png
+```
+
+**Rule of thumb**: pick ONE tier per turn. If you render an artifact, don't also list the URLs as markdown — the artifact IS the display. Tier 2 already implies the URL (image src). Tier 3 is the fallback when nothing else renders.
+
+#### Cost-aware optimization for iterative APPEND
+
+Each artifact in Claude Desktop counts toward conversation tokens. Re-rendering a 9-slide HTML artifact after every intermediate APPEND can balloon context by 80k+ tokens over the course of an iterative build.
+
+**Render the full artifact (Tier 1) ONLY at canonical moments:**
+- After **atomic RENDER** (the full carousel arrived in one call)
+- After **REPLACE** (the user just changed something — they need to see the whole composition)
+- After the **final APPEND** of an iterative sequence (user signals "pronto" / "fechou" / "perfeito" / "done" / hit the original slide count)
+
+**During intermediate APPENDs** (the user is mid-iteration, "now slide 3, now slide 4…"):
+- Show ONLY the new slide as a single Tier 2 markdown image — `![Slide N — purpose](url)`
+- Brief one-line confirmation: "Slide N adicionado. Total: N slides."
+- Don't render the full artifact yet — it'll come at the end.
+
+#### Language note
+
+Templates above are in Portuguese for the most common Postzee user. **Adapt to the user's language** (the same rule applies to the entire skill — see §0 Identity).
+
 ### 8.7 Post-stage — Publish
 
 `POSTZEE_CREATE_POST({ type, channelId, text: caption, mediaUrls })`. The `mediaUrls` from RENDER (or REPLACE) is already in display order — pass it through unchanged. Don't reorder; don't slice.
+
+### 8.7.A — Proactive publish CTA
+
+When a carousel reaches a "complete" state, **always offer to publish it on Postzee** before waiting for the user to bring it up. The user invested time scripting and validating — converting that work into a scheduled post is the natural next step, and asking proactively saves them from having to remember the right tool name.
+
+**Trigger conditions** — offer the CTA when:
+- Atomic `POSTZEE_RENDER_CAROUSEL` returned success (full carousel ready in one call)
+- Final `POSTZEE_APPEND_CAROUSEL_SLIDE` of an iterative sequence (user signaled done: "pronto", "fechou", "perfeito", "done", "let's go" — OR slide count reached what the user originally asked for in §8.2)
+- `POSTZEE_REPLACE_CAROUSEL_SLIDE` succeeded and the carousel was already presented as final earlier in the conversation
+
+**Template** (adapt to the user's language):
+
+> O carrossel está pronto ✨
+> [Display Contract — Tier 1, 2, or 3 from §8.6.D]
+>
+> Quer que eu publique no Postzee agora? Posso preparar a postagem para [list the channels from `POSTZEE_LIST_CHANNELS` where `canPostNow === true`].
+
+EN version:
+
+> The carousel is ready ✨
+> [Display Contract output]
+>
+> Want me to publish it on Postzee now? I can schedule the post for [connected channels].
+
+**Don't offer the CTA when:**
+- The user already named which channels to post to in the same turn → skip the CTA and proceed directly to the Publish flow (§8.7 / §12). Calling `POSTZEE_LIST_CHANNELS` first is still required — the channels mentioned may need re-auth.
+- The user previously declined publishing in this session (said "só baixei pra olhar", "não vou postar agora", "deixa quieto"). Drop it. Don't re-offer unless they kick off a new generation.
+- The carousel is mid-iteration (intermediate APPEND). Wait for the "complete" signal first.
+
+**Don't insist.** One offer per "complete" moment is enough. If declined, move on without comment.
 
 ### 8.8 Per-platform specs
 **Always fetch via `POSTZEE_GET_CONTEXT` → `platformSpecs`** — never hardcode. Specs change.
@@ -776,7 +884,7 @@ End-to-end without re-asking each step (still run §1, §2, §6 checks):
 - **"Create a Reel/TikTok"** — context → models → validate → enhance → generate vertical (9:16) → poll → channels → post
 - **"Animate my photo"** — context → models (i2v) → validate with imageUrl → generate → poll
 - **"Create a HeyGen video"** — context (heygen=true?) → avatars → voices → generate → poll
-- **"Carrossel sobre X com 7 slides"** — context → 7-question briefing criativo → triagem (silent) → 10 numbered headlines (5 IC + 5 NM, see `reference/carousel-headline-engine.md`) → user picks → 18-block script with mandatory frase-ponte → editorial validation gate (7 parameters, 5 final tests, visual checklist) → user types `aprovado` → compose HTML following design system → `POSTZEE_RENDER_CAROUSEL` → `POSTZEE_CREATE_POST`. See SKILL.md §8 + `reference/carousel-mastery.md` for the mandatory 7-stage editorial flow. **Never skip stage 5 (validation) or stage 6 (approval).**
+- **"Carrossel sobre X com 7 slides"** — context → 7-question briefing criativo → triagem (silent) → 10 numbered headlines (5 IC + 5 NM, see `reference/carousel-headline-engine.md`) → user picks → 18-block script with mandatory frase-ponte → editorial validation gate (7 parameters, 5 final tests, visual checklist) → user types `aprovado` → compose HTML following design system → `POSTZEE_RENDER_CAROUSEL` → **Display Contract (§8.6.D) + Proactive Publish CTA (§8.7.A)** → if user accepts, `POSTZEE_CREATE_POST`. See SKILL.md §8 + `reference/carousel-mastery.md` for the mandatory 7-stage editorial flow. **Never skip stage 5 (validation) or stage 6 (approval).** Carousel quick actions ALWAYS end with the publish CTA — even if user didn't pre-specify channels.
 - **"Multi-scene video"** — context (which features available?) → storyboard → strategy → validate → generate scenes → (compose if shell) → post
 - **"Post this text to all channels"** — context → channels → caption per platform → post each
 
