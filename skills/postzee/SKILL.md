@@ -512,7 +512,7 @@ If they say "do whatever you think is best for everything" — push back once: a
 
 ### 8.3 Stages 2-4 — Triagem, Headlines, Script
 
-After briefing, the agent silently runs the **4-layer triagem** (stage 2 — never shown to user), then generates **exactly 10 numbered headlines** (5 IC + 5 NM, see `reference/carousel-headline-engine.md`), waits for the user to pick one, then writes the **18-block script** following the appropriate narrative arc (see `reference/carousel-quality-manual.md` §4).
+After briefing, the agent silently runs the **4-layer triagem** (stage 2 — never shown to user), then enters the headline engine: internally generates 10 candidates (5 IC + 5 NM), applies the rejection checklist and coverage rule, and **surfaces ONE winner** with a one-line defense + three expansion commands (`boa, vai` / `outras` / `todas`). Full surface protocol in `reference/carousel-headline-engine.md` §1 and §11. Once the user lands on a headline (default winner, or one chosen after expansion), the agent writes the **18-block script** following the appropriate narrative arc (see `reference/carousel-quality-manual.md` §4).
 
 The script output the user sees:
 

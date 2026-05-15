@@ -117,7 +117,20 @@ Slides reference images via `<img src="...">` or `background: url(...)`. For the
      (its network context is different from the artifact's CSP)
    - But the artifact preview slide will show a placeholder
 
-4. Successfully fetched and sized:
+4. NO fetch capability available on the current surface:
+   - Some minimal surfaces (stripped MCP clients, restricted embedded
+     contexts) expose ZERO HTTP fetch capability to the agent — no
+     WebFetch, no shell with curl, nothing
+   - Skip base64 inlining entirely. Use the original CDN URLs in the
+     slide HTML and tell the user upfront:
+       "Não tenho fetch HTTP nessa superfície — o preview do artifact
+        vai mostrar placeholders pras imagens, mas o RENDER final no
+        Postzee funciona normal (Puppeteer fetcha server-side)."
+   - Do not fabricate a base64 payload. Do not hallucinate image bytes.
+   - Iteration still works for everything except the image-bearing
+     slides' visual fidelity in the preview.
+
+5. Successfully fetched and sized:
    - Encode bytes as base64
    - Build the data URI: `data:<mime>;base64,<payload>`
    - Substitute into the slide HTML: replace the original src/url with the data URI
@@ -230,6 +243,16 @@ Some surfaces don't render Claude artifacts visually (Claude Code, hermes, custo
 **(d) Two images, one very large, one small.** Apply the per-image fallback independently — slide 3 can show a placeholder (image too large) while slide 5 shows the real photo. The user knows from the warning which slide is degraded.
 
 **(e) Image is animated (GIF/WebP animation).** Carousels render to static PNG. The agent embeds the first frame as a static image and warns the user: "Carrosséis renderizam estáticos — usei o primeiro frame da animação no slide N."
+
+**(f) Artifact total size approaches the surface rendering limit.** Claude artifacts have a size ceiling that varies by surface — typically ~5MB for Claude Desktop, similar for Claude Web. A 9-slide carousel with full-bleed images at JPEG q85 can sit around 6-9MB total, which can fail to render or get truncated in the artifact pane.
+
+Watch the cumulative artifact size as you build it (sum of all `srcdoc` payloads + the wrapper). If the cumulative size approaches 5MB, choose ONE of these strategies (do not mix):
+
+**Strategy A — Compress aggressively, single HTML preserved:** drop image quality across the board until everything fits. Try JPEG q70, then q55, then resize to 1620px (75% of max dimension). The compressed base64 stays in the HTML — the same HTML that gets sent to RENDER. **Trade-off**: render quality matches the compressed preview (which is fine — user sees what they get). Tell the user: "Comprimi as imagens pra caber no preview da artifact. O render final usa essa mesma compressão."
+
+**Strategy B — CDN-URL fallback for heaviest slides, render keeps full quality:** for the 1-2 heaviest image slides, swap the base64 data URI for the original CDN URL inside the slide HTML. **Same HTML for both preview and render** — but: the artifact preview shows a placeholder for those slides (Claude CSP blocks the CDN fetch), while Postzee's server-side Puppeteer fetches the URL at full quality during render. Tell the user: "Slides X e Y vão aparecer com placeholder no preview (imagens grandes demais pra embutir), mas o render no Postzee puxa as imagens originais e fica na qualidade cheia."
+
+Pick the strategy that fits the user's intent: if quality matters most, go B and accept the preview-fidelity gap on a couple of slides; if preview-fidelity matters most, go A and accept the compression at render. **Don't mix** — that recreates the dual-HTML source-of-truth problem the single-HTML architecture was designed to avoid.
 
 ---
 

@@ -182,36 +182,35 @@ The triagem produces a 4-line memo. The agent uses it internally to drive stages
 
 ---
 
-## 5. Stage 3 — Headline Batch (10 variations)
+## 5. Stage 3 — Headline: Winner-First Surface
 
-Run the headline engine. Always 10. Always numbered. Always 5 IC + 5 NM.
+Run the headline engine. **Internally**: always 10. Always 5 IC + 5 NM. Always rejection-checked. Always coverage-validated. **Externally**: surface ONE winner with a one-line defense — top of the funnel of decision-making, not a menu of 10.
 
-**Full discipline:** `carousel-headline-engine.md`.
+**Full discipline:** `carousel-headline-engine.md` (read §1 and §11 for the surface protocol; §2-§10 for the internal generation rules).
 
-Output format the user sees:
+Default surface (what the user sees first):
 
 ```
-Aqui estão 10 ideias para essa headline:
+✨ Headline mais forte pro carrossel:
 
-INVESTIGATIVE CULTURAL (1-5)
-VARIAÇÃO 1 — [headline]
-VARIAÇÃO 2 — [headline]
-VARIAÇÃO 3 — [headline]
-VARIAÇÃO 4 — [headline]
-VARIAÇÃO 5 — [headline]
+   "<the winning variation, full text>"
 
-MAGNETIC NARRATIVE (6-10)
-VARIAÇÃO 6 — [headline]
-VARIAÇÃO 7 — [headline]
-VARIAÇÃO 8 — [headline]
-VARIAÇÃO 9 — [headline]
-VARIAÇÃO 10 — [headline]
+   <one-line reasoning: lift pattern + why this beat the other 9.
+    ~15-25 words. Copywriter voice, not tool voice.>
 
-Qual te chama mais? Pode dizer "a 3", "mistura a 2 com a 7",
-"refazer headlines", ou "a 5 com ângulo brasileiro".
+   👉 "boa, vai"  — sigo com essa
+      "outras"   — te mostro o top-3
+      "todas"    — te mostro as 10 numeradas
 ```
 
-**Wait for the user to pick** before moving on.
+**The user can:**
+- Approve the winner (`boa, vai`, `tá bom`, silence followed by next message about something else) → advance to stage 4 with the winner.
+- Ask for `outras` → top-3 numbered revealed; indexed commands (§8 of headline-engine) activate.
+- Ask for `todas` → full 10 numbered revealed; same indexed commands cover 1-10.
+- Issue an indexed command without first expanding (`ajusta a 3`, `mistura a 2 com a 7`) → auto-expand to `todas`, then apply the command. Don't refuse, don't ask for clarification — see headline-engine.md §1 auto-expand rule.
+- Type `refazer headlines` → fresh batch of 10 generated internally, default surface re-emitted.
+
+**Once a headline lands (winner or any expanded choice)**, the agent moves to stage 4. The chosen variation will be used whole on slide 1 (cover headline rule — see headline-engine.md §10).
 
 ---
 
@@ -1006,8 +1005,8 @@ The user never sees:
 
 The work is invisible. The user sees:
 
-- The 10 numbered headlines
-- The script (or its output: the rendered slides)
+- One winning headline + 3 expansion commands (or, on request, the top-3 / all-10 numbered list — see `carousel-headline-engine.md` §1)
+- The script (or its output: the visual preview artifact, then the rendered slides)
 - The caption + hashtags
 - Surgical iteration responses
 
