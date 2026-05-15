@@ -502,6 +502,19 @@ Switch to typography-only Bold or Minimal movement. Headline dominates the slide
 
 Render 4 separate images (one per language) by calling `POSTZEE_RENDER_IMAGE` 4 times with different `text` content but same composition. Agent surfaces all 4 mediaUrls and lets user pick which to publish where.
 
+### 9.6 Realtime events — Path A vs Path B asymmetry
+
+Single-image renders emit DIFFERENT realtime event types depending on the path:
+
+| Path | Event emitted | Why |
+|---|---|---|
+| Path A (`POSTZEE_RENDER_IMAGE`) | `group.ready` | Internally creates a 1-slide MediaGroup, inherits the carousel emit path |
+| Path B (`POSTZEE_UPLOAD_RENDERED_IMAGE`) | `media.ready` | Bypasses the MediaGroup — produces a standalone Media directly |
+
+This is **intentional**, not a bug — the events reflect the underlying data model. The frontend `RealtimeProvider` handles both: `group.ready` triggers gallery SWR invalidation; `media.ready` does the same plus toast notification routing. From the user's perspective the behaviour is identical (gallery updates, no manual refresh).
+
+If you're writing a new consumer of single-image events (e.g. a third-party webhook listener), subscribe to BOTH event types and treat them as semantically equivalent for the "a single image is ready" intent.
+
 ---
 
 ## 10. Cross-references
