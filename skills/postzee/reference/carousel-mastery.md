@@ -416,22 +416,32 @@ See SKILL.md §8.5.C — never silently retry, surface raw response, ask user.
 
 The agent fills `--P`, `--LB`, `--DB`, `--F-HEAD`, `--F-BODY` based on the briefing answers. The other variables derive.
 
-### 10.1.5 Image inlining rule (paralela à de fontes em §11)
+### 10.1.5 Image source rule (paralela à de fontes em §11)
 
-**Always embed images as base64 `data:image/...` URIs** in slide HTML — never reference an external URL.
+Two delivery modes, used in different contexts:
+
+| Mode | Used in | When |
+|---|---|---|
+| **base64 `data:image/...` URI** | preview shape | Default for preview. Artifact CSP blocks external image fetches, so the data: URI is the only thing that renders. |
+| **CDN URL** | render shape (PREFERRED when available) | Default for render when the image has a known CDN URL (POSTZEE_GENERATE_IMAGE output, POSTZEE_UPLOAD_MEDIA result, or any postzee CDN reference). Puppeteer fetches server-side — no CSP. |
 
 ```html
-<!-- ❌ DON'T: external URL — blocked in Claude artifact CSP, breaks preview -->
-<img src="https://cdn.postzee.app/r2/abc.jpg" crossorigin="anonymous">
+<!-- Preview shape: base64 ONLY — artifact CSP blocks external -->
+<img src="data:image/jpeg;base64,/9j/4AAQSk...">
 
-<!-- ✅ DO: base64 data URI — same image bytes in both preview and render shapes -->
+<!-- Render shape: CDN URL when available -->
+<img src="https://cdn.postzee.app/r2/abc.jpg">
+
+<!-- Render shape: base64 when no CDN URL (e.g. user pasted data: URI directly) -->
 <img src="data:image/jpeg;base64,/9j/4AAQSk...">
 ```
 
+The swap from base64 → CDN URL happens at the preview→render conversion (`carousel-visual-preview.md` §5.1 step 5). Don't second-guess it: same image bytes either way; render output is byte-identical.
+
 **Why this matters:**
 - The Claude artifact CSP blocks fetches to external CDN URLs. A slide with `<img src="https://...">` renders with a missing image in the artifact preview — breaks the visual fidelity of stage 7a.
-- Inlining once means the SAME base64 image bytes appear in both the preview and the render shapes (see `carousel-visual-preview.md` §5.1 conversion). The agent doesn't fetch twice or maintain two divergent image references — only the shape of the surrounding HTML differs.
-- The 7MB per-slide ceiling has enough headroom: a 1080×1350 JPEG at quality 85 is ~250-800KB raw → ~330KB-1MB base64. Comfortably fits with fonts (~200KB) and HTML/CSS.
+- The render shape has no CSP (Puppeteer fetches freely), and CDN URL refs are ~50 chars vs ~120 KB of base64 — same image, ~99% smaller. This is one half of the token-budget fix (see `carousel-mastery.md` §11.0.2 for the other half: fonts).
+- The 7 MB per-slide ceiling has enough headroom: a 1080×1350 JPEG at quality 85 is ~250-800 KB raw → ~330 KB-1 MB base64. Comfortably fits with fonts (~200 KB) and HTML/CSS. The ceiling isn't the binding constraint — the model's output token budget is, which is why we prefer URLs over base64 for render.
 
 **How the agent gets images:**
 
@@ -465,7 +475,8 @@ See `carousel-visual-preview.md` for the full image-inlining workflow and the ag
   <style>
     /* Embedded fonts via @font-face base64 — see §11 */
     /* CSS variables — see §10.1 */
-    /* Images: ALWAYS base64 data: URIs, see §10.1.5 — never external URLs */
+    /* Images: base64 data: URIs in the preview shape (CSP requires it);
+       swapped to CDN URL at render-shape conversion when available — see §10.1.5 */
     /* Slide-type-specific styles */
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -534,9 +545,10 @@ See `carousel-visual-preview.md` for the full image-inlining workflow and the ag
       background: #fff; border: 3px solid #fff;
       box-shadow: 0 6px 18px rgba(0,0,0,0.3);
     ">
-      <!-- v3.6+: src MUST be a base64 data URI, never an external URL.
-           See §10.1.5 for the image inlining rule.
-           Example: src="data:image/jpeg;base64,/9j/4AAQSk..." -->
+      <!-- Preview shape: src is a base64 data URI (artifact CSP requires it).
+           At render-shape conversion (visual-preview §5.1 step 5), the agent
+           swaps base64 → CDN URL when the image has a known CDN URL.
+           Example preview src: "data:image/jpeg;base64,/9j/4AAQSk..." -->
       <img src="USER_LOGO_BASE64_DATA_URI"
            style="width:100%;height:100%;object-fit:cover;" alt="">
     </div>
@@ -834,9 +846,10 @@ See `carousel-visual-preview.md` for the full image-inlining workflow and the ag
       background: #fff; border: 3px solid #fff;
       box-shadow: 0 4px 12px rgba(0,0,0,0.25);
     ">
-      <!-- v3.6+: src MUST be a base64 data URI, never an external URL.
-           See §10.1.5 for the image inlining rule.
-           Example: src="data:image/jpeg;base64,/9j/4AAQSk..." -->
+      <!-- Preview shape: src is a base64 data URI (artifact CSP requires it).
+           At render-shape conversion (visual-preview §5.1 step 5), the agent
+           swaps base64 → CDN URL when the image has a known CDN URL.
+           Example preview src: "data:image/jpeg;base64,/9j/4AAQSk..." -->
       <img src="USER_LOGO_BASE64_DATA_URI"
            style="width:100%;height:100%;object-fit:cover;" alt="">
     </div>
@@ -903,25 +916,47 @@ See `carousel-visual-preview.md` for the full image-inlining workflow and the ag
 
 ---
 
-## 11. Font embedding rule (critical for Puppeteer)
+## 11. Font delivery rule
 
-**Never use `<link rel="stylesheet" href="https://fonts.googleapis.com/...">`** in slide HTML. The headless browser may render the slide before the font has loaded — leading to fallback typography in the PNG.
+Two delivery modes, used in different contexts:
 
-Instead, **embed fonts as base64 `@font-face`** inside the `<style>` block:
+| Delivery mode | Used in | When |
+|---|---|---|
+| **Google Fonts `<link>`** | render shape (PREFERRED) | Default for render. Puppeteer waits for `document.fonts.ready` before screenshotting — fonts always arrive. Works for any font in the pre-approved set (§11.1). |
+| **base64 `@font-face`** | preview shape | Default for preview (artifact CSP blocks external font fetches). Also a render fallback when the font isn't on Google Fonts. |
+
+### 11.0 Render shape — prefer Google Fonts `<link>`
+
+In the render shape (HTML sent to `POSTZEE_RENDER_CAROUSEL` / `POSTZEE_RENDER_IMAGE`), use Google Fonts:
+
+```html
+<head>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@500;700&display=block">
+</head>
+```
+
+**Why this works in render but not in preview**: the backend Puppeteer (`canvas/src/services/html-render.service.ts:239-255`) calls `await page.evaluate(() => document.fonts.ready)` AFTER `networkidle0` — fonts are guaranteed loaded before the screenshot. The artifact preview has no equivalent guarantee (and CSP often blocks the fetch entirely), which is why the preview shape uses base64.
+
+This rule was previously inverted in the skill (legacy: an earlier worker didn't wait for fonts and Google Fonts arrived too late). The worker was made font-aware; the skill rule lagged. Fixed in v3.7.2 — Google Fonts `<link>` in render is now correct and PREFERRED.
+
+### 11.0.0 Render shape — base64 `@font-face` as fallback
+
+Acceptable when:
+- The font isn't on Google Fonts (brand-custom face the agent has bytes for)
+- The agent already has the base64 in hand AND the carousel total HTML is comfortably small (uncommon — image swap and font `<link>` together already keep slides ~10 KB)
+
+When using base64 in the render shape, the block looks like the preview-shape block but with `font-display: block`:
 
 ```html
 <style>
 @font-face {
-  font-family: 'Inter';
+  font-family: 'BrandCustom';
   font-weight: 700;
-  font-style: normal;
   src: url(data:font/woff2;base64,d09GMgABAA...) format('woff2');
-  font-display: block; /* Render shape — Puppeteer waits. Preview shape uses `swap`. See §11.0.1. */
-}
-@font-face {
-  font-family: 'Inter';
-  font-weight: 800;
-  ...
+  font-display: block; /* Render: Puppeteer waits. Preview uses swap. See §11.0.1. */
 }
 </style>
 ```
@@ -949,6 +984,23 @@ The mechanical preview→render conversion (see `carousel-visual-preview.md` §5
 - `block` in preview → invisible text in the artifact, user thinks the carousel is broken
 - `swap` in render → Puppeteer may capture before the font loads → PNG ships with fallback typography
 
+### 11.0.2 The token-budget reason for moving font delivery off base64
+
+Path A's user-visible bottleneck is NOT the backend's 7 MB/slide + 50 MB total payload limit. It's the model's **output token budget** — every byte of base64 in the tool-call argument costs ~0.25 tokens to emit, and Claude has only ~8K–32K output tokens per turn.
+
+Worked example, 9-slide carousel:
+
+| Strategy | Per slide | 9 slides total | Output tokens |
+|---|---|---|---|
+| Naive (4 weights base64 fonts + base64 cover) | ~270 KB | ~2.4 MB | ~600 K (impossible) |
+| After image swap (cover → CDN URL) | ~150 KB | ~1.4 MB | ~340 K (impossible) |
+| After font swap (Google Fonts `<link>`) | ~5 KB | ~45 KB | ~12 K (comfortable) |
+| Combined (image + font swap) | ~10 KB | ~90 KB | ~22 K (comfortable) |
+
+Without these swaps, the agent on Path A burns minutes doing "shrink gymnastics" (removing covers from slides 2–N, recompressing, switching font weights) and often still can't fit the response. With the swaps, the same carousel goes through in one shot.
+
+The optimizations move bytes from `model output → server-side fetches`. The render PNG is byte-identical. The bottleneck disappears.
+
 ### 11.1 Pre-approved font set
 
 To keep slide HTML compact and rendering fast, restrict to these fonts (each weight is ~30-50KB base64):
@@ -962,9 +1014,14 @@ To keep slide HTML compact and rendering fast, restrict to these fonts (each wei
 
 Maximum weights per slide: **5**. The 7MB per-slide ceiling can technically fit more (with base64 images plus fonts), but disciplined typography produces better carousels — 5 weights is more than enough to express the four design styles.
 
-### 11.2 If fonts fail to embed
+### 11.2 Font fallback chain
 
-If the agent doesn't have access to base64 font payloads (and can't generate them), fall back to a system-stack fallback: `font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;`. The slide will still render — it just loses brand fidelity. Surface this to the user: "I rendered with system fonts because I couldn't embed [Font]. If you have the file, I can embed it for the next render."
+If the preferred Google Fonts `<link>` fetch fails (rare — backend allowlist permits it and Puppeteer waits) OR the requested font isn't on Google Fonts:
+
+1. **Render shape**: try base64 `@font-face` (only if the agent actually has the base64 bytes — don't fabricate). Use `font-display: block`.
+2. **Both shapes**: fall back to system stack `font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;`. The slide still renders, brand fidelity drops. Surface to the user: "I rendered with system fonts because I couldn't embed [Font]. If you have the file, I can embed it for the next render."
+
+For the pre-approved set (§11.1 — Anton, Inter, Playfair Display, Bricolage Grotesque), Google Fonts `<link>` always works. The fallback chain is real but rarely exercised.
 
 ---
 
@@ -1142,7 +1199,9 @@ If a photo doesn't fit the slide context — drop it. Forced photo placement loo
 - [ ] CTA slide contains: frase-ponte (block 16) + verb-first action (17) + keyword box (18)
 - [ ] Caption draft has hook in first 125 chars (IG) or first 3 lines (LinkedIn)
 - [ ] Hashtags 3-5, niche-relevant, not spam
-- [ ] Fonts embedded base64 (not `<link>` to Google Fonts)
+- [ ] Render shape uses Google Fonts `<link>` (preferred) or base64 @font-face fallback for non-Google fonts — see §11.0
+- [ ] Render shape images use CDN URL when available, base64 only when no URL exists — see §10.1.5 + visual-preview §5.1
+- [ ] Preview shape uses base64 for both images and fonts (CSP requirement)
 - [ ] mediaUrls passed to POSTZEE_CREATE_POST in original order
 
 ---
@@ -1161,7 +1220,8 @@ If a photo doesn't fit the slide context — drop it. Forced photo placement loo
 - ❌ Skip the frase-ponte (block 16) on slide 9 — CTA reads cold
 - ❌ Render before stage 6 (explicit approval) — wastes credits + clutters gallery
 - ❌ Re-render to "fix" — use REPLACE per slide
-- ❌ Use `<link>` to Google Fonts in slide HTML — fonts may not load in time → use base64 @font-face
+- ❌ Use Google Fonts `<link>` in the PREVIEW shape — artifact CSP blocks the fetch → use base64 in preview, `<link>` in render (see §11.0)
+- ❌ Inline base64 for the render shape when the image has a known CDN URL — blows the model's output token budget for no benefit (see §11.0.2)
 - ❌ Place body text centered on internal slides — only cover and CTA verb are centered
 - ❌ Apply accent color to more than 3 words per slide
 - ❌ Show the user the triagem, the 7-parameter scoring, or the visual checklist — invisible scaffolding rule

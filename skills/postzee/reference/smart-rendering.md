@@ -33,16 +33,18 @@ Both paths produce the same `{ mediaId, mediaUrl, width, height }` shape. The ag
 
 ## 1. Why Path B exists
 
-The Postzee Puppeteer pool is parallel (4 workers, ~5-15s per slide). It works for everyone. But on Claude Code with shell access, the agent has a local Chromium it can drive — saving 5-30s of queue wait time per render, plus making iteration on slow days (when the pool is busy) instant.
+The Postzee Puppeteer pool is parallel (4 workers, ~5-15s per slide). It works for everyone. But on **any surface with Bash + Node + Playwright** (Claude Code, Claude Desktop with shell MCP, openclaw with task adapters, hermes with sandbox adapters, etc.), the agent has a local Chromium it can drive — saving 5-30s of queue wait time per render, plus making iteration on slow days (when the pool is busy) instant.
 
 Trade-offs accepted:
 
-- **Path B only works on a fraction of surfaces** — Claude Code + Bash + ability to install playwright. Probably 20-30% of the user base.
+- **Path B only works where the host exposes Bash + Node/npm** — covers more than just Claude Code. The skill does NOT require any external MCP server; it just runs whatever shell the host already provides (see §3.5).
 - **Compute moves to the user's machine** — minor; the render is bounded (few seconds, modest memory).
 - **Postzee never sees the source HTML for Path B renders** — operationally fine (we never inspected source HTML anyway), and a privacy improvement for sensitive content.
 - **Final pixels might differ subtly** between Path A and Path B (different Chromium versions, different font rendering). Acceptable: the difference is sub-pixel and never user-visible at carousel scale.
 
 The skill prefers Path B when usable but never blocks shipping on it — Path A is the universal fallback.
+
+> **Note on token budget**: both paths benefit equally from the image→URL and font→`<link>` swaps in `carousel-visual-preview.md` §5.1. Path B doesn't bypass the model's output budget on its own (the agent still has to emit the slide HTML for Bash to write to disk), so do the swaps in Path B too. After swaps, ~10 KB/slide instead of ~270 KB.
 
 ---
 
@@ -186,17 +188,41 @@ A Path B failure is NOT user-facing as an error — it's an internal optimizatio
 
 ---
 
-## 3. Surface heuristics — when to expect Path B
+## 3. Surface heuristics — set expectations only
 
-| Surface | Bash tool? | Likely playwright-capable? | Default state |
-|---|---|---|---|
-| Claude Code | Yes | Yes (usually has dev tooling) | Try Path B |
-| Claude Desktop | Sometimes via MCP servers | Usually no | Path A |
-| Claude Web (claude.ai) | No | No | Path A |
-| openclaw | Depends on adapters | Rarely | Path A |
-| hermes | Depends on adapters | Rarely | Path A |
+| Surface | Bash tool typically present? | Default approach |
+|---|---|---|
+| Claude Code | Yes | Run detection §2.1 → Try Path B |
+| Claude Desktop | Sometimes (via MCP shell/filesystem) | Run detection §2.1 → Try Path B if Bash present |
+| Claude Web (claude.ai) | No | Path A only |
+| openclaw | Depends on adapters | Run detection §2.1 → Try Path B if Bash present |
+| hermes | Depends on adapters | Run detection §2.1 → Try Path B if Bash present |
 
-The agent doesn't need to memorize this table — it just runs §2.1 detection. The table just helps the agent set expectations when telling the user what's happening.
+The agent doesn't memorize this table. It runs §2.1 detection on every surface that exposes a Bash tool, regardless of the surface's name. The table only helps the agent set user expectations.
+
+## 3.5 Capability over surface name (the rule)
+
+The skill does NOT categorize surfaces as "Path A only" by name. Many surfaces look minimal but expose Bash via MCP — Claude Desktop with filesystem/shell servers, Hermes with sandbox adapters, openclaw with task-runner adapters. The only thing that matters is **can the agent invoke a shell command right now?**
+
+The detection cost is one fast shell exec (`which node && which npm && (which playwright || npx playwright --version)`). The savings are 5–30s per render across the session, often dozens of renders. Run it always.
+
+**Concrete behavior**:
+
+```
+First render attempt of the session
+  ↓
+Is the Bash tool present in this conversation's tool list?
+  ├─ No  → state = 'path-a-only'. Use POSTZEE_RENDER_*.
+  └─ Yes → Run §2.1 detection.
+            ├─ node + npm + playwright work → state = 'path-b-ready'. Use UPLOAD_RENDERED_*.
+            ├─ node + npm work but no playwright → optionally offer one-time install (§2.2).
+            └─ Anything fails → state = 'path-a-only'. Cache and fall back silently.
+```
+
+**What the agent never does**:
+- Skip detection because "this is Claude Desktop, must be Path A". Wrong premise.
+- Require any external MCP server to enable Path B. The skill uses only the Bash tool the host already exposes.
+- Re-run detection after a Bash failure in the same session. Cache and move on.
 
 ---
 

@@ -255,25 +255,61 @@ For each <section class="slide-N"> in the preview master:
    the scale transform — Puppeteer renders at full 1080×1350.
 
 2. Build an independent <!doctype html>...</html> document for the slide:
-   a. New <head> with the @font-face block(s) the slide uses
-   b. The per-slide scoped CSS (`.slide-N .headline { ... }`) — keep the
-      .slide-N class on the body or wrapper so selectors still match
-   c. Plain <body> with the slide's content at full 1080×1350
+   a. New <head> with font delivery (step 3) + per-slide scoped CSS
+      — keep the `.slide-N` class on body/wrapper so selectors still match
+   b. <body> with the slide's content at full 1080×1350
 
-3. CHANGE `font-display: swap` → `font-display: block`
-   - In preview: `swap` shows text immediately with fallback if font fails
-     (artifact CSP can block data: URI fonts)
-   - In render: `block` makes Puppeteer wait up to 3s for the font before
-     capturing — we WANT the correct typography in the final PNG, not
-     fallback. Puppeteer's font loading is not subject to artifact CSP.
+3. Font delivery swap — PREFERRED: Google Fonts <link>
+   Replace preview's base64 @font-face declarations with a Google Fonts
+   <link> in <head>:
 
-4. Inline images already use data: URIs from §3 — keep as-is. (Puppeteer
-   would also accept CDN URLs, but data: URIs are deterministic.)
+     <link rel="preconnect" href="https://fonts.googleapis.com">
+     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+     <link rel="stylesheet"
+       href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@500;700&display=block">
 
-5. Submit the N HTML strings as `slides: [{ html, width: 1080, height: 1350 }, ...]`.
+   The backend Puppeteer waits for `document.fonts.ready` after
+   `networkidle0` before screenshotting — fonts always arrive.
+
+   FALLBACK to base64 @font-face when:
+   - The font isn't on Google Fonts (e.g. brand-custom face)
+   - The agent already has base64 in hand and the carousel total HTML
+     is comfortably small (rare since we just dropped most of it)
+   Keep the fallback's `font-display: block` (see step 4).
+
+4. font-display swap → block (any @font-face that remains)
+   - Preview: `swap` — text appears immediately with fallback if data:
+     URI fonts blocked by artifact CSP
+   - Render: `block` — Puppeteer waits for the font before capturing.
+     Network fetches in Puppeteer have no CSP, so external font fetches
+     succeed; we want crisp typography, not fallback.
+
+5. Image source swap — CRITICAL (eliminates the Path A token-budget bug)
+   For each <img src="..."> and background-image: url(...) in the slide:
+   - If source has a KNOWN CDN URL (came from POSTZEE_GENERATE_IMAGE,
+     POSTZEE_UPLOAD_MEDIA, or any postzee CDN reference earlier in this
+     session): REPLACE the base64 data: URI with the CDN URL.
+   - If source was inline base64 from the user (no CDN URL available):
+     KEEP base64.
+
+   Why: the artifact preview NEEDS base64 (CSP blocks externals), but
+   the render Puppeteer has no CSP — fetches CDN URLs server-side. A
+   120KB base64 cover becomes a ~50-char URL. Saves ~30K output tokens
+   per image per slide. See `smart-rendering.md` §1.1 + `carousel-mastery.md`
+   §11.0.2 for the full token-budget breakdown.
+
+6. Submit the N HTML strings as `slides: [{ html, width: 1080, height: 1350 }, ...]`.
 ```
 
-**Source of truth is the content + design system**, not the literal HTML envelope. The agent treats preview and render as two emissions of the same underlying carousel definition. Each emission gets the CSS values appropriate for its surface — that's why the two shapes diverge on `font-display` and on aggregated-vs-per-slide structure.
+**Worked example** — a 9-slide carousel with the cover repeated on every slide and 4 font weights:
+
+| | Naive (no swaps) | After swaps |
+|---|---|---|
+| Per-slide HTML size | ~270 KB (150 KB fonts + 120 KB cover) | ~10 KB (link + URL ref) |
+| Total tool-call payload | ~2.4 MB | ~90 KB |
+| Output tokens needed | ~600 K (impossible) | ~22 K (comfortable) |
+
+**Source of truth is the content + design system**, not the literal HTML envelope. The agent treats preview and render as two emissions of the same underlying carousel definition. Each emission gets the asset-delivery mode appropriate for its surface — that's why the two shapes diverge on image/font source AND on `font-display` AND on aggregated-vs-per-slide structure.
 
 **Partial approval ("o slide 4 ainda tá fraco, ajusta")** is NOT a visual approval. Stay in 7a, iterate.
 

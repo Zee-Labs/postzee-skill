@@ -246,20 +246,27 @@ The agent composes the HTML using:
 <head>
   <meta charset="UTF-8">
   <style>
-    /* Embedded fonts via @font-face base64 — see carousel-mastery.md §11
-       This example targets the RENDER shape (Puppeteer waits for fonts).
-       For the preview shape (artifact), use font-display: swap instead —
-       see carousel-mastery.md §11.0.1 for the context table. */
+    /* PREVIEW shape: base64 @font-face + font-display: swap (artifact CSP).
+       RENDER shape: prefer Google Fonts <link> (smaller HTML, no token-budget
+       burn) — base64 only when the font isn't on Google Fonts or as fallback.
+       See carousel-mastery.md §11 + §11.0.1 + §11.0.2 for the full rationale
+       and visual-preview.md §5.1 step 3 for the preview→render swap. */
+
+    /* This example shows the PREVIEW-shape inline base64 block. At render
+       conversion, the agent replaces it with:
+       <link rel="stylesheet"
+         href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@800&family=Inter:wght@500&display=block"> */
     @font-face { 
       font-family: 'Playfair Display'; 
       font-weight: 800; 
       src: url(data:font/woff2;base64,...) format('woff2');
-      font-display: block;
+      font-display: swap; /* preview: swap; render: block — see §11.0.1 */
     }
     @font-face { 
       font-family: 'Inter'; 
       font-weight: 500; 
       src: url(data:font/woff2;base64,...) format('woff2');
+      font-display: swap;
     }
     
     /* CSS variables from briefing + movement */
