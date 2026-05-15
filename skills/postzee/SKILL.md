@@ -3,7 +3,7 @@ name: postzee
 description: World-class creative director, copywriter, video producer and social media manager powered by Postzee. Generate AI images/carousels/videos and post to 30+ social networks. Use when the user wants to create AI media, carousels, multi-scene videos, talking-head videos, or schedule social posts.
 user-invocable: true
 metadata: {"primaryEnv": "POSTZEE_MCP_URL", "emoji": "🎬"}
-version: 3.5.2
+version: 3.6.0
 ---
 
 # Postzee — World-Class AI Social Media Studio
@@ -337,7 +337,7 @@ Postzee Skill v3.5 ships a complete **editorial methodology** that produces caro
 
 **Read `reference/carousel-mastery.md` end-to-end before generating any carousel.** Then dive into the discipline files as needed during generation.
 
-### 8.0 Mandatory 7-stage editorial workflow — never skip
+### 8.0 Mandatory 8-stage editorial workflow — never skip
 
 **Carousels are high-leverage and high-cost (in attention, time, credibility). Never silently generate.** Walk the user through these stages every time.
 
@@ -357,11 +357,17 @@ Postzee Skill v3.5 ships a complete **editorial methodology** that produces caro
 │   Layer 3 — Ângulo narrativo (the unique POV defended)            │
 │   Layer 4 — Evidências (2-3 named-source facts + 1 case)          │
 ├───────────────────────────────────────────────────────────────────┤
-│ STAGE 3 — HEADLINE BATCH                                          │
-│   Generate EXACTLY 10 headlines: 5 Investigative Cultural         │
-│   (variations 1-5, 20-24 words, 0 or 2 colons) + 5 Magnetic       │
-│   Narrative (variations 6-10, 3 sentences each). Numbered.        │
-│   Run rejection checklist on each. See carousel-headline-engine.  │
+│ STAGE 3 — HEADLINE: WINNER-FIRST SURFACE                          │
+│   Internally: generate EXACTLY 10 headlines (5 IC + 5 NM), run    │
+│   rejection checklist on each, apply coverage rule. UNCHANGED.    │
+│   Externally: surface ONE — the winner — with 1-line reasoning    │
+│   (which lift pattern, what makes it the strongest of the 10).    │
+│   Offer 3 user commands:                                          │
+│     • "boa, vai"  → continue to stage 4 with the winner           │
+│     • "outras"   → reveal top-3 numbered, indexed commands ACTIVE │
+│     • "todas"    → reveal all 10 numbered                         │
+│   `refazer headlines` still works — produces a fresh batch of 10. │
+│   See carousel-headline-engine.md.                                │
 ├───────────────────────────────────────────────────────────────────┤
 │ STAGE 4 — SCRIPT (18 blocks across 9 slides)                      │
 │   Pick the narrative arc matching the brief's carousel type.      │
@@ -377,22 +383,49 @@ Postzee Skill v3.5 ships a complete **editorial methodology** that produces caro
 │   ANY failure → fix before offering the script for approval.      │
 ├───────────────────────────────────────────────────────────────────┤
 │ STAGE 6 — TEXT APPROVAL (HARD STOP — user types `aprovado`)       │
-│   ⛔ DO NOT call POSTZEE_RENDER_CAROUSEL until the user explicitly │
-│   approves the script. Partial approvals ("o slide 4 ainda tá     │
-│   fraco") are revision requests — iterate, do not render.         │
+│   ⛔ DO NOT generate slide HTML until the user explicitly approves │
+│   the script. Partial approvals ("o slide 4 ainda tá fraco") are  │
+│   revision requests — iterate, do not advance.                    │
 ├───────────────────────────────────────────────────────────────────┤
-│ STAGE 7 — RENDER + ITERATE                                        │
-│   POSTZEE_GET_CONTEXT (validate credits/plan) → compose HTML      │
-│   following the design system in carousel-mastery.md §10 →        │
-│   choose ONE path:                                                │
-│     A) atomic: POSTZEE_RENDER_CAROUSEL with full slides[]         │
-│     B) iterative: RENDER once with [slide1] then APPEND each next │
+│ STAGE 7a — VISUAL PREVIEW (HTML artifact, NO Postzee call)        │
+│   Compose the full slide HTMLs following the design system in     │
+│   carousel-mastery.md §10. Inline ALL images as base64 data URIs  │
+│   (fetch CDN URLs, embed POSTZEE_GENERATE_IMAGE outputs, resize   │
+│   anything >5MB raw). Package the N slides into ONE HTML artifact │
+│   — iframe srcdoc per slide for CSS isolation, scale 50% (540×675)│
+│   in a single-column grid, vertical scroll.                       │
+│   Output as an artifact so Claude Desktop/Web/openclaw render it  │
+│   visually. Surfaces without artifact rendering (Claude Code,     │
+│   hermes): graceful fallback — fenced ```html``` block + textual  │
+│   slide-by-slide summary. See carousel-visual-preview.md.         │
+│   Iteration loop — user commands:                                 │
+│     "muda cor de fundo do slide 3 pra preto"                      │
+│     "headline do slide 1 maior"                                   │
+│     "troca slide 4 com 5"                                         │
+│     "remove slide 7"                                              │
+│     "insere slide entre 2 e 3 sobre X"                            │
+│     "troca a imagem do slide 6 por essa: <url>"                   │
+│   → Edit the master HTML, re-output the artifact. No Postzee call.│
+│   ⛔ NEVER call POSTZEE_RENDER_CAROUSEL inside this stage.         │
+├───────────────────────────────────────────────────────────────────┤
+│ STAGE 7b — RENDER & SHIP                                          │
+│   Triggered ONLY by an explicit visual approval phrase:           │
+│     PT: `renderiza` / `pode publicar` / `tá pronto` /             │
+│         `aprovado` / `vai`                                        │
+│     EN: `render` / `ship it` / `let's go` / `approved`            │
+│   POSTZEE_GET_CONTEXT (validate credits/plan) →                   │
+│   POSTZEE_RENDER_CAROUSEL with the SAME HTML that was in the      │
+│   artifact (base64 images fit in the 7MB/slide + 50MB total       │
+│   limit, see §8.1).                                               │
 │   Save the returned mediaGroupId.                                 │
 │   ⛔ Never call RENDER more than once for the same carousel.       │
 │   ⛔ Never silently retry on failure — surface error to user.      │
-│   "Change slide N" → POSTZEE_REPLACE_CAROUSEL_SLIDE                │
-│   "Add slide N+1" → POSTZEE_APPEND_CAROUSEL_SLIDE                  │
-│   Insert/reorder/delete → no primitive; rebuild via RENDER.       │
+│   After a successful render, REPLACE / APPEND are escape hatches  │
+│   for post-render tweaks — not the main iteration loop (which     │
+│   lives in stage 7a, before any credit is spent):                 │
+│     "Change slide N (after render)" → POSTZEE_REPLACE_CAROUSEL_SLIDE │
+│     "Add slide N+1 (after render)"  → POSTZEE_APPEND_CAROUSEL_SLIDE  │
+│     Insert/reorder/delete → no primitive; iterate in 7a or rebuild.│
 ├───────────────────────────────────────────────────────────────────┤
 │ POST-STAGE — PUBLISH                                              │
 │   POSTZEE_CREATE_POST with mediaUrls (already in display order).  │
@@ -401,7 +434,7 @@ Postzee Skill v3.5 ships a complete **editorial methodology** that produces caro
 
 ### 8.0.1 The invisible scaffolding rule
 
-The user **never sees** the triagem analysis, the 7-parameter scoring, the 5 final tests, or the visual checklist. The work is invisible. The user sees the 10 numbered headlines, the script, the rendered slides, the caption — never the discipline behind them.
+The user **never sees** the triagem analysis, the 10-headline batch internals, the 7-parameter scoring, the 5 final tests, or the visual checklist. The work is invisible. The user sees one winning headline (with optional expansion on demand), the script, the visual preview, the rendered slides, the caption — never the discipline behind them.
 
 If the user asks "why did you choose that headline?" — *then* explain briefly in their language. Never volunteer the methodology.
 
@@ -440,7 +473,8 @@ POSTZEE_REPLACE_CAROUSEL_SLIDE({
 **Hard limits (all three tools):**
 - max **15 slides** per carousel total
 - min 256 / max **2160** px per dimension
-- 250 KB max HTML per slide
+- **7 MB max HTML per slide** (enough room to inline images as base64 — see §8 visual preview workflow)
+- 50 MB max **total payload** per RENDER_CAROUSEL call (sum of all `slides[].html`)
 - 45 s render timeout per slide
 - RENDER_CAROUSEL is all-or-nothing: any slide failure → entire group is rolled back
 - APPEND fails atomically per call: a failed append leaves the carousel as-is, no partial state

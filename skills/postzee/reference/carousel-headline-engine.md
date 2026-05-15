@@ -1,18 +1,54 @@
 # Carousel Headline Engine
 
-This file is the heart of the carousel headline craft. It governs **how the agent generates 10 headlines** for every carousel, the structural rules each must obey, the empirical patterns that perform, and the iteration commands the user can issue.
+This file is the heart of the carousel headline craft. It governs **how the agent generates 10 headlines** internally for every carousel, which one to surface as the winner, the structural rules each must obey, the empirical patterns that perform, and the iteration commands the user can issue.
 
-The headline is the carousel. A weak slide-1 hook wastes the other eight slides — no matter how good they are. So this stage is **non-negotiable**: the agent generates exactly 10 numbered headlines, runs the rejection checklist on each, and only then offers them to the user.
+The headline is the carousel. A weak slide-1 hook wastes the other eight slides — no matter how good they are. So this stage is **non-negotiable**: the agent generates exactly 10 headlines internally, runs the rejection checklist on each, applies the coverage rule, picks the strongest — and surfaces it to the user with conviction.
 
 ---
 
 ## 1. The inviolable rule
 
-> **For every carousel, generate exactly 10 headlines: 5 in *Investigative Cultural* format (variations 1-5) and 5 in *Magnetic Narrative* format (variations 6-10). Numbered. No more, no less.**
+> **For every carousel, generate exactly 10 headlines internally: 5 in *Investigative Cultural* format (variations 1-5) and 5 in *Magnetic Narrative* format (variations 6-10). Apply the rejection checklist (§7), pattern coverage (§9), and trigger coverage. Surface ONE — the winner — to the user.**
 
-Not 9. Not 11. **Ten.** This is structural — the user will reference them by number ("a 3 mais provocativa", "mistura a 2 com a 7"), so the index must be stable.
+The discipline (rejection checklist, coverage rule, lift-pattern selection) is internal: it produces a strong shortlist. What changes is what the user sees first.
 
-If the user asks for something specific ("só preciso de 3 ideias rápidas"), still generate the full 10 internally and offer them. The user does not pay the cost — the agent does the discipline.
+**Surface protocol (default):**
+
+```
+✨ Headline mais forte pro carrossel:
+
+   "<the winning variation, full text>"
+
+   <one-line reasoning: which lift pattern, what makes it the strongest
+    of the 10 — keep it brief, ~20 words. Talk like a copywriter
+    defending a pick, not a tool listing parameters.>
+
+   👉 "boa, vai"  — sigo com essa
+      "outras"   — te mostro o top-3
+      "todas"    — te mostro as 10 numeradas
+```
+
+The user reads ONE headline, defended, and decides fast. The other 9 stay in your scratch pad — accessible on demand but not dumped as a menu.
+
+**Why winner-first instead of dumping 10:**
+- A senior copywriter doesn't show clients 10 drafts; they show the pick + a one-line argument. That's the work.
+- 10 options paralyzes — most users skim, pick something mid-list, and move on. Winner-first compresses 30-180s of decision time to 5-15s.
+- The discipline is preserved: you still generated 10, still filtered, still satisfied coverage. The user just doesn't have to wade through it.
+
+**Expansion paths:**
+
+| User command | Reveal | What it enables |
+|---|---|---|
+| `boa, vai` / silence / approval | nothing new | proceed to Stage 4 with the winner |
+| `outras` | the top-3 numbered (1, 2, 3 — strongest after the winner) | indexed commands (§8) on the top-3 |
+| `todas` | full 10 numbered (1-10) | indexed commands (§8) on all 10 |
+| `refazer headlines` | a fresh batch of 10 (winner-first surface again) | resets the iteration |
+
+Once any expansion is revealed, every indexed command in §8 (`mistura a 3 com a 7`, `a 4 mais provocativa`, `a 2 com ângulo brasileiro`, etc.) operates on the visible numbers. The index is stable within a session — the variation labeled "2" stays "2" until a `refazer headlines`.
+
+**Stable index across surface modes:** the winner is the same headline whether the user is in default mode or has expanded. If you reveal the top-3, the winner is variation 1. If you reveal all 10, the winner stays variation 1 there too. Never re-number on expansion.
+
+If the user asks for something specific ("só preciso de 3 ideias rápidas"), still generate the full 10 internally and surface the winner. The user does not pay the cost — the agent does the discipline.
 
 ---
 
@@ -271,21 +307,49 @@ If the user says "use a 3 na capa" and you secretly decide "vou cortar a parte f
 
 ## 11. The invisible scaffolding rule
 
-The agent never narrates this process to the user. The user sees:
+The agent never narrates this process to the user. The default surface is one winner, defended in one line, with three commands:
 
 ```
-Aqui estão 10 ideias de headline:
+✨ Headline mais forte pro carrossel:
 
-VARIAÇÃO 1 — [headline]
+   "[winning variation, full text]"
+
+   [one-line reasoning — lift pattern + why this beat the other 9.
+    ~15-25 words. Talk like a copywriter, not a tool.]
+
+   👉 "boa, vai"  — sigo com essa
+      "outras"   — te mostro o top-3
+      "todas"    — te mostro as 10 numeradas
+```
+
+On `outras` (top-3 reveal):
+
+```
+Top-3 (em ordem de força):
+
+VARIAÇÃO 1 — [winner — same headline from default surface]
+VARIAÇÃO 2 — [second-strongest]
+VARIAÇÃO 3 — [third-strongest]
+
+"a 1" / "a 2" / "a 3" pra escolher, "mistura a 1 com a 3"
+pra blendar, "todas" pra ver as 10.
+```
+
+On `todas` (full reveal — the legacy surface):
+
+```
+VARIAÇÃO 1 — [winner]
 VARIAÇÃO 2 — [headline]
 ...
 VARIAÇÃO 10 — [headline]
 
-Qual te chama a atenção? Pode dizer "a 3", "mistura a 2 com a 7",
-ou "refazer headlines" se nenhuma serve.
+Qual te chama a atenção? "a 3", "mistura a 2 com a 7", ou
+"refazer headlines" se nenhuma serve.
 ```
 
 **No** "I generated using the Two-Colon formula", **no** "I optimized for the +155% lift pattern", **no** "I checked the rejection list against each variation". The work is invisible. Only the result is shown.
+
+The one-line reasoning on the winner is the ONLY place the lift pattern surfaces by default — and even there, talk like a copywriter explaining a pick, not a tool reciting parameters. "Pattern Death/End (+119% lift)" is fine because it's short and concrete. "I selected this based on a multi-criteria scoring across 7 dimensions" is not.
 
 If the user asks why a specific variation was chosen, *then* you can explain the lever you pulled — but in their language, briefly. Never volunteer it.
 
