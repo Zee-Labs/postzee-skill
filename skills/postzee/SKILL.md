@@ -3,7 +3,7 @@ name: postzee
 description: World-class creative director, copywriter, video producer and social media manager powered by Postzee. Generate AI images/carousels/videos and post to 30+ social networks. Use when the user wants to create AI media, carousels, multi-scene videos, talking-head videos, or schedule social posts.
 user-invocable: true
 metadata: {"primaryEnv": "POSTZEE_MCP_URL", "emoji": "🎬"}
-version: 3.6.0
+version: 3.7.0
 ---
 
 # Postzee — World-Class AI Social Media Studio
@@ -177,14 +177,17 @@ See `reference/credit-aware-flow.md` for how to interpret context and handle eve
 | `POSTZEE_ENHANCE_PROMPT` | Optimize a prompt for better results |
 | `POSTZEE_GENERATE_IMAGE` | Generate an AI image |
 | `POSTZEE_GENERATE_VIDEO` | Generate an AI video |
-| **`POSTZEE_RENDER_CAROUSEL`** ⭐ | Submit N HTML documents → atomically rendered to PNG slides as one ordered MediaGroup (1-15 slides). The carousel pipeline. See §8 + `reference/carousel-mastery.md` |
+| **`POSTZEE_RENDER_IMAGE`** ⭐ | Submit ONE HTML document → rendered to a single PNG Media (returns mediaId+mediaUrl). The single-image pipeline for text-heavy posts. See §8 + `reference/image-mastery.md`. Path A (Postzee renders server-side). |
+| **`POSTZEE_RENDER_CAROUSEL`** ⭐ | Submit N HTML documents → atomically rendered to PNG slides as one ordered MediaGroup (1-15 slides). The carousel pipeline. See §8 + `reference/carousel-mastery.md`. Path A. |
+| **`POSTZEE_UPLOAD_RENDERED_IMAGE`** ⭐ | Submit a PRE-RENDERED PNG (base64) → standalone Media. Used by Path B (when the agent has local Playwright + shell). See `reference/smart-rendering.md`. |
+| **`POSTZEE_UPLOAD_RENDERED_CAROUSEL`** ⭐ | Submit N pre-rendered PNGs → atomic MediaGroup. Path B carousel. See `reference/smart-rendering.md`. |
 | **`POSTZEE_REPLACE_CAROUSEL_SLIDE`** ⭐ | Surgically replace ONE slide in an existing carousel — the other slides keep their identity, order, and URLs. Use when the user says "change slide N" instead of re-rendering everything. |
 | **`POSTZEE_APPEND_CAROUSEL_SLIDE`** ⭐ | Append a single slide to the END of an existing carousel. Use for iterative authoring ("show me slide 1, ok now slide 2…") so slides land in ONE growing MediaGroup instead of N orphan single-slide groups. |
 | `POSTZEE_GENERATE_HEYGEN_VIDEO` | Avatar video with HeyGen (uses HeyGen credits, not Postzee) |
 | `POSTZEE_LIST_HEYGEN_AVATARS` | Available HeyGen avatars |
 | `POSTZEE_LIST_HEYGEN_VOICES` | Available HeyGen voices |
 | `POSTZEE_CHECK_JOB` | Poll generation status |
-| `POSTZEE_CREATE_POST` | Publish or schedule a post |
+| `POSTZEE_CREATE_POST` | Publish or schedule a post. v3.7: accepts `settings` for per-platform customization (story vs feed on IG, TikTok privacy/duet/music, YouTube tags, etc.). See `reference/platform-settings.md`. |
 
 The legacy `POSTZEE_LIST_IMAGE_MODELS` and `POSTZEE_LIST_VIDEO_MODELS` still work but are superseded by `POSTZEE_LIST_MODELS_DETAILED`.
 
@@ -291,11 +294,16 @@ Full templates: `reference/plans-and-pricing.md` and `reference/credit-aware-flo
 ## 7. Format Decision Tree
 
 ```
-1 hero image / static visual / quote
+1 hero image / static visual / quote / text-heavy single post
 └── IMAGE (single)
+    ├── Text-heavy editorial composition (the v3.7 path)
+    │   → POSTZEE_RENDER_IMAGE with composed HTML
+    │   → See §8 + `reference/image-mastery.md` (6-stage workflow)
+    └── Pure AI-generated image (no overlay text)
+        → POSTZEE_GENERATE_IMAGE (existing flow)
 
 Multi-image educational / list / story / tutorial
-└── CAROUSEL (see §8)
+└── CAROUSEL (see §8 + `reference/carousel-mastery.md`)
 
 Single dynamic moment / 1 cena
 └── VIDEO (single-scene)
@@ -318,18 +326,30 @@ When in doubt, ask (in the user's language): "Is it 1 image, a carousel, or a vi
 
 ---
 
-## 8. CAROUSEL MASTERY — HTML Render (editorial-grade format)
+## 8. CAROUSEL + IMAGE MASTERY — HTML Render (editorial-grade format)
 
-Carousels drive **3-5x more engagement** than single images on IG and LinkedIn (2026 data) — but only when the **content is editorial-grade**. AI-generated carousels with template hooks, slop language, and missing structure die on impact: the audience scrolls past in 1 second.
+Carousels drive **3-5x more engagement** than single images on IG and LinkedIn (2026 data); single text-heavy posts (image #18 / `@gpt_academico` style) drive **2-4x engagement** over plain photos in the same niches. Both — but only when the **content is editorial-grade**. AI-generated content with template hooks, slop language, and missing visual discipline dies on impact: the audience scrolls past in 1 second.
 
-Postzee Skill v3.6 ships a complete **editorial methodology** that produces carousels indistinguishable from what a top human editorial team would publish. The methodology has 6 disciplines, each with its own deep-dive reference file:
+Postzee Skill v3.7 ships a complete **editorial methodology** that produces both carousels AND single-image posts indistinguishable from what a top human editorial team would publish. The methodology has 9 disciplines spread across reference files, all required reading before generating anything:
 
-- `reference/carousel-mastery.md` — central orchestrator: 8-stage workflow, design system, control commands
-- `reference/carousel-headline-engine.md` — the 10-headline discipline (winner-first surface)
-- `reference/carousel-visual-preview.md` — stage 7a HTML artifact preview protocol (NEW in v3.6)
+**Content disciplines**:
+- `reference/copywriting-mastery.md` — the 10 inviolable laws, 12 hook patterns, 4 caption frameworks, Brazilian voice (NEW in v3.7 — REQUIRED for any post)
+- `reference/carousel-headline-engine.md` — the 10-headline discipline (winner-first surface) for carousels
 - `reference/carousel-editorial-filter.md` — anti-AI-slop language rules (32+ banned constructs, 5-question test, 7 quality parameters)
 - `reference/carousel-quality-manual.md` — 18-block / 9-slide structure with word-count targets, 4 narrative arcs
-- `reference/carousel-design-principles.md` — visual hierarchy, dark/light rhythm, type scale, 9-item visual checklist
+
+**Design disciplines**:
+- `reference/editorial-design.md` — 6 design movements (Editorial / Bold / Minimal / Photo-led / Magazine / Brutalist), typography pairings, type contrast law, photo treatment, brand bar system, highlight blocks (NEW in v3.7 — REQUIRED for any composition)
+- `reference/carousel-design-principles.md` — legacy visual rules; reframes against `editorial-design.md` movements
+
+**Workflow disciplines**:
+- `reference/carousel-mastery.md` — central orchestrator for carousels: 8-stage workflow, design system, control commands
+- `reference/image-mastery.md` — single-image methodology: 6-stage workflow, autonomous mode, composition (NEW in v3.7)
+- `reference/carousel-visual-preview.md` — stage 7a HTML artifact preview protocol (applies to both single image + carousel)
+- `reference/smart-rendering.md` — Path A vs Path B render decision (NEW in v3.7)
+
+**Operational disciplines**:
+- `reference/platform-settings.md` — per-network publish settings (story vs feed, TikTok privacy/duet/music, YouTube tags, etc.) (NEW in v3.7 — REQUIRED before any `POSTZEE_CREATE_POST` call)
 - `reference/carousel-references.md` — two complete worked examples
 
 > **You design. Postzee renders.**
@@ -1062,12 +1082,17 @@ For polling: `POSTZEE_CHECK_JOB` may take 10-60s for images, 30-180s for videos,
 | `reference/media-memory.md` | **Manifest pattern + decision tree for recalling/reusing generated and uploaded assets across turns and sessions.** |
 | `reference/plans-and-pricing.md` | The 5 plans, 5 credit packs, when to recommend which |
 | `reference/credit-aware-flow.md` | State matrix: how to react in every plan/credit/channel state, with CTA copy |
-| `reference/carousel-mastery.md` | **v3.6 — orchestrator** — 8-stage editorial workflow (stage 7 split into 7a visual preview + 7b render), design system (CSS variables, slide types A-F, image and font embedding rules), control commands, iteration playbook, competitor positioning. **Read end-to-end before any carousel.** |
+| `reference/carousel-mastery.md` | **v3.6 — orchestrator** — 8-stage carousel editorial workflow (stage 7 split into 7a visual preview + 7b render), design system (CSS variables, slide types A-F, image and font embedding rules), control commands, iteration playbook, competitor positioning. **Read end-to-end before any carousel.** |
+| `reference/image-mastery.md` | **v3.7 — NEW** — single-image methodology: 6-stage workflow with autonomous-mode briefing (3 questions max), winner-first hook + treatment proposal, composition for the 6 movements, iteration loop, hand-off to render. **Read end-to-end before any single-image post.** |
+| `reference/copywriting-mastery.md` | **v3.7 — NEW** — copywriter brain: 10 inviolable laws (specificity, one-promise, conversation join, pattern interrupt, slippery slope, etc), 5 awareness levels (Schwartz), 12 hook patterns atlas, 4 caption frameworks (AIDA/PAS/BAB/HookPromisePayoffCTA), Brazilian voice register, anti-anglicism. **Required before writing any post.** |
+| `reference/editorial-design.md` | **v3.7 — NEW** — 6 design movements (Editorial/Bold/Minimal/Photo-led/Magazine/Brutalist) with typography pairings + composition + color systems, type contrast law (4:1 minimum), photo treatment (grading, subject placement, blocking), brand bar system (8 canonical positions), highlight block system (orange/red/underline), 4-zone slide anatomy, 9-item visual polish checklist. **Required for any composition.** |
+| `reference/carousel-visual-preview.md` | **v3.6 — applies to both single image + carousel** — stage 7a protocol: HTML artifact structure (iframe srcdoc per slide), image base64-inlining decision tree (fetch, resize >5MB, fallback on failure), iteration command vocabulary, hand-off to stage 7b, graceful degradation for headless surfaces. |
+| `reference/smart-rendering.md` | **v3.7 — NEW** — Path A (Postzee renders via Puppeteer) vs Path B (agent renders locally via Playwright + uploads bytes). Capability detection protocol, when to prefer each path, render script template, fallback flow on Path B failure, security notes. |
+| `reference/platform-settings.md` | **v3.7 — NEW** — per-network publish settings reference: Instagram (post/story + collaborators), TikTok (privacy/duet/stitch/comment/title/music), YouTube (visibility/tags), LinkedIn (carousel), X/Threads/Pinterest/Facebook + cross-cutting concerns. **Required before any `POSTZEE_CREATE_POST` call.** Includes triggers (PT-BR + EN), smart defaults, and the v3.7 settings passthrough on the MCP tool. |
 | `reference/carousel-headline-engine.md` | **v3.6** — 10-headline discipline with winner-first surface: internally generate 10 (5 IC + 5 NM) with rejection checklist + coverage rule, surface 1 winner + reasoning. Expansion commands (`outras` / `todas`) reveal top-3 or full 10 on demand. 5 empirical patterns, 6 emotional triggers, lift data, iteration commands. |
-| `reference/carousel-visual-preview.md` | **v3.6 — NEW** — stage 7a protocol: HTML artifact structure (iframe srcdoc per slide), image base64-inlining decision tree (fetch, resize >5MB, fallback on failure), iteration command vocabulary, hand-off to stage 7b, graceful degradation for headless surfaces. |
 | `reference/carousel-editorial-filter.md` | **v3.5** — anti-AI-slop ruleset: 32+ banned constructions, Portuguese grammar rules, 5-question AI-tone test, 7 quality parameters with 8/10 threshold, banned framings/openings/closings |
 | `reference/carousel-quality-manual.md` | **v3.5** — editorial journalism standard: 18-block / 9-slide structure with word-count targets per block, 4 narrative arcs (Tendência/Tese/Case/Previsão), 7-step revision, 5 final tests, slide-count adaptations (5/7/9/12), penalty rules |
-| `reference/carousel-design-principles.md` | **v3.5** — visual discipline: 3-tier hierarchy, dark/light rhythm cadence, lower-third rule, type scale, 9-item visual checklist, anti-patterns table, 4 visual styles, 11-niche palette table, image distribution rules |
+| `reference/carousel-design-principles.md` | **v3.5** — legacy visual discipline (3-tier hierarchy, dark/light rhythm, type scale, anti-patterns table, 11-niche palette table). Most material now lives in `editorial-design.md` (v3.7); this file retains rules specific to carousel slide flow. |
 | `reference/carousel-references.md` | **v3.5** — two complete worked examples (Tese Contraintuitiva + Tendência Interpretada): triagem → 10 headlines → spine → 9-slide copy → caption. Use to calibrate intuition, not as templates |
 | `reference/captions-frameworks.md` | AIDA / PAS / BAB / FAB / 4 Ps templates per platform |
 | `reference/hooks-library.md` | 80+ proven hooks by category |

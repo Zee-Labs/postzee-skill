@@ -1,15 +1,25 @@
 # Carousel Mastery — The Editorial Carousel System
 
-This is the **central reference** for the carousel pipeline. Skill v3.6 ships an editorial-grade carousel methodology built on six disciplines, each with its own deep-dive file:
+This is the **central reference** for the carousel pipeline. Skill v3.7 extends the v3.6 editorial methodology with new disciplines for single-image posts, design depth, and copywriting:
 
-- `carousel-headline-engine.md` — the 10-headline discipline with winner-first surface
-- `carousel-visual-preview.md` — stage 7a HTML artifact preview protocol (NEW in v3.6)
+**Disciplines this file orchestrates** (carousel-specific):
+- `carousel-headline-engine.md` — 10-headline discipline with winner-first surface
+- `carousel-visual-preview.md` — stage 7a HTML artifact preview protocol
 - `carousel-editorial-filter.md` — anti-IA-slop language rules
 - `carousel-quality-manual.md` — 18-block / 9-slide structure with word counts
-- `carousel-design-principles.md` — visual hierarchy, dark/light rhythm, anti-patterns
+- `carousel-design-principles.md` — legacy carousel visual rules (most material migrated to `editorial-design.md` in v3.7)
 - `carousel-references.md` — two complete worked examples
 
-This file (carousel-mastery.md) is the orchestrator: it defines the workflow that runs all six together, the design-system CSS + HTML scaffolding for each slide type, the image and font inlining rules, the iteration playbook, and the control commands the user can issue.
+**v3.7 disciplines (apply to BOTH carousels and single images)**:
+- `copywriting-mastery.md` — 10 inviolable laws, 12 hook patterns, 4 caption frameworks, BR voice
+- `editorial-design.md` — 6 design movements, type contrast law, photo treatment, brand bar system
+- `smart-rendering.md` — Path A (Postzee renders) vs Path B (agent renders locally)
+- `platform-settings.md` — per-network publish settings (REQUIRED before any `POSTZEE_CREATE_POST`)
+
+**v3.7 parallel methodology**:
+- `image-mastery.md` — single-image methodology (6-stage workflow); read for any post that's NOT a carousel
+
+This file (carousel-mastery.md) is the orchestrator for carousels: it defines the workflow that runs the carousel disciplines together, the design-system CSS + HTML scaffolding for each slide type, the image and font inlining rules, the iteration playbook, and the control commands the user can issue. Pair it with `image-mastery.md` for single-image work — same disciplines, different methodology.
 
 > **Hard rule:** before generating any carousel for a user, read this file end-to-end. Then dive into the discipline files only as needed during generation.
 

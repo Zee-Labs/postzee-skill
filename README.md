@@ -4,6 +4,29 @@ The most complete AI agent skill for social media production. Turns your agent i
 
 All operations go through the **Postzee MCP HTTP** server — never the REST API directly.
 
+## What's new in v3.7 — Single-image posts + Editorial design system + Smart rendering + Per-platform settings
+
+Four pillars on top of v3.6:
+
+- **Single-image posts via HTML** — same architecture that powers carousels (skill composes editorial HTML, Postzee renders to PNG) extended to standalone text-heavy posts. The agent generates editorial typography + photo overlay + brand bar in a single composition; the user posts the resulting PNG to any feed. Output rivals magazine-grade design accounts like `@gpt_academico` (528k engagement posts) — composed via conversation, no Canva, no Photoshop.
+
+  New tools: `POSTZEE_RENDER_IMAGE` (HTML → single Media). New methodology: `reference/image-mastery.md` (6-stage workflow with autonomous-mode briefing — 3 questions max instead of 7).
+
+- **Editorial design system** — `reference/editorial-design.md` codifies the 6 design movements (Editorial / Bold / Minimal / Photo-led / Magazine / Brutalist) with full typography pairings + composition rules + color systems. The type contrast law (display:body ≥ 4:1), the photo treatment rules (grade, subject placement, blocking), the brand bar system (8 canonical positions), the highlight block system (orange/red/underline emphasis). What separates "made by a designer" from "made by an amateur with a template" — now operationalized.
+
+  `reference/copywriting-mastery.md` codifies the copywriter brain: the 10 inviolable laws (specificity, one-promise, conversation join, pattern interrupt, slippery slope, show-don't-tell, etc.) synthesized from Schwartz / Sugarman / Kennedy / Halbert / Hopkins / Ogilvy / Shleyner / Harry Dry. The 5 awareness levels. The 12 hook patterns atlas (expanded from 5). The 4 caption frameworks (AIDA / PAS / BAB / Hook→Promise→Payoff→CTA). The Brazilian voice register with anti-anglicism guidelines.
+
+- **Smart rendering — Path A vs Path B** — when the agent has local rendering capability (Claude Code with Bash + Playwright), `reference/smart-rendering.md` teaches it to render locally and upload bytes (Path B) instead of sending HTML to Postzee's Puppeteer pool (Path A). Saves 5-30s per render for power users; falls back transparently when capability isn't available. New tools: `POSTZEE_UPLOAD_RENDERED_IMAGE` and `POSTZEE_UPLOAD_RENDERED_CAROUSEL`.
+
+- **Per-platform publish settings** — `reference/platform-settings.md` documents 80+ network-specific settings across top-8 platforms (Instagram story vs feed, TikTok privacy/duet/stitch/comment/music/title, YouTube visibility/tags/description, LinkedIn carousel mode, Pinterest board, Facebook story, etc.) with PT-BR + EN trigger phrases and smart defaults.
+
+  Closes a real v3.6 bug: posting "no Instagram como story" was silently going to feed because the MCP `POSTZEE_CREATE_POST` tool stripped per-platform settings. v3.7 adds a `settings` passthrough on the MCP tool — the agent now sends flat per-platform fields, the backend auto-derives the discriminator from the channel's platform.
+
+Companion backend bumps:
+- `POSTZEE_RENDER_IMAGE` (single HTML → 1 Media) for the new single-image flow
+- `POSTZEE_UPLOAD_RENDERED_IMAGE` + `POSTZEE_UPLOAD_RENDERED_CAROUSEL` for Path B
+- `POSTZEE_CREATE_POST` accepts a per-platform `settings` object with magic-byte validation on uploaded bytes
+
 ## What's new in v3.6 — Winner-First Headlines + Visual Preview Artifact
 
 Two structural UX upgrades on top of the v3.5 editorial methodology:
