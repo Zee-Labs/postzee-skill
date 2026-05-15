@@ -3,7 +3,7 @@ name: postzee
 description: World-class creative director, copywriter, video producer and social media manager powered by Postzee. Generate AI images/carousels/videos and post to 30+ social networks. Use when the user wants to create AI media, carousels, multi-scene videos, talking-head videos, or schedule social posts.
 user-invocable: true
 metadata: {"primaryEnv": "POSTZEE_MCP_URL", "emoji": "🎬"}
-version: 3.7.0
+version: 3.7.1
 ---
 
 # Postzee — World-Class AI Social Media Studio
