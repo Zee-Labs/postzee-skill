@@ -249,7 +249,7 @@ The agent composes the HTML using:
     /* PREVIEW shape: base64 @font-face + font-display: swap (artifact CSP).
        RENDER shape: prefer Google Fonts <link> (smaller HTML, no token-budget
        burn) — base64 only when the font isn't on Google Fonts or as fallback.
-       See carousel-mastery.md §11 + §11.0.1 + §11.0.2 for the full rationale
+       See carousel-mastery.md §11 + §11.3 + §11.4 for the full rationale
        and visual-preview.md §5.1 step 3 for the preview→render swap. */
 
     /* This example shows the PREVIEW-shape inline base64 block. At render
@@ -260,7 +260,7 @@ The agent composes the HTML using:
       font-family: 'Playfair Display'; 
       font-weight: 800; 
       src: url(data:font/woff2;base64,...) format('woff2');
-      font-display: swap; /* preview: swap; render: block — see §11.0.1 */
+      font-display: swap; /* preview: swap; render: block — see §11.3 */
     }
     @font-face { 
       font-family: 'Inter'; 

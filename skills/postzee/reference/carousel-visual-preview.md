@@ -286,17 +286,24 @@ For each <section class="slide-N"> in the preview master:
 
 5. Image source swap — CRITICAL (eliminates the Path A token-budget bug)
    For each <img src="..."> and background-image: url(...) in the slide:
-   - If source has a KNOWN CDN URL (came from POSTZEE_GENERATE_IMAGE,
-     POSTZEE_UPLOAD_MEDIA, or any postzee CDN reference earlier in this
-     session): REPLACE the base64 data: URI with the CDN URL.
-   - If source was inline base64 from the user (no CDN URL available):
-     KEEP base64.
+   - If the agent has ANY public URL for the image — Postzee CDN
+     (POSTZEE_GENERATE_IMAGE output, POSTZEE_UPLOAD_MEDIA result),
+     user-provided external URL (the link the user pasted in the brief),
+     or any URL the agent successfully WebFetch'd to inline as base64
+     for the preview — REPLACE the base64 data: URI with that URL.
+   - If the image only exists as inline base64 the user pasted directly
+     (no URL ever existed): KEEP base64.
+
+   The backend Puppeteer's URL allowlist (`isUrlAllowed` in
+   `canvas/src/services/html-render.service.ts:153-193`) is permissive
+   — it only blocks loopback / cloud-metadata IPs. Any public http(s)
+   URL passes. The agent doesn't need to verify the URL works during
+   render — Puppeteer fetches it server-side.
 
    Why: the artifact preview NEEDS base64 (CSP blocks externals), but
-   the render Puppeteer has no CSP — fetches CDN URLs server-side. A
-   120KB base64 cover becomes a ~50-char URL. Saves ~30K output tokens
-   per image per slide. See `smart-rendering.md` §1.1 + `carousel-mastery.md`
-   §11.0.2 for the full token-budget breakdown.
+   the render Puppeteer has no CSP. A 120KB base64 cover becomes a
+   ~50-char URL. Saves ~30K output tokens per image per slide. See
+   `carousel-mastery.md` §11.4 for the full token-budget breakdown.
 
 6. Submit the N HTML strings as `slides: [{ html, width: 1080, height: 1350 }, ...]`.
 ```
@@ -365,11 +372,13 @@ Some surfaces don't render Claude artifacts visually (Claude Code, hermes, custo
 
 Watch the cumulative artifact size as you build it (sum of all slide content + inlined fonts + the wrapper). If the cumulative size approaches 5MB, choose ONE of these strategies (do not mix):
 
-**Strategy A — Compress aggressively, shared image bytes:** drop image quality across the board until everything fits. Try JPEG q70, then q55, then resize to 1620px (75% of max dimension). The compressed base64 bytes are the same in both preview and render shapes — the §5.1 conversion preserves them. **Trade-off**: render quality matches the compressed preview (which is fine — user sees what they get). Tell the user: "Comprimi as imagens pra caber no preview da artifact. O render final usa essa mesma compressão."
+**Baseline reminder**: after the §5.1 swaps (image base64 → URL when available; fonts base64 → Google Fonts `<link>`), the **render shape** is already ~10 KB/slide and never the binding constraint. Edge case (f) is exclusively about the **preview shape** exceeding the artifact pane's render budget. Two responses:
 
-**Strategy B — CDN-URL fallback for heaviest slides, render keeps full quality:** for the 1-2 heaviest image slides, swap the base64 data URI for the original CDN URL in BOTH the preview content AND the corresponding slide in the render conversion. The artifact preview shows a placeholder for those slides (artifact CSP blocks the CDN fetch), while Postzee's server-side Puppeteer fetches the URL at full quality during render. Tell the user: "Slides X e Y vão aparecer com placeholder no preview (imagens grandes demais pra embutir), mas o render no Postzee puxa as imagens originais e fica na qualidade cheia."
+**Strategy A — Compress aggressively (preview only):** drop image quality across the board until the preview fits. Try JPEG q70, then q55, then resize to 1620px (75% of max dimension). The compressed bytes go into the preview shape only. The render shape uses the original CDN URL via §5.1 step 5, so quality at render isn't affected. Tell the user: "Comprimi as imagens só pro preview caber. O render no Postzee usa as originais em qualidade cheia."
 
-Pick the strategy that fits the user's intent: if quality matters most, go B and accept the preview-fidelity gap on a couple of slides; if preview-fidelity matters most, go A and accept the compression at render. **Don't mix per slide** — if slide N uses compressed base64 in preview, it must use the same compressed base64 in render; if it uses a CDN URL in preview, it uses the same CDN URL in render. Mixing creates divergent image bytes between the two shapes — the bug we're trying to avoid.
+**Strategy B — Upload-first to get a URL:** if the only reason an image lacks a URL is that the user pasted raw bytes / a data: URI, the agent can call `POSTZEE_UPLOAD_MEDIA` BEFORE building the preview. That gives a Postzee CDN URL the agent uses in render via §5.1 step 5. The preview can still use compressed base64 (Strategy A) for pane fit. Tell the user: "Subi a imagem do slide N pro Postzee primeiro — ganhei a URL e o preview ficou leve."
+
+The two strategies are complementary, not alternatives. Strategy A keeps the preview viewable; Strategy B widens the image-swap rule's coverage. Apply both when needed. The single failure mode to avoid is shipping the render with worse-than-necessary image bytes — if you compressed for preview, make sure the render still references the original URL.
 
 ---
 
@@ -388,6 +397,6 @@ Pick the strategy that fits the user's intent: if quality matters most, go B and
 |---|---|---|
 | Postzee tool calls | NONE | `POSTZEE_RENDER_CAROUSEL` (one call) |
 | Iteration cost | free, instant | each `REPLACE` = credits + queue time |
-| Source of truth | content + design system (preview shape: aggregated, scaled, `font-display: swap`) | same content + design system (render shape: per-slide, full 1080×1350, `font-display: block`) — converted via §5.1 |
+| Source of truth | content + design system (preview shape: aggregated, scaled, base64 images, base64 @font-face, `font-display: swap`) | same content + design system (render shape: per-slide, full 1080×1350, CDN URLs for images when available, Google Fonts `<link>` for fonts when available, `font-display: block`) — converted via §5.1 |
 | User signals advance via | `renderiza` / `ship it` / `aprovado` | post-render: gallery card, ready to publish |
 | Failure recovery | edit HTML, re-output artifact | surface raw error, ask user (SKILL.md §8.5.C) |
