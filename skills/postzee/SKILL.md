@@ -421,8 +421,10 @@ Postzee Skill v3.7 ships a complete **editorial methodology** that produces both
 │   POSTZEE_ESTIMATE_GENERATION_COST. Present a compact proposal    │
 │   with prompt + model + cost per slide + 5 commands               │
 │   (gera todas / só X / só X e Y / pula / outros prompts).         │
-│   On approval: POSTZEE_GENERATE_IMAGE per accepted slide; hold    │
-│   the mediaUrls for Step 1. On "pula": ZERO charge, continue.     │
+│   On approval: fire POSTZEE_GENERATE_IMAGE in PARALLEL per        │
+│   accepted slide (each returns jobId), then poll                  │
+│   POSTZEE_CHECK_JOB every ~5s until success; collect mediaUrls    │
+│   for Step 1. On "pula": ZERO charge, continue typography-only.   │
 │                                                                   │
 │   STEP 1 — COMPOSE THE PREVIEW                                    │
 │   Compose the full slide content following the design system in   │

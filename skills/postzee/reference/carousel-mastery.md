@@ -347,6 +347,21 @@ Before composing the preview HTML, the agent runs a strategic analysis: **which 
 
 The default mental model: a typography-only carousel is the **baseline**. Images are added only when the slide LOSES force without them. Carousels that need images and ship typography-only underperform; carousels that don't need images and ship with them visually saturate. The agent must know the difference.
 
+#### 9.1.0 First: account for any user-provided photos
+
+Before running the strategy, the agent checks whether the user already supplied photos in the brief or session context.
+
+**If the user provided photos**:
+1. Distribute them per `§18` (Image distribution — when the user provides photos). That table assigns specific slides based on photo count.
+2. The slides covered by user-provided photos are **out of scope** for §9.1 proposal — don't propose to generate an image for a slide that already has one.
+3. For the **remaining** slides (those NOT covered by user photos), run §9.1.1 + §9.1.2 normally.
+
+**Example**: user provides 1 photo for the cover. Agent assigns it to slide 1 per §18. Then §9.1 evaluates slides 2-N for the rigorous filter. If slide 3 qualifies, the agent proposes generating that one — never proposes regenerating the cover (user already chose).
+
+**If the user provided NO photos**: proceed directly to §9.1.1 (cover candidate) and §9.1.2 (filter for internals). This is the common case.
+
+This step is silent — the agent doesn't surface anything to the user. It's a pre-filter on what's considered for the proposal.
+
 #### 9.1.1 The cover slide — almost always a candidate
 
 Slide 1 (capa) is proposed as an image candidate by default, **except** when:
@@ -415,11 +430,21 @@ Don't hardcode. Call `POSTZEE_LIST_IMAGE_MODELS` once at the start of Step 0 (ca
 |---|---|---|
 | Editorial photoreal — humans, objects, real scenes | balanced (FLUX 1.1 Pro, Imagen 3, etc.) | Cover with person, case real, brand object |
 | Conceptual / metaphoric — abstract, surreal compositions | balanced or premium | Metaphorical cover, conceptual slide |
+| Cinematic / atmospheric backgrounds — moody scenery, environmental shots | `nano-banana` or equivalent (see SKILL.md §8 background-art notes) | Full-bleed slide backgrounds where the image is mostly atmosphere behind text |
 | Minimalist design — clean geometric / illustrative | recraft (design mode) when available | Slides with limited visual weight, brand-friendly |
 
 Default tier: **balanced** (predictable cost, high quality). Reach for premium only if the user explicitly asks for max quality.
 
-Aspect ratio: **4:5** (1080×1350, matches the slide canvas).
+**Aspect ratio**: match the carousel canvas decided at briefing — it varies by destination platform:
+
+| Destination | Aspect | Pixels |
+|---|---|---|
+| Instagram / Facebook / LinkedIn carousel (default) | 4:5 | 1080×1350 |
+| Pinterest carousel | 2:3 | 1080×1620 |
+| X (Twitter) carousel | 16:9 or 1:1 | 1920×1080 or 1080×1080 |
+| TikTok carousel | 9:16 or 4:5 | 1080×1920 or 1080×1350 |
+
+If the brief didn't specify a destination, default to 4:5 (the most common). If multiple destinations were stated, default to the most restrictive aspect (4:5 fits everywhere acceptably).
 
 Use `POSTZEE_ESTIMATE_GENERATION_COST` to get the exact credit cost before showing the proposal. **Never guess** the cost — pricing changes; the live tool returns the right number.
 
@@ -498,12 +523,33 @@ Compact, justification-driven, cost-transparent, 4-5 commands. Example for the "
 
 | Response | Action |
 |---|---|
-| `gera as N` / `todas` / `ok` / `vai` | Loop `POSTZEE_GENERATE_IMAGE` for each qualifying slide. Hold the returned `mediaUrl` from each. |
-| `só capa` / `só 1` | Generate only that one. |
-| `só 3` / `só 1 e 3` / numerical subset | Generate just the listed indices. |
+| `gera as N` / `todas` / `ok` / `vai` | **Generate in parallel**: issue `POSTZEE_GENERATE_IMAGE` for ALL accepted slides simultaneously (don't await one before firing the next). Each returns a `jobId`. **Then poll**: call `POSTZEE_CHECK_JOB(jobId)` for each every ~5s until `status: success` (typical: 10-60s per image). Collect the `mediaUrl` from each job's success payload. See §9.1.6.1 for the parallel polling pattern. |
+| `só capa` / `só 1` | Same flow — one GENERATE_IMAGE + one CHECK_JOB poll. |
+| `só 3` / `só 1 e 3` / numerical subset | Same parallel pattern for the listed indices. |
 | `pula` / `não` / `vai sem` / `typography` | Skip step entirely. **ZERO** charge, NO retry, NO guilt-trip. Continue straight to Step 1 (compose preview, all slides typography-only). |
-| `outros prompts` / `refaz` | Re-write prompts for the SAME qualifying slides (the editorial decision of WHICH slides was correct — only prompt-text changes). Present again. Do not re-analyze qualification. |
+| `outros prompts` / `refaz` | Re-write prompts for the SAME qualifying slides (the editorial decision of WHICH slides was correct — only prompt-text changes). Present again. Do not re-analyze qualification. **Cap: 2 cycles.** After 2 rewrites, if the user still asks for `outros prompts`, surface: *"Essas foram as 2 melhores versões que tenho pros prompts. Escolhe uma das opções (`gera`, `só capa`, etc.) ou `pula` pra seguir typography-only."* |
 | Ambiguous / unclear | Ask ONE clarifying question, or default to "pula" if intent unreadable. Never re-propose if the user clearly declined. |
+
+##### 9.1.6.1 Parallel generation + polling pattern
+
+For N accepted slides:
+
+```
+1. Fire N POSTZEE_GENERATE_IMAGE calls in parallel (single message,
+   multiple tool calls). Each returns { jobId, status: 'processing' }.
+2. Hold the N jobIds.
+3. Poll: every ~5s, issue POSTZEE_CHECK_JOB for each still-processing
+   jobId in parallel. Continue until ALL jobs are 'success' or 'failed'.
+4. Cap polling at 90s total wall-clock per job (typical: 10-60s; if
+   it stretches past 90s, treat as 'failed' for that slide and apply
+   §9.1.8 handling).
+5. Collect (mediaUrl, mediaId, slideIndex) tuples from successful jobs.
+6. Surface a single combined message to the user:
+     "✅ Gerado: slide 1 + slide 3. Compondo o preview agora."
+7. Proceed to Step 1.
+```
+
+**Why parallel**: 3 images sequential ≈ 30-90s of wall-clock; 3 images in parallel ≈ 10-30s. The backend's worker pool handles concurrent generation comfortably.
 
 After generation completes, the agent has N `(mediaUrl, mediaId)` pairs in working memory. These feed Step 1:
 
@@ -533,9 +579,19 @@ For **Free plan** users with 0 generation balance: same flow. Free supports AI g
 
 #### 9.1.8 Generation failure handling
 
-If `POSTZEE_GENERATE_IMAGE` fails for one slide (timeout, model down, content-policy rejection):
-- Skip that slide's image
-- Continue with the slides that succeeded
+Failures can surface at two points in the flow:
+
+**A. `POSTZEE_GENERATE_IMAGE` rejects synchronously** (rate limit, validation error, model unavailable, content-policy block at submission)
+- The call returns an error instead of a `jobId`
+- Skip that slide's image; the rest of the parallel batch continues normally
+
+**B. `POSTZEE_CHECK_JOB` reports `status: failed`** (model crashed mid-generation, post-generation content-policy block, timeout)
+- The job's success payload never arrives
+- Skip that slide's image; treat as if (A) happened
+- If polling exceeds 90s without `success` or `failed` (very rare), treat as a B failure and stop polling
+
+**In both cases**:
+- Continue with the slides that succeeded (don't await failures to block the batch)
 - Surface to the user, briefly: *"Slide N não gerou (motivo: X). Sigo com as outras N-1 imagens; o slide N vai typography-only no preview."*
 - DO NOT auto-retry. User decides whether to request `outros prompts` for that slide or proceed.
 
@@ -1415,7 +1471,7 @@ When the user provides photos AND additional slides would still benefit from ima
 
 - [ ] Stage 5 (editorial validation gate) passed
 - [ ] Stage 6 (text approval) explicitly given by user
-- [ ] Stage 7a Step 0 (image strategy, §9.1) proposal made before preview — user accepted all / partial / said `pula`
+- [ ] Stage 7a Step 0 (image strategy, §9.1) considered before preview — either proposal presented (user accepted/partial/`pula`) OR agent decided to skip (movement typography-led; user-provided photos cover all qualifying slides; zero qualifying slides after the filter)
 - [ ] Slide 1 headline visible at min 88px, fits in 5 lines
 - [ ] Same palette + typography across all 9 slides
 - [ ] Tags/labels present and consistent on internal slides
