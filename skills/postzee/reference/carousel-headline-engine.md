@@ -48,6 +48,10 @@ Once any expansion is revealed, every indexed command in §8 (`mistura a 3 com a
 
 **Stable index across surface modes:** the winner is the same headline whether the user is in default mode or has expanded. If you reveal the top-3, the winner is variation 1. If you reveal all 10, the winner stays variation 1 there too. Never re-number on expansion.
 
+**Indexed command before expansion (auto-expand rule):** if the user issues an indexed iteration command (e.g. `ajusta a 3`, `mistura a 2 com a 7`, `a 5 mais provocativa`) while still in default winner-only mode — they haven't seen the numbered list yet — auto-expand to `todas` and then process the command on the now-visible list. Show the full 10 with the requested change applied. Don't refuse, don't ask "qual lista?", don't guess. The user clearly wants to operate on numbered options; surface them and act.
+
+Same rule if the user is in top-3 mode and references a number outside 1-3 (e.g. `mistura a 2 com a 8`): auto-expand to `todas`, then process.
+
 If the user asks for something specific ("só preciso de 3 ideias rápidas"), still generate the full 10 internally and surface the winner. The user does not pay the cost — the agent does the discipline.
 
 ---
@@ -277,7 +281,14 @@ The user will not regenerate from scratch — they will request surgical changes
 | `a [N] mais curta` / `[N] shorter` | Trim N within format limits (IC: never below 20 words; NM: keep 3 sentences). |
 | `troca o ângulo` / `change the angle` | Means: the central friction was wrong. Re-run §6 from step 1. |
 
-The agent **always responds with the full updated list of 10**, not just the changed variation. Reduces user cognitive load.
+The agent **responds in the same surface mode the user is currently in** — winner-only, top-3, or all-10. Switching surface mode mid-iteration creates cognitive whiplash; preserve continuity:
+
+- Default mode (winner-only) + user issues an indexed command (e.g. `ajusta a 3`): see §1 — auto-expand to `todas`, then process. The response shows the full 10 with the variation updated, and the user is now in all-10 mode going forward.
+- Top-3 mode + `ajusta a 2`: respond with the updated top-3.
+- All-10 mode + any iteration: respond with the updated all-10.
+- `refazer headlines`: reset to default mode (winner-only) — the slate is clean.
+
+Internal discipline is unaffected: every response still represents a stable batch of 10 internally, with rejection checklist + coverage rule reapplied. Surface mode only controls what the user sees.
 
 ---
 

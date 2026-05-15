@@ -298,10 +298,14 @@ The cover decision happens during Phase 2 (script approval) — confirm with the
 For internal slides where text is < 60% of the slide's normal density, fill the visual gap with an `.img-box`:
 
 ```html
+<!-- The url() value MUST be a base64 data URI in v3.6+ (e.g.
+     url('data:image/jpeg;base64,/9j/4AAQSk...')). External CDN URLs
+     are blocked by the Claude artifact CSP — the preview won't render.
+     See carousel-mastery.md §10.1.5 for the inlining workflow. -->
 <div class="img-box" style="
   width: 100%;
   height: 360px;
-  background: url('...') center/cover;
+  background: url('data:image/jpeg;base64,...') center/cover;
   border-radius: 12px;
   margin: 40px 0;
 "></div>
@@ -321,10 +325,13 @@ For internal slides where text is < 60% of the slide's normal density, fill the 
 For a dark slide where the photo is the *atmosphere* (not the data):
 
 ```html
+<!-- The <img> src MUST be a base64 data URI in v3.6+. External URLs
+     break the artifact preview (Claude CSP blocks remote fetches).
+     See carousel-mastery.md §10.1.5. -->
 <div style="
   width:1080px;height:1350px;position:relative;overflow:hidden;
 ">
-  <img src="..." crossorigin="anonymous" style="
+  <img src="data:image/jpeg;base64,..." style="
     position:absolute;inset:0;width:100%;height:100%;
     object-fit:cover;
   ">

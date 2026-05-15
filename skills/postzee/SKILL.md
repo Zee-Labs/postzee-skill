@@ -322,10 +322,11 @@ When in doubt, ask (in the user's language): "Is it 1 image, a carousel, or a vi
 
 Carousels drive **3-5x more engagement** than single images on IG and LinkedIn (2026 data) — but only when the **content is editorial-grade**. AI-generated carousels with template hooks, slop language, and missing structure die on impact: the audience scrolls past in 1 second.
 
-Postzee Skill v3.5 ships a complete **editorial methodology** that produces carousels indistinguishable from what a top human editorial team would publish. The methodology has 5 disciplines, each with its own deep-dive reference file:
+Postzee Skill v3.6 ships a complete **editorial methodology** that produces carousels indistinguishable from what a top human editorial team would publish. The methodology has 6 disciplines, each with its own deep-dive reference file:
 
-- `reference/carousel-mastery.md` — central orchestrator: workflow, design system, control commands
-- `reference/carousel-headline-engine.md` — the 10-headline generation discipline
+- `reference/carousel-mastery.md` — central orchestrator: 8-stage workflow, design system, control commands
+- `reference/carousel-headline-engine.md` — the 10-headline discipline (winner-first surface)
+- `reference/carousel-visual-preview.md` — stage 7a HTML artifact preview protocol (NEW in v3.6)
 - `reference/carousel-editorial-filter.md` — anti-AI-slop language rules (32+ banned constructs, 5-question test, 7 quality parameters)
 - `reference/carousel-quality-manual.md` — 18-block / 9-slide structure with word-count targets, 4 narrative arcs
 - `reference/carousel-design-principles.md` — visual hierarchy, dark/light rhythm, type scale, 9-item visual checklist
@@ -918,7 +919,7 @@ End-to-end without re-asking each step (still run §1, §2, §6 checks):
 - **"Create a Reel/TikTok"** — context → models → validate → enhance → generate vertical (9:16) → poll → channels → post
 - **"Animate my photo"** — context → models (i2v) → validate with imageUrl → generate → poll
 - **"Create a HeyGen video"** — context (heygen=true?) → avatars → voices → generate → poll
-- **"Carrossel sobre X com 7 slides"** — context → 7-question briefing criativo → triagem (silent) → 10 numbered headlines (5 IC + 5 NM, see `reference/carousel-headline-engine.md`) → user picks → 18-block script with mandatory frase-ponte → editorial validation gate (7 parameters, 5 final tests, visual checklist) → user types `aprovado` → compose HTML following design system → `POSTZEE_RENDER_CAROUSEL` → **Display Contract (§8.6.D) + Proactive Publish CTA (§8.7.A)** → if user accepts, `POSTZEE_CREATE_POST`. See SKILL.md §8 + `reference/carousel-mastery.md` for the mandatory 7-stage editorial flow. **Never skip stage 5 (validation) or stage 6 (approval).** Carousel quick actions ALWAYS end with the publish CTA — even if user didn't pre-specify channels.
+- **"Carrossel sobre X com 7 slides"** — context → 7-question briefing criativo → triagem (silent) → **winner-first headline surface** (1 headline + 3 expansion commands: `boa, vai` / `outras` / `todas`, see `reference/carousel-headline-engine.md`) → user approves the winner → 18-block script with mandatory frase-ponte → editorial validation gate (7 parameters, 5 final tests, visual checklist) → user types `aprovado` → **Stage 7a: visual preview as HTML artifact with base64-inlined images** (user iterates freely, NO Postzee call) → user types `renderiza` / `pode publicar` / `aprovado` → **Stage 7b: `POSTZEE_RENDER_CAROUSEL` once with the approved HTML** → **Display Contract (§8.6.D) + Proactive Publish CTA (§8.7.A)** → if user accepts, `POSTZEE_CREATE_POST`. See SKILL.md §8 + `reference/carousel-mastery.md` + `reference/carousel-visual-preview.md` for the mandatory 8-stage editorial flow. **Never skip stage 5 (validation), stage 6 (text approval), or stage 7a (visual preview).** REPLACE/APPEND only as post-render escape hatch. Carousel quick actions ALWAYS end with the publish CTA — even if user didn't pre-specify channels.
 - **"Multi-scene video"** — context (which features available?) → storyboard → strategy → validate → generate scenes → (compose if shell) → post
 - **"Post this text to all channels"** — context → channels → caption per platform → post each
 
@@ -1061,8 +1062,9 @@ For polling: `POSTZEE_CHECK_JOB` may take 10-60s for images, 30-180s for videos,
 | `reference/media-memory.md` | **Manifest pattern + decision tree for recalling/reusing generated and uploaded assets across turns and sessions.** |
 | `reference/plans-and-pricing.md` | The 5 plans, 5 credit packs, when to recommend which |
 | `reference/credit-aware-flow.md` | State matrix: how to react in every plan/credit/channel state, with CTA copy |
-| `reference/carousel-mastery.md` | **v3.5 — orchestrator** — 7-stage editorial workflow, design system (CSS variables, slide types A-F, font embedding rule), control commands, iteration playbook, competitor positioning. **Read end-to-end before any carousel.** |
-| `reference/carousel-headline-engine.md` | **v3.5** — 10-headline discipline: 5 IC + 5 NM with strict structures, 5 empirical patterns (Death/Generational/Investigation/Brand-reveal/Two-Colon), 6 emotional triggers, lift data, rejection checklist, iteration commands |
+| `reference/carousel-mastery.md` | **v3.6 — orchestrator** — 8-stage editorial workflow (stage 7 split into 7a visual preview + 7b render), design system (CSS variables, slide types A-F, image and font embedding rules), control commands, iteration playbook, competitor positioning. **Read end-to-end before any carousel.** |
+| `reference/carousel-headline-engine.md` | **v3.6** — 10-headline discipline with winner-first surface: internally generate 10 (5 IC + 5 NM) with rejection checklist + coverage rule, surface 1 winner + reasoning. Expansion commands (`outras` / `todas`) reveal top-3 or full 10 on demand. 5 empirical patterns, 6 emotional triggers, lift data, iteration commands. |
+| `reference/carousel-visual-preview.md` | **v3.6 — NEW** — stage 7a protocol: HTML artifact structure (iframe srcdoc per slide), image base64-inlining decision tree (fetch, resize >5MB, fallback on failure), iteration command vocabulary, hand-off to stage 7b, graceful degradation for headless surfaces. |
 | `reference/carousel-editorial-filter.md` | **v3.5** — anti-AI-slop ruleset: 32+ banned constructions, Portuguese grammar rules, 5-question AI-tone test, 7 quality parameters with 8/10 threshold, banned framings/openings/closings |
 | `reference/carousel-quality-manual.md` | **v3.5** — editorial journalism standard: 18-block / 9-slide structure with word-count targets per block, 4 narrative arcs (Tendência/Tese/Case/Previsão), 7-step revision, 5 final tests, slide-count adaptations (5/7/9/12), penalty rules |
 | `reference/carousel-design-principles.md` | **v3.5** — visual discipline: 3-tier hierarchy, dark/light rhythm cadence, lower-third rule, type scale, 9-item visual checklist, anti-patterns table, 4 visual styles, 11-niche palette table, image distribution rules |

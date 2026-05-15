@@ -4,9 +4,23 @@ The most complete AI agent skill for social media production. Turns your agent i
 
 All operations go through the **Postzee MCP HTTP** server — never the REST API directly.
 
+## What's new in v3.6 — Winner-First Headlines + Visual Preview Artifact
+
+Two structural UX upgrades on top of the v3.5 editorial methodology:
+
+- **Headline surface: winner-first instead of a menu of 10** — the agent still generates 10 candidates internally (rejection checklist, pattern coverage rule, lift-table selection — all preserved), but surfaces ONE winner with a one-line defense. Three commands expand on demand: `boa, vai` continues with the winner, `outras` reveals the top-3, `todas` reveals all 10. Indexed commands (`mistura a 3 com a 7`, etc.) still work — gated behind expansion or auto-revealed when the user issues one cold. Decision time drops from 30-180s to 5-15s.
+
+- **Stage 7 split into 7a (visual preview) + 7b (render & ship)** — the agent composes the full slide HTMLs with base64-inlined images (Claude artifact CSP blocks external CDN URLs) and outputs them as ONE HTML artifact for the user to iterate on. "muda fundo do slide 3", "troca slide 4 e 5", "remove slide 7" — all happen locally in the artifact, zero Postzee credit spent. Only on `renderiza` / `aprovado` does `POSTZEE_RENDER_CAROUSEL` get called. One render, zero retrabalho.
+
+Backend bump to support this: `MAX_HTML_SIZE` 250KB → 7MB per slide, new `MAX_PAYLOAD_SIZE` = 50MB total per RENDER call. Enough headroom to embed images as base64 alongside fonts in a single HTML — preview and render share the exact same source of truth.
+
+A new reference file `carousel-visual-preview.md` documents the artifact structure, image inlining decision tree, iteration vocabulary, and graceful degradation for surfaces without artifact rendering (Claude Code, hermes).
+
+The carousel workflow is now **8 stages**. `REPLACE_CAROUSEL_SLIDE` / `APPEND_CAROUSEL_SLIDE` are demoted to post-render escape hatches — the main iteration loop lives in 7a, before any credit is spent.
+
 ## What's new in v3.5 — Editorial Carousel Methodology
 
-Carousels are now produced through a **7-stage editorial workflow** that delivers content indistinguishable from what a top human editorial team would publish:
+Carousels are produced through an **editorial workflow** (v3.6 expanded this to 8 stages; v3.5 originally shipped with 7) that delivers content indistinguishable from what a top human editorial team would publish:
 
 - **Briefing Criativo** — 7 questions (brand, niche, color, visual style, narrative arc, CTA, slide count)
 - **Triagem** — 4-layer analysis (Transformação / Fricção / Ângulo / Evidências) before any draft

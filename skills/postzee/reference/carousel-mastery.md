@@ -1,14 +1,15 @@
 # Carousel Mastery — The Editorial Carousel System
 
-This is the **central reference** for the carousel pipeline. Skill v3.5 ships an editorial-grade carousel methodology built on five disciplines, each with its own deep-dive file:
+This is the **central reference** for the carousel pipeline. Skill v3.6 ships an editorial-grade carousel methodology built on six disciplines, each with its own deep-dive file:
 
-- `carousel-headline-engine.md` — the 10-headline generation discipline
+- `carousel-headline-engine.md` — the 10-headline discipline with winner-first surface
+- `carousel-visual-preview.md` — stage 7a HTML artifact preview protocol (NEW in v3.6)
 - `carousel-editorial-filter.md` — anti-IA-slop language rules
 - `carousel-quality-manual.md` — 18-block / 9-slide structure with word counts
 - `carousel-design-principles.md` — visual hierarchy, dark/light rhythm, anti-patterns
 - `carousel-references.md` — two complete worked examples
 
-This file (carousel-mastery.md) is the orchestrator: it defines the workflow that runs all five together, the design-system CSS + HTML scaffolding for each slide type, the iteration playbook, and the control commands the user can issue.
+This file (carousel-mastery.md) is the orchestrator: it defines the workflow that runs all six together, the design-system CSS + HTML scaffolding for each slide type, the image and font inlining rules, the iteration playbook, and the control commands the user can issue.
 
 > **Hard rule:** before generating any carousel for a user, read this file end-to-end. Then dive into the discipline files only as needed during generation.
 
@@ -524,7 +525,10 @@ See `carousel-visual-preview.md` for the full image-inlining workflow, including
       background: #fff; border: 3px solid #fff;
       box-shadow: 0 6px 18px rgba(0,0,0,0.3);
     ">
-      <img src="USER_LOGO_URL" crossorigin="anonymous"
+      <!-- v3.6+: src MUST be a base64 data URI, never an external URL.
+           See §10.1.5 for the image inlining rule.
+           Example: src="data:image/jpeg;base64,/9j/4AAQSk..." -->
+      <img src="USER_LOGO_BASE64_DATA_URI"
            style="width:100%;height:100%;object-fit:cover;" alt="">
     </div>
     <div style="font-size: 22px; font-weight: 700; letter-spacing: 0.02em;">
@@ -821,7 +825,10 @@ See `carousel-visual-preview.md` for the full image-inlining workflow, including
       background: #fff; border: 3px solid #fff;
       box-shadow: 0 4px 12px rgba(0,0,0,0.25);
     ">
-      <img src="USER_LOGO_URL" crossorigin="anonymous"
+      <!-- v3.6+: src MUST be a base64 data URI, never an external URL.
+           See §10.1.5 for the image inlining rule.
+           Example: src="data:image/jpeg;base64,/9j/4AAQSk..." -->
+      <img src="USER_LOGO_BASE64_DATA_URI"
            style="width:100%;height:100%;object-fit:cover;" alt="">
     </div>
     <div style="font-size: 22px; font-weight: 700;">
@@ -1176,6 +1183,6 @@ await POSTZEE_CREATE_POST({
 
 Every carousel that ships from this system should be **indistinguishable from** what a top human editorial team would publish — not "in the style of", but "actually equivalent". If a slide reads as AI-generated, the system failed. If a headline reads as templated, the system failed. If the visual rhythm feels random, the system failed.
 
-The discipline is the difference. Run all 7 stages. Don't skip the gate. Wait for explicit approval. Use REPLACE for fixes, not RENDER. Embed fonts. Show only the result, never the scaffolding.
+The discipline is the difference. Run all 8 stages. Don't skip the gate. Iterate on the visual preview before committing to a render. Use REPLACE/APPEND only as a post-render escape hatch. Embed fonts AND images as base64. Show only the result, never the scaffolding.
 
 That's the bar. Ship at the bar.
