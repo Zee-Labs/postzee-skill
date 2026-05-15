@@ -234,7 +234,7 @@ Comando: "boa, vai" pra eu montar o HTML.
 ## 6. Stage 4 — Visual Composition (HTML artifact)
 
 The agent composes the HTML using:
-- **Slide skeleton** from `carousel-mastery.md` §10.2 (single doc, no `<iframe srcdoc>` wrapper needed since it's 1 image — but if using artifact preview, wrap in the same artifact structure as `carousel-visual-preview.md` §2 with N=1)
+- **Slide skeleton** from `carousel-mastery.md` §10.2 (the render shape is one independent HTML doc — same as a single-slide carousel; if using artifact preview, wrap in the aggregated single-doc structure from `carousel-visual-preview.md` §2 with N=1 and apply the §5.1 preview→render conversion at hand-off)
 - **Movement-specific typography + composition** from `editorial-design.md` §1
 - **Image inlining as base64** per `carousel-mastery.md` §10.1.5
 
@@ -246,7 +246,10 @@ The agent composes the HTML using:
 <head>
   <meta charset="UTF-8">
   <style>
-    /* Embedded fonts via @font-face base64 — see carousel-mastery.md §11 */
+    /* Embedded fonts via @font-face base64 — see carousel-mastery.md §11
+       This example targets the RENDER shape (Puppeteer waits for fonts).
+       For the preview shape (artifact), use font-display: swap instead —
+       see carousel-mastery.md §11.0.1 for the context table. */
     @font-face { 
       font-family: 'Playfair Display'; 
       font-weight: 800; 

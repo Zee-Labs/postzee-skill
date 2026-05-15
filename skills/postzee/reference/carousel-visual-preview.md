@@ -211,7 +211,7 @@ After the first artifact is rendered, the user issues changes in natural languag
 | "troca a imagem do slide 6 por essa: \<url>" | Fetch new URL → base64 → swap the data URI in slide 6 → re-output |
 | "deixa todos os fundos mais escuros" | Bulk edit: walk every slide, adjust background var → re-output |
 | "muda a fonte de display pra Anton" | Replace `--F-HEAD` and the associated `@font-face` block across all slides → re-output |
-| "tá ótimo, renderiza" / "ship it" / "approved" | **Exit 7a, enter 7b.** Call `POSTZEE_RENDER_CAROUSEL` with the final HTML. |
+| "tá ótimo, renderiza" / "ship it" / "approved" | **Exit 7a, enter 7b.** Apply preview→render conversion (§5.1), then call `POSTZEE_RENDER_CAROUSEL`. |
 
 **What the agent never does in 7a:**
 - Call `POSTZEE_RENDER_CAROUSEL` / `POSTZEE_REPLACE_CAROUSEL_SLIDE` / `POSTZEE_APPEND_CAROUSEL_SLIDE`. **Any of these in 7a is a discipline break.**
@@ -329,11 +329,11 @@ Some surfaces don't render Claude artifacts visually (Claude Code, hermes, custo
 
 Watch the cumulative artifact size as you build it (sum of all slide content + inlined fonts + the wrapper). If the cumulative size approaches 5MB, choose ONE of these strategies (do not mix):
 
-**Strategy A — Compress aggressively, single HTML preserved:** drop image quality across the board until everything fits. Try JPEG q70, then q55, then resize to 1620px (75% of max dimension). The compressed base64 stays in the HTML — the same HTML that gets sent to RENDER. **Trade-off**: render quality matches the compressed preview (which is fine — user sees what they get). Tell the user: "Comprimi as imagens pra caber no preview da artifact. O render final usa essa mesma compressão."
+**Strategy A — Compress aggressively, shared image bytes:** drop image quality across the board until everything fits. Try JPEG q70, then q55, then resize to 1620px (75% of max dimension). The compressed base64 bytes are the same in both preview and render shapes — the §5.1 conversion preserves them. **Trade-off**: render quality matches the compressed preview (which is fine — user sees what they get). Tell the user: "Comprimi as imagens pra caber no preview da artifact. O render final usa essa mesma compressão."
 
-**Strategy B — CDN-URL fallback for heaviest slides, render keeps full quality:** for the 1-2 heaviest image slides, swap the base64 data URI for the original CDN URL inside the slide HTML. **Same HTML for both preview and render** — but: the artifact preview shows a placeholder for those slides (Claude CSP blocks the CDN fetch), while Postzee's server-side Puppeteer fetches the URL at full quality during render. Tell the user: "Slides X e Y vão aparecer com placeholder no preview (imagens grandes demais pra embutir), mas o render no Postzee puxa as imagens originais e fica na qualidade cheia."
+**Strategy B — CDN-URL fallback for heaviest slides, render keeps full quality:** for the 1-2 heaviest image slides, swap the base64 data URI for the original CDN URL in BOTH the preview content AND the corresponding slide in the render conversion. The artifact preview shows a placeholder for those slides (artifact CSP blocks the CDN fetch), while Postzee's server-side Puppeteer fetches the URL at full quality during render. Tell the user: "Slides X e Y vão aparecer com placeholder no preview (imagens grandes demais pra embutir), mas o render no Postzee puxa as imagens originais e fica na qualidade cheia."
 
-Pick the strategy that fits the user's intent: if quality matters most, go B and accept the preview-fidelity gap on a couple of slides; if preview-fidelity matters most, go A and accept the compression at render. **Don't mix** — that recreates the dual-HTML source-of-truth problem the single-HTML architecture was designed to avoid.
+Pick the strategy that fits the user's intent: if quality matters most, go B and accept the preview-fidelity gap on a couple of slides; if preview-fidelity matters most, go A and accept the compression at render. **Don't mix per slide** — if slide N uses compressed base64 in preview, it must use the same compressed base64 in render; if it uses a CDN URL in preview, it uses the same CDN URL in render. Mixing creates divergent image bytes between the two shapes — the bug we're trying to avoid.
 
 ---
 
@@ -352,6 +352,6 @@ Pick the strategy that fits the user's intent: if quality matters most, go B and
 |---|---|---|
 | Postzee tool calls | NONE | `POSTZEE_RENDER_CAROUSEL` (one call) |
 | Iteration cost | free, instant | each `REPLACE` = credits + queue time |
-| Source of truth | master HTML in agent's working context | same master HTML — submitted to backend |
+| Source of truth | content + design system (preview shape: aggregated, scaled, `font-display: swap`) | same content + design system (render shape: per-slide, full 1080×1350, `font-display: block`) — converted via §5.1 |
 | User signals advance via | `renderiza` / `ship it` / `aprovado` | post-render: gallery card, ready to publish |
 | Failure recovery | edit HTML, re-output artifact | surface raw error, ask user (SKILL.md §8.5.C) |

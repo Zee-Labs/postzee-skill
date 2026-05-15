@@ -335,7 +335,7 @@ Iteration happens in 7a, in the artifact. By the time you reach 7b, the HTML is 
 
 ### 9.1 Stage 7b — render path A: atomic (only path going forward)
 
-After the user approves the visual in stage 7a, render the whole carousel atomically with the exact same HTML that was in the artifact:
+After the user approves the visual in stage 7a, render the whole carousel atomically. Apply the preview→render conversion from `carousel-visual-preview.md` §5.1 — same content + design system, render shape (per-slide independent HTML docs at full 1080×1350, `font-display: block` for the Puppeteer wait window):
 
 ```ts
 POSTZEE_RENDER_CAROUSEL({
@@ -424,13 +424,13 @@ The agent fills `--P`, `--LB`, `--DB`, `--F-HEAD`, `--F-BODY` based on the brief
 <!-- ❌ DON'T: external URL — blocked in Claude artifact CSP, breaks preview -->
 <img src="https://cdn.postzee.app/r2/abc.jpg" crossorigin="anonymous">
 
-<!-- ✅ DO: base64 data URI — same source of truth for preview and render -->
+<!-- ✅ DO: base64 data URI — same image bytes in both preview and render shapes -->
 <img src="data:image/jpeg;base64,/9j/4AAQSk...">
 ```
 
 **Why this matters:**
-- The Claude artifact sandbox CSP blocks fetches to external CDN URLs. A slide with `<img src="https://...">` renders with a missing image in the artifact preview — breaks the visual fidelity of stage 7a.
-- Inlining once means the SAME HTML drives the artifact preview AND the eventual `POSTZEE_RENDER_CAROUSEL` call. No dual source of truth, no sync bugs.
+- The Claude artifact CSP blocks fetches to external CDN URLs. A slide with `<img src="https://...">` renders with a missing image in the artifact preview — breaks the visual fidelity of stage 7a.
+- Inlining once means the SAME base64 image bytes appear in both the preview and the render shapes (see `carousel-visual-preview.md` §5.1 conversion). The agent doesn't fetch twice or maintain two divergent image references — only the shape of the surrounding HTML differs.
 - The 7MB per-slide ceiling has enough headroom: a 1080×1350 JPEG at quality 85 is ~250-800KB raw → ~330KB-1MB base64. Comfortably fits with fonts (~200KB) and HTML/CSS.
 
 **How the agent gets images:**
@@ -916,7 +916,7 @@ Instead, **embed fonts as base64 `@font-face`** inside the `<style>` block:
   font-weight: 700;
   font-style: normal;
   src: url(data:font/woff2;base64,d09GMgABAA...) format('woff2');
-  font-display: block;
+  font-display: block; /* Render shape — Puppeteer waits. Preview shape uses `swap`. See §11.0.1. */
 }
 @font-face {
   font-family: 'Inter';

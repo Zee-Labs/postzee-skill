@@ -409,12 +409,15 @@ Postzee Skill v3.7 ships a complete **editorial methodology** that produces both
 │   revision requests — iterate, do not advance.                    │
 ├───────────────────────────────────────────────────────────────────┤
 │ STAGE 7a — VISUAL PREVIEW (HTML artifact, NO Postzee call)        │
-│   Compose the full slide HTMLs following the design system in     │
+│   Compose the full slide content following the design system in   │
 │   carousel-mastery.md §10. Inline ALL images as base64 data URIs  │
 │   (fetch CDN URLs, embed POSTZEE_GENERATE_IMAGE outputs, resize   │
-│   anything >5MB raw). Package the N slides into ONE HTML artifact │
-│   — iframe srcdoc per slide for CSS isolation, scale 50% (540×675)│
-│   in a single-column grid, vertical scroll.                       │
+│   anything >5MB raw). Package the N slides into ONE aggregated    │
+│   HTML doc — slides as scaled <section class="slide-N"> elements  │
+│   (NO iframes), fonts loaded once with font-display: swap, scoped │
+│   CSS per slide. Scale 50% (540×675) in a single-column grid,     │
+│   vertical scroll. Before output, validate the pre-flight         │
+│   checklist (carousel-visual-preview.md §2.1).                    │
 │   Output as an artifact so Claude Desktop/Web/openclaw render it  │
 │   visually. Surfaces without artifact rendering (Claude Code,     │
 │   hermes): graceful fallback — fenced ```html``` block + textual  │
@@ -435,9 +438,12 @@ Postzee Skill v3.7 ships a complete **editorial methodology** that produces both
 │         `aprovado` / `vai`                                        │
 │     EN: `render` / `ship it` / `let's go` / `approved`            │
 │   POSTZEE_GET_CONTEXT (validate credits/plan) →                   │
-│   POSTZEE_RENDER_CAROUSEL with the SAME HTML that was in the      │
-│   artifact (base64 images fit in the 7MB/slide + 50MB total       │
-│   limit, see §8.1).                                               │
+│   Apply preview→render conversion (carousel-visual-preview.md     │
+│   §5.1): per-slide independent HTML docs at full 1080×1350,       │
+│   font-display flipped from `swap` to `block`. Same image bytes,  │
+│   same design system — only shape differs.                        │
+│   POSTZEE_RENDER_CAROUSEL with the converted per-slide HTMLs      │
+│   (base64 images fit in 7MB/slide + 50MB total, see §8.1).        │
 │   Save the returned mediaGroupId.                                 │
 │   ⛔ Never call RENDER more than once for the same carousel.       │
 │   ⛔ Never silently retry on failure — surface error to user.      │
@@ -1086,7 +1092,7 @@ For polling: `POSTZEE_CHECK_JOB` may take 10-60s for images, 30-180s for videos,
 | `reference/image-mastery.md` | **v3.7 — NEW** — single-image methodology: 6-stage workflow with autonomous-mode briefing (3 questions max), winner-first hook + treatment proposal, composition for the 6 movements, iteration loop, hand-off to render. **Read end-to-end before any single-image post.** |
 | `reference/copywriting-mastery.md` | **v3.7 — NEW** — copywriter brain: 10 inviolable laws (specificity, one-promise, conversation join, pattern interrupt, slippery slope, etc), 5 awareness levels (Schwartz), 12 hook patterns atlas, 4 caption frameworks (AIDA/PAS/BAB/HookPromisePayoffCTA), Brazilian voice register, anti-anglicism. **Required before writing any post.** |
 | `reference/editorial-design.md` | **v3.7 — NEW** — 6 design movements (Editorial/Bold/Minimal/Photo-led/Magazine/Brutalist) with typography pairings + composition + color systems, type contrast law (4:1 minimum), photo treatment (grading, subject placement, blocking), brand bar system (8 canonical positions), highlight block system (orange/red/underline), 4-zone slide anatomy, 9-item visual polish checklist. **Required for any composition.** |
-| `reference/carousel-visual-preview.md` | **v3.6 — applies to both single image + carousel** — stage 7a protocol: HTML artifact structure (iframe srcdoc per slide), image base64-inlining decision tree (fetch, resize >5MB, fallback on failure), iteration command vocabulary, hand-off to stage 7b, graceful degradation for headless surfaces. |
+| `reference/carousel-visual-preview.md` | **v3.7.1 — applies to both single image + carousel** — stage 7a protocol: aggregated single-doc artifact (no iframes — see §2 bug history), pre-flight checklist (§2.1), image base64-inlining decision tree (fetch, resize >5MB, fallback on failure), iteration command vocabulary, preview→render shape conversion at hand-off (§5.1, including font-display swap→block flip), graceful degradation for headless surfaces. |
 | `reference/smart-rendering.md` | **v3.7 — NEW** — Path A (Postzee renders via Puppeteer) vs Path B (agent renders locally via Playwright + uploads bytes). Capability detection protocol, when to prefer each path, render script template, fallback flow on Path B failure, security notes. |
 | `reference/platform-settings.md` | **v3.7 — NEW** — per-network publish settings reference: Instagram (post/story + collaborators), TikTok (privacy/duet/stitch/comment/title/music), YouTube (visibility/tags), LinkedIn (carousel), X/Threads/Pinterest/Facebook + cross-cutting concerns. **Required before any `POSTZEE_CREATE_POST` call.** Includes triggers (PT-BR + EN), smart defaults, and the v3.7 settings passthrough on the MCP tool. |
 | `reference/carousel-headline-engine.md` | **v3.6** — 10-headline discipline with winner-first surface: internally generate 10 (5 IC + 5 NM) with rejection checklist + coverage rule, surface 1 winner + reasoning. Expansion commands (`outras` / `todas`) reveal top-3 or full 10 on demand. 5 empirical patterns, 6 emotional triggers, lift data, iteration commands. |
