@@ -3,7 +3,7 @@ name: postzee
 description: World-class creative director, copywriter, video producer and social media manager powered by Postzee. Generate AI images/carousels/videos and post to 30+ social networks. Use when the user wants to create AI media, carousels, multi-scene videos, talking-head videos, or schedule social posts.
 user-invocable: true
 metadata: {"primaryEnv": "POSTZEE_MCP_URL", "emoji": "🎬"}
-version: 3.7.2
+version: 3.8.0
 ---
 
 # Postzee — World-Class AI Social Media Studio
@@ -409,19 +409,38 @@ Postzee Skill v3.7 ships a complete **editorial methodology** that produces both
 │   revision requests — iterate, do not advance.                    │
 ├───────────────────────────────────────────────────────────────────┤
 │ STAGE 7a — VISUAL PREVIEW (HTML artifact, NO Postzee call)        │
+│                                                                   │
+│   STEP 0 — IMAGE STRATEGY (new in v3.8.0)                         │
+│   Before composing the preview, run the strategic analysis in     │
+│   carousel-mastery.md §9.1. Default: cover is a candidate;        │
+│   internal slides only qualify if they pass the 4-criterion       │
+│   filter (loses force without image + concrete subject + <40      │
+│   words + doesn't saturate rhythm). Compose prompts tied to the   │
+│   design movement, choose model via POSTZEE_LIST_IMAGE_MODELS     │
+│   (balanced tier default), get exact cost via                     │
+│   POSTZEE_ESTIMATE_GENERATION_COST. Present a compact proposal    │
+│   with prompt + model + cost per slide + 5 commands               │
+│   (gera todas / só X / só X e Y / pula / outros prompts).         │
+│   On approval: POSTZEE_GENERATE_IMAGE per accepted slide; hold    │
+│   the mediaUrls for Step 1. On "pula": ZERO charge, continue.     │
+│                                                                   │
+│   STEP 1 — COMPOSE THE PREVIEW                                    │
 │   Compose the full slide content following the design system in   │
 │   carousel-mastery.md §10. Inline ALL images as base64 data URIs  │
-│   (fetch CDN URLs, embed POSTZEE_GENERATE_IMAGE outputs, resize   │
-│   anything >5MB raw). Package the N slides into ONE aggregated    │
-│   HTML doc — slides as scaled <section class="slide-N"> elements  │
-│   (NO iframes), fonts loaded once with font-display: swap, scoped │
-│   CSS per slide. Scale 50% (540×675) in a single-column grid,     │
-│   vertical scroll. Before output, validate the pre-flight         │
-│   checklist (carousel-visual-preview.md §2.1).                    │
+│   (fetch CDN URLs from Step 0, embed POSTZEE_GENERATE_IMAGE       │
+│   outputs, resize anything >5MB raw). Package the N slides into   │
+│   ONE aggregated HTML doc — slides as scaled <section             │
+│   class="slide-N"> elements (NO iframes), fonts loaded once with  │
+│   font-display: swap, scoped CSS per slide. Scale 50% (540×675)   │
+│   in a single-column grid, vertical scroll. Before output,        │
+│   validate the pre-flight checklist (carousel-visual-preview.md   │
+│   §2.1).                                                          │
 │   Output as an artifact so Claude Desktop/Web/openclaw render it  │
 │   visually. Surfaces without artifact rendering (Claude Code,     │
 │   hermes): graceful fallback — fenced ```html``` block + textual  │
 │   slide-by-slide summary. See carousel-visual-preview.md.         │
+│                                                                   │
+│   STEP 2 — ITERATE                                                │
 │   Iteration loop — user commands:                                 │
 │     "muda cor de fundo do slide 3 pra preto"                      │
 │     "headline do slide 1 maior"                                   │
@@ -945,7 +964,7 @@ End-to-end without re-asking each step (still run §1, §2, §6 checks):
 - **"Create a Reel/TikTok"** — context → models → validate → enhance → generate vertical (9:16) → poll → channels → post
 - **"Animate my photo"** — context → models (i2v) → validate with imageUrl → generate → poll
 - **"Create a HeyGen video"** — context (heygen=true?) → avatars → voices → generate → poll
-- **"Carrossel sobre X com 7 slides"** — context → 7-question briefing criativo → triagem (silent) → **winner-first headline surface** (1 headline + 3 expansion commands: `boa, vai` / `outras` / `todas`, see `reference/carousel-headline-engine.md`) → user approves the winner → 18-block script with mandatory frase-ponte → editorial validation gate (7 parameters, 5 final tests, visual checklist) → user types `aprovado` → **Stage 7a: visual preview as HTML artifact with base64-inlined images** (user iterates freely, NO Postzee call) → user types `renderiza` / `pode publicar` / `aprovado` → **Stage 7b: `POSTZEE_RENDER_CAROUSEL` once with the approved HTML** → **Display Contract (§8.6.D) + Proactive Publish CTA (§8.7.A)** → if user accepts, `POSTZEE_CREATE_POST`. See SKILL.md §8 + `reference/carousel-mastery.md` + `reference/carousel-visual-preview.md` for the mandatory 8-stage editorial flow. **Never skip stage 5 (validation), stage 6 (text approval), or stage 7a (visual preview).** REPLACE/APPEND only as post-render escape hatch. Carousel quick actions ALWAYS end with the publish CTA — even if user didn't pre-specify channels.
+- **"Carrossel sobre X com 7 slides"** — context → 7-question briefing criativo → triagem (silent) → **winner-first headline surface** (1 headline + 3 expansion commands: `boa, vai` / `outras` / `todas`, see `reference/carousel-headline-engine.md`) → user approves the winner → 18-block script with mandatory frase-ponte → editorial validation gate (7 parameters, 5 final tests, visual checklist) → user types `aprovado` → **Stage 7a Step 0: Image Strategy** — agent proposes background images for slides that lose force without one (cover almost always; internal slides pass the 4-criterion filter), shows prompt + model + cost per slide, user picks `gera todas` / partial / `pula` (see `reference/carousel-mastery.md` §9.1) → **Stage 7a Step 1: visual preview as HTML artifact with base64-inlined images** (typography + generated images, user iterates freely, NO Postzee call beyond the Step 0 generations) → user types `renderiza` / `pode publicar` / `aprovado` → **Stage 7b: `POSTZEE_RENDER_CAROUSEL` once with the approved HTML** → **Display Contract (§8.6.D) + Proactive Publish CTA (§8.7.A)** → if user accepts, `POSTZEE_CREATE_POST`. See SKILL.md §8 + `reference/carousel-mastery.md` + `reference/carousel-visual-preview.md` for the mandatory 8-stage editorial flow. **Never skip stage 5 (validation), stage 6 (text approval), Stage 7a Step 0 (image strategy proposal), or Stage 7a Step 1 (visual preview).** REPLACE/APPEND only as post-render escape hatch. Carousel quick actions ALWAYS end with the publish CTA — even if user didn't pre-specify channels.
 - **"Multi-scene video"** — context (which features available?) → storyboard → strategy → validate → generate scenes → (compose if shell) → post
 - **"Post this text to all channels"** — context → channels → caption per platform → post each
 
@@ -1088,7 +1107,7 @@ For polling: `POSTZEE_CHECK_JOB` may take 10-60s for images, 30-180s for videos,
 | `reference/media-memory.md` | **Manifest pattern + decision tree for recalling/reusing generated and uploaded assets across turns and sessions.** |
 | `reference/plans-and-pricing.md` | The 5 plans, 5 credit packs, when to recommend which |
 | `reference/credit-aware-flow.md` | State matrix: how to react in every plan/credit/channel state, with CTA copy |
-| `reference/carousel-mastery.md` | **v3.6 — orchestrator** — 8-stage carousel editorial workflow (stage 7 split into 7a visual preview + 7b render), design system (CSS variables, slide types A-F, image and font embedding rules), control commands, iteration playbook, competitor positioning. **Read end-to-end before any carousel.** |
+| `reference/carousel-mastery.md` | **v3.8.0 — orchestrator** — 8-stage carousel editorial workflow. Stage 7 splits into 7a (3 steps: image strategy + compose + iterate) and 7b (atomic render). **§9.1 NEW v3.8.0**: Stage 7a Step 0 Image Strategy — proactive editorial proposal for which slides gain real impact from a background image (cover almost always candidate; internal slides pass a 4-criterion filter), prompt-craft tied to design movement, model selection via live tools, cost-transparent proposal with 5 commands. Plus design system (CSS variables, slide types A-F, image and font embedding rules §10–§11), control commands, iteration playbook, competitor positioning. **Read end-to-end before any carousel.** |
 | `reference/image-mastery.md` | **v3.7 — NEW** — single-image methodology: 6-stage workflow with autonomous-mode briefing (3 questions max), winner-first hook + treatment proposal, composition for the 6 movements, iteration loop, hand-off to render. **Read end-to-end before any single-image post.** |
 | `reference/copywriting-mastery.md` | **v3.7 — NEW** — copywriter brain: 10 inviolable laws (specificity, one-promise, conversation join, pattern interrupt, slippery slope, etc), 5 awareness levels (Schwartz), 12 hook patterns atlas, 4 caption frameworks (AIDA/PAS/BAB/HookPromisePayoffCTA), Brazilian voice register, anti-anglicism. **Required before writing any post.** |
 | `reference/editorial-design.md` | **v3.7 — NEW** — 6 design movements (Editorial/Bold/Minimal/Photo-led/Magazine/Brutalist) with typography pairings + composition + color systems, type contrast law (4:1 minimum), photo treatment (grading, subject placement, blocking), brand bar system (8 canonical positions), highlight block system (orange/red/underline), 4-zone slide anatomy, 9-item visual polish checklist. **Required for any composition.** |
