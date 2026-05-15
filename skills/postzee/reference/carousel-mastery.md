@@ -113,11 +113,11 @@ Every carousel goes through these 8 stages. Skipping any stage produces a worse 
 │   Do NOT generate slide HTML until this happens.                │
 ├─────────────────────────────────────────────────────────────────┤
 │ STAGE 7a — VISUAL PREVIEW (HTML artifact, no Postzee call)      │
-│   Compose slide HTMLs with base64-inlined images, output as ONE │
-│   artifact (iframe srcdoc per slide, 50% scale, 1-column grid). │
-│   Iterate freely: "muda fundo do slide 3", "troca slide 4 e 5", │
-│   etc. → edit the master HTML, re-output the artifact. No call  │
-│   to POSTZEE_RENDER_CAROUSEL.                                   │
+│   Compose slides with base64-inlined images, output as ONE      │
+│   aggregated HTML doc (single document, scaled <section>s, NO   │
+│   iframes — see preview rationale §2). Iterate freely: "muda    │
+│   fundo do slide 3", "troca slide 4 e 5", etc. → edit master    │
+│   HTML, re-output. No call to POSTZEE_RENDER_CAROUSEL.          │
 │   See carousel-visual-preview.md                                │
 ├─────────────────────────────────────────────────────────────────┤
 │ STAGE 7b — RENDER & SHIP (user approves visual)                 │
@@ -453,7 +453,7 @@ The agent fills `--P`, `--LB`, `--DB`, `--F-HEAD`, `--F-BODY` based on the brief
 <div style="background: url('data:image/jpeg;base64,/9j/...') center/cover;"></div>
 ```
 
-See `carousel-visual-preview.md` for the full image-inlining workflow, including how the artifact wraps base64-inlined slides in `<iframe srcdoc>` containers for pixel-fidelity preview.
+See `carousel-visual-preview.md` for the full image-inlining workflow and the aggregated single-document preview shape.
 
 ### 10.2 The slide skeleton (every slide is built from this)
 
@@ -925,6 +925,29 @@ Instead, **embed fonts as base64 `@font-face`** inside the `<style>` block:
 }
 </style>
 ```
+
+### 11.0.1 `font-display` by context — DO NOT GET THIS WRONG
+
+The same `@font-face` block needs **different `font-display` values** depending on which surface will consume the HTML:
+
+| Surface | `font-display` | Why |
+|---|---|---|
+| Render HTML (sent to `POSTZEE_RENDER_CAROUSEL`) | `block` | Puppeteer waits up to 3s for the font before capturing the PNG — we WANT the correct typography, not a fallback. Puppeteer is not subject to artifact CSP, so data: URI fonts always load. |
+| Preview HTML (Stage 7a artifact) | `swap` | The artifact CSP can block `data:` URI font loads. With `block`, text stays invisible forever when the font is blocked. With `swap`, text renders immediately using the fallback chain (`Inter, system-ui, sans-serif`) — degraded typography is fine; invisible text is not. |
+
+Always pair `font-display: swap` (in the preview) with an **explicit system fallback chain** on every `font-family` declaration, otherwise the swap target has nothing to swap to. Example:
+
+```css
+/* ✅ Preview-safe */
+.headline { font-family: 'Anton', Impact, "Arial Black", sans-serif; }
+
+/* ❌ Will be invisible if Anton fails */
+.headline { font-family: 'Anton'; }
+```
+
+The mechanical preview→render conversion (see `carousel-visual-preview.md` §5.1) is the moment to flip `swap` → `block`. Get this wrong in either direction:
+- `block` in preview → invisible text in the artifact, user thinks the carousel is broken
+- `swap` in render → Puppeteer may capture before the font loads → PNG ships with fallback typography
 
 ### 11.1 Pre-approved font set
 

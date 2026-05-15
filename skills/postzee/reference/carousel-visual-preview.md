@@ -2,7 +2,7 @@
 
 This file is the protocol for **stage 7a of the carousel workflow** — the visual preview the user iterates on before any Postzee credit is spent. Stage 7b (the actual `POSTZEE_RENDER_CAROUSEL` call) is covered in `carousel-mastery.md` §9.
 
-> **Single HTML, two surfaces.** The exact same slide HTML you output as a Claude artifact for preview is what you later send to `POSTZEE_RENDER_CAROUSEL` for the real render. Zero divergence between what the user approved and what gets shipped.
+> **Two shapes, one source of truth.** The preview is a single aggregated document optimized for the Claude artifact CSP. The render is per-slide HTML optimized for server-side Puppeteer. Source of truth is the **content + design system** — the agent applies a mechanical conversion at hand-off (see §3a). Trying to use literally the same HTML for both surfaces causes invisible-text bugs (see §2 rationale).
 
 ---
 
@@ -18,7 +18,7 @@ Result: iteration in 7a is free and instant; the render in 7b happens exactly on
 
 ## 2. The artifact structure
 
-The artifact is a single self-contained HTML document that displays all N slides stacked vertically. Each slide is wrapped in an `<iframe srcdoc>` so its CSS is isolated from the wrapper and from sibling slides — what you see in the preview is pixel-equivalent to what the server-side Puppeteer will produce.
+The artifact is a **single self-contained HTML document**. All N slides live in ONE document, each as a scaled `<section class="slide-N">`. Fonts load ONCE in the wrapper's `<head>`. **No iframes.**
 
 ```html
 <!doctype html>
@@ -26,12 +26,24 @@ The artifact is a single self-contained HTML document that displays all N slides
 <head>
   <meta charset="UTF-8">
   <style>
+    /* === Fonts: load ONCE for the whole preview === */
+    @font-face {
+      font-family: 'Anton';
+      font-weight: 400;
+      src: url(data:font/woff2;base64,...) format('woff2');
+      /* CRITICAL: `swap`, NOT `block`. Artifact CSP may block data: URI
+         fonts; with `block` the text stays invisible forever. With `swap`,
+         text appears immediately with the fallback chain. Render-time uses
+         `block` instead (Puppeteer waits) — see §3a conversion. */
+      font-display: swap;
+    }
+
     body {
       background: #111;
       padding: 24px;
+      margin: 0;
       font-family: system-ui, -apple-system, sans-serif;
       color: #999;
-      margin: 0;
     }
     .carousel {
       display: grid;
@@ -40,7 +52,7 @@ The artifact is a single self-contained HTML document that displays all N slides
       max-width: 600px;
       margin: 0 auto;
     }
-    .slide {
+    .slide-wrap {
       display: flex;
       flex-direction: column;
       gap: 8px;
@@ -50,25 +62,47 @@ The artifact is a single self-contained HTML document that displays all N slides
       letter-spacing: 0.04em;
       text-transform: uppercase;
     }
-    .frame {
+    /* === Slide container: scaled, isolated via scoped class === */
+    .slide {
       width: 540px;
       height: 675px;
-      border: 0;
+      overflow: hidden;
       border-radius: 12px;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-      display: block;
+      position: relative;
+      /* Slides are authored at 1080×1350 in their own coordinate system;
+         we scale the inner content by 0.5 to fit the 540×675 box. */
     }
+    .slide > .inner {
+      width: 1080px;
+      height: 1350px;
+      transform: scale(0.5);
+      transform-origin: top left;
+    }
+
+    /* === Per-slide styles, scoped via `.slide-N` === */
+    /* Use scoped selectors so slide 1's CSS can't bleed into slide 2.
+       Example: `.slide-1 .headline { ... }` (NEVER bare `.headline { ... }`). */
+    .slide-1 .headline { font-family: 'Anton', Impact, "Arial Black", sans-serif; font-size: 120px; color: #fff; }
+    /* ... per-slide blocks ... */
   </style>
 </head>
 <body>
   <div class="carousel">
-    <div class="slide">
+    <div class="slide-wrap">
       <div class="label">Slide 1 / 9 — Capa</div>
-      <iframe class="frame" srcdoc='&lt;!doctype html&gt;... full slide 1 HTML with base64 images ...'></iframe>
+      <section class="slide slide-1">
+        <div class="inner">
+          <!-- slide 1 content here, using `.slide-1`-scoped classes -->
+          <h1 class="headline">A morte do gosto pessoal.</h1>
+        </div>
+      </section>
     </div>
-    <div class="slide">
+    <div class="slide-wrap">
       <div class="label">Slide 2 / 9</div>
-      <iframe class="frame" srcdoc='&lt;!doctype html&gt;... full slide 2 HTML ...'></iframe>
+      <section class="slide slide-2">
+        <div class="inner"><!-- ... --></div>
+      </section>
     </div>
     <!-- ... slides 3-9 ... -->
   </div>
@@ -78,8 +112,28 @@ The artifact is a single self-contained HTML document that displays all N slides
 
 **Layout rationale:**
 - **Single column, 540×675** (50% of the real 1080×1350): fits comfortably in Claude's artifact pane on most viewports; user scrolls vertically to see all slides at once.
-- **`srcdoc` instead of `src`**: each slide is fully self-contained HTML — no cross-frame asset fetching, no CSP issues, no load order dependency.
-- **HTML-entity-encoded srcdoc content**: `<` → `&lt;`, `"` → `&quot;`. The agent must escape the inner slide HTML correctly when interpolating into the wrapper.
+- **No iframes** — bug history: iframe `srcdoc` in Claude artifacts inherits a strict sandbox where `@font-face` with `data:` URIs is unreliably blocked. Combined with the default `font-display: block`, the text rendered invisible (fonts never load → block hides text indefinitely). Single document eliminates the sandbox path.
+- **Fonts loaded once** in the wrapper's `<head>` — 9× less memory than per-iframe duplication, faster parse, single point of `font-display: swap` discipline.
+- **CSS isolation via scoped classes** (`.slide-N .selector`) — sufficient when slides share a design system (CSS variables, font set) by construction. No iframe boundary needed.
+- **`.slide > .inner` with `transform: scale(0.5)`** — slides are authored at full 1080×1350 in their own coordinate system, then visually downscaled. Same coordinate math as the render, just a transform applied.
+
+---
+
+## 2.1 Pre-flight checklist — VALIDATE BEFORE EVERY ARTIFACT OUTPUT
+
+Before showing the preview to the user, check every item:
+
+- [ ] Every `@font-face` block uses **`font-display: swap`** (NEVER `block`, NEVER `auto`, NEVER omitted)
+- [ ] Every `font-family` declaration has a **system fallback chain**
+  - ✅ `font-family: 'Anton', Impact, "Arial Black", sans-serif`
+  - ❌ `font-family: 'Anton'` ← if Anton fails, text disappears
+- [ ] **Zero `<iframe>`** in the preview document
+- [ ] **Zero `<link href="https://fonts.googleapis.com/...">`** (artifact CSP blocks external font fetches)
+- [ ] All images use **`data:` URIs** (not CDN URLs) — see §3
+- [ ] Every slide root has **explicit width/height + scale transform** (`.slide > .inner` with `transform: scale(0.5)`)
+- [ ] Per-slide CSS uses **scoped selectors** (`.slide-N .headline`, never bare `.headline`)
+
+If any item fails, fix it before output. Failures here become user-visible invisible-text or broken-layout bugs that look like the carousel is broken.
 
 ---
 
@@ -179,9 +233,7 @@ Stage 7b is triggered by **explicit visual approval**. Listen for these phrases 
 
 ```
 1. POSTZEE_GET_CONTEXT (verify credits + plan can support N slides)
-2. Extract each slide's HTML from the master (the same HTML strings used
-   inside the iframe srcdoc wrappers — strip the wrapper, keep the inner
-   <!doctype html>...</html> for each slide).
+2. Convert preview shape → render shape (see §5.1 below).
 3. POSTZEE_RENDER_CAROUSEL({
      slides: [{ html, width: 1080, height: 1350 }, ...],
      aspectRatio: "4:5",
@@ -192,7 +244,36 @@ Stage 7b is triggered by **explicit visual approval**. Listen for these phrases 
 6. Offer the publish step (POSTZEE_CREATE_POST), if applicable.
 ```
 
-The exact same HTML the user saw in the artifact is what gets rendered. Pixel fidelity by construction.
+### 5.1 Preview shape → Render shape conversion
+
+The preview is **one aggregated document** with all slides scaled to 540×675. The render expects **per-slide independent HTML documents** at full 1080×1350. The agent does this mechanical conversion at hand-off:
+
+```
+For each <section class="slide-N"> in the preview master:
+
+1. Take the inner content (everything inside `.slide-N > .inner`) WITHOUT
+   the scale transform — Puppeteer renders at full 1080×1350.
+
+2. Build an independent <!doctype html>...</html> document for the slide:
+   a. New <head> with the @font-face block(s) the slide uses
+   b. The per-slide scoped CSS (`.slide-N .headline { ... }`) — keep the
+      .slide-N class on the body or wrapper so selectors still match
+   c. Plain <body> with the slide's content at full 1080×1350
+
+3. CHANGE `font-display: swap` → `font-display: block`
+   - In preview: `swap` shows text immediately with fallback if font fails
+     (artifact CSP can block data: URI fonts)
+   - In render: `block` makes Puppeteer wait up to 3s for the font before
+     capturing — we WANT the correct typography in the final PNG, not
+     fallback. Puppeteer's font loading is not subject to artifact CSP.
+
+4. Inline images already use data: URIs from §3 — keep as-is. (Puppeteer
+   would also accept CDN URLs, but data: URIs are deterministic.)
+
+5. Submit the N HTML strings as `slides: [{ html, width: 1080, height: 1350 }, ...]`.
+```
+
+**Source of truth is the content + design system**, not the literal HTML envelope. The agent treats preview and render as two emissions of the same underlying carousel definition. Each emission gets the CSS values appropriate for its surface — that's why the two shapes diverge on `font-display` and on aggregated-vs-per-slide structure.
 
 **Partial approval ("o slide 4 ainda tá fraco, ajusta")** is NOT a visual approval. Stay in 7a, iterate.
 
@@ -210,7 +291,7 @@ Some surfaces don't render Claude artifacts visually (Claude Code, hermes, custo
    `carousel-preview.html` e abre no seu navegador pra ver visualmente.
    Os comandos de iteração funcionam normalmente daqui."
 
-2. Output the complete preview HTML (the artifact wrapper + iframe srcdocs)
+2. Output the complete preview HTML (single aggregated document, see §2)
    inside a fenced ```html ... ``` block. The user can copy-paste once.
 
 3. Below the block, output a textual slide-by-slide summary so the user
@@ -246,7 +327,7 @@ Some surfaces don't render Claude artifacts visually (Claude Code, hermes, custo
 
 **(f) Artifact total size approaches the surface rendering limit.** Claude artifacts have a size ceiling that varies by surface — typically ~5MB for Claude Desktop, similar for Claude Web. A 9-slide carousel with full-bleed images at JPEG q85 can sit around 6-9MB total, which can fail to render or get truncated in the artifact pane.
 
-Watch the cumulative artifact size as you build it (sum of all `srcdoc` payloads + the wrapper). If the cumulative size approaches 5MB, choose ONE of these strategies (do not mix):
+Watch the cumulative artifact size as you build it (sum of all slide content + inlined fonts + the wrapper). If the cumulative size approaches 5MB, choose ONE of these strategies (do not mix):
 
 **Strategy A — Compress aggressively, single HTML preserved:** drop image quality across the board until everything fits. Try JPEG q70, then q55, then resize to 1620px (75% of max dimension). The compressed base64 stays in the HTML — the same HTML that gets sent to RENDER. **Trade-off**: render quality matches the compressed preview (which is fine — user sees what they get). Tell the user: "Comprimi as imagens pra caber no preview da artifact. O render final usa essa mesma compressão."
 
