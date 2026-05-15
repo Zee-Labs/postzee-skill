@@ -1,6 +1,14 @@
-# Carousel Visual Preview (Stage 7a)
+# Carousel Visual Preview (Stage 7a — Steps 1 + 2)
 
-This file is the protocol for **stage 7a of the carousel workflow** — the visual preview the user iterates on before any Postzee credit is spent. Stage 7b (the actual `POSTZEE_RENDER_CAROUSEL` call) is covered in `carousel-mastery.md` §9.
+This file is the protocol for **Steps 1 (compose) and 2 (iterate) of stage 7a** — the visual preview the user iterates on before Postzee renders.
+
+**Stage 7a runs in three steps** (full workflow in `carousel-mastery.md` §9.0):
+
+- **Step 0 — Image Strategy** (`carousel-mastery.md` §9.1, NEW in v3.8.0): agent proactively proposes background images for slides that lose editorial force without them. Runs BEFORE this file's Step 1. The mediaUrls returned by `POSTZEE_GENERATE_IMAGE` feed Step 1's image inlining.
+- **Step 1 — Compose the preview HTML artifact** (§2 of this file): aggregate slides into a single document, base64-inline images (including the ones from Step 0), output the artifact.
+- **Step 2 — Iterate** (§4 of this file): user edits via natural language, agent updates the master HTML, re-outputs the artifact. No Postzee call.
+
+Stage 7b (the actual `POSTZEE_RENDER_CAROUSEL` call) is covered in `carousel-mastery.md` §9.2.
 
 > **Two shapes, one source of truth.** The preview is a single aggregated document optimized for the Claude artifact CSP. The render is per-slide HTML optimized for server-side Puppeteer. Source of truth is the **content + design system** — the agent applies a mechanical conversion at hand-off (see §3a). Trying to use literally the same HTML for both surfaces causes invisible-text bugs (see §2 rationale).
 

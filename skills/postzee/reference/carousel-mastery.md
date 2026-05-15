@@ -327,13 +327,235 @@ If the user gives a *non-committal* response ("hmm tá bom") — ask once: "Poss
 
 ## 9. Stage 7a / 7b — Visual preview → Render & ship
 
-### 9.0 The new shape of stage 7
+### 9.0 The shape of stage 7
 
-Stage 7 split into two: **7a (visual preview)** lets the user iterate freely on a client-side HTML artifact before any Postzee credit is spent; **7b (render & ship)** is the single commit to `POSTZEE_RENDER_CAROUSEL` once the visual is approved.
+Stage 7 splits into **7a (visual preview)** and **7b (render & ship)**.
 
-Iteration happens in 7a, in the artifact. By the time you reach 7b, the HTML is final — one render call, save the `mediaGroupId`, ready to publish. See `carousel-visual-preview.md` for the artifact protocol, image inlining rules, and surface fallbacks.
+**Stage 7a has 3 steps**, in order:
 
-### 9.1 Stage 7b — render path A: atomic (only path going forward)
+1. **Step 0 — Image Strategy** (NEW in v3.8.0, §9.1 below): proactively propose background images for slides that lose editorial force without one. User accepts / partial / skips. Zero Postzee calls beyond `POSTZEE_GENERATE_IMAGE` for accepted slides.
+2. **Step 1 — Compose the preview HTML artifact**: typography + images (the ones generated in Step 0, if any) into the aggregated single-doc artifact. See `carousel-visual-preview.md`.
+3. **Step 2 — Iterate freely** on the artifact (§9.4 below). All edits are local, no Postzee calls.
+
+**Stage 7b** (§9.2 below) happens once: a single commit to `POSTZEE_RENDER_CAROUSEL` after explicit visual approval. By that point the HTML is final and the mediaGroupId comes back, ready to publish.
+
+See `carousel-visual-preview.md` for the artifact protocol, image inlining rules, and surface fallbacks.
+
+### 9.1 Stage 7a Step 0 — Image Strategy (NEW in v3.8.0)
+
+Before composing the preview HTML, the agent runs a strategic analysis: **which slides (if any) would gain real editorial impact from a background image?** This is an editorial decision, not an upsell.
+
+The default mental model: a typography-only carousel is the **baseline**. Images are added only when the slide LOSES force without them. Carousels that need images and ship typography-only underperform; carousels that don't need images and ship with them visually saturate. The agent must know the difference.
+
+#### 9.1.1 The cover slide — almost always a candidate
+
+Slide 1 (capa) is proposed as an image candidate by default, **except** when:
+- The design movement chosen at brief is explicitly typography-led (Brutalist / Minimal / Magazine with typography-only direction stated by the user)
+- The headline IS the visual statement (e.g. a giant single-word cover where typography carries the entire visual; verified against the chosen movement)
+
+For all other carousels, propose an image for the cover. The cover is the scroll-stopper — without strong visual on slide 1, even brilliant text loses the feed.
+
+#### 9.1.2 Internal slides — the rigorous filter
+
+For ANY internal slide (2 through N), apply the filter. The slide qualifies ONLY when ALL four criteria are simultaneously true:
+
+| # | Criterion | What it means |
+|---|---|---|
+| 1 | **Loses editorial force without image** | Not "would look nicer" — fundamentally weakens without one. If the slide reads strong as pure typography, skip. |
+| 2 | **Has a concrete visual subject** | Person, object, place, specific scene a prompt can clearly render. Abstract concepts (*liberdade*, *verdade*, *futuro*) fail this. |
+| 3 | **Body text under ~40 words** | Text-heavy slides compete with the image. Both lose. |
+| 4 | **Doesn't saturate the rhythm** | If slide N-1 or N+1 is already proposed, slide N must be exceptionally strong to also pass. Alternance > clustering. |
+
+Slides that systematically FAIL the filter:
+- Argumentative / opinion slides (no concrete subject, prose carries the weight)
+- Data-heavy slides (the number is the protagonist)
+- Bridge / transition slides
+- Text-driven CTAs (verb-first action + keyword box — typography wins)
+
+**Worked example — 9-slide carousel "A morte do gosto pessoal":**
+
+| # | Slide content | Decision | Why |
+|---|---|---|---|
+| 1 | Capa: "A morte do gosto pessoal" | ✅ Propose | Cover default; strong metaphor with visual subject |
+| 2 | Tese: "O algoritmo decide o que você consome" | ❌ Skip | Argumentative, no concrete subject |
+| 3 | Case: "Spotify, 2019: 30M de usuários receberam a mesma playlist gerada por IA" | ✅ Propose | Concrete subject (Spotify), specific year, <40 words |
+| 4 | Dados: "70% das playlists de 2024 foram algorítmicas" | ❌ Skip | Number is the protagonist |
+| 5 | Contexto histórico (3 frases) | ❌ Skip | Text-heavy |
+| 6 | Pivô: "E aí, isso é ruim?" | ❌ Skip | Bridge slide |
+| 7 | Virada: "O custo é a curiosidade" | ❌ Skip | Abstract — no visual subject |
+| 8 | Frase-ponte | ❌ Skip | Transition |
+| 9 | CTA: "Recomece. Escolha uma música hoje sem algoritmo." | ❌ Skip | Text-driven CTA |
+
+**Result**: 2 images proposed (slides 1 and 3). Carousel feels complete, focus maintained.
+
+**Counter-example — 6-slide tutorial "Como otimizar custos com IA":**
+
+| # | Slide | Decision |
+|---|---|---|
+| 1 | Capa: "Como cortar 60% do seu gasto com IA" | ✅ Propose (cover default) |
+| 2-5 | 4 steps with action items | ❌ All skip (tutorial = action-driven, text leads) |
+| 6 | CTA: "Comece pelo passo 1 ainda hoje" | ❌ Skip |
+
+**Result**: 1 image proposed (capa only). Most tutorial carousels land here.
+
+**Expected distribution across carousel types**:
+- Tutorial / how-to: **1 image** (capa)
+- Educational / explanatory: **1-2 images** (capa + maybe 1 case)
+- Tese / opinion: **1-2 images** (capa + maybe 1 metaphor or case)
+- Storytelling / case study: **2-3 images** (capa + 1-2 concrete scenes)
+- Aspirational / lifestyle: **2-3 images** (capa + 1-2 emotional)
+
+If the agent identified 4+ qualifying slides, the filter wasn't strict enough — re-evaluate with criterion #1 (loses force without image) as the hard gate. The default is **fewer images, more disciplined**.
+
+#### 9.1.3 Choosing the model
+
+Don't hardcode. Call `POSTZEE_LIST_IMAGE_MODELS` once at the start of Step 0 (cache for session), then categorize:
+
+| Image type | Tier preference | Use case |
+|---|---|---|
+| Editorial photoreal — humans, objects, real scenes | balanced (FLUX 1.1 Pro, Imagen 3, etc.) | Cover with person, case real, brand object |
+| Conceptual / metaphoric — abstract, surreal compositions | balanced or premium | Metaphorical cover, conceptual slide |
+| Minimalist design — clean geometric / illustrative | recraft (design mode) when available | Slides with limited visual weight, brand-friendly |
+
+Default tier: **balanced** (predictable cost, high quality). Reach for premium only if the user explicitly asks for max quality.
+
+Aspect ratio: **4:5** (1080×1350, matches the slide canvas).
+
+Use `POSTZEE_ESTIMATE_GENERATION_COST` to get the exact credit cost before showing the proposal. **Never guess** the cost — pricing changes; the live tool returns the right number.
+
+#### 9.1.4 Composing the image prompt
+
+One prompt per qualifying slide. Structure:
+
+```
+[Concrete subject doing concrete action], [composition: rule of thirds /
+centered / negative space / off-center], [lighting: cinematic /
+editorial / documentary / golden hour], [mood: tense / hopeful /
+nostalgic / dystopian], [style: editorial photography / fine art /
+minimalist design / documentary], [color hint from brand palette], 4:5
+```
+
+Tie the style to the design movement chosen at brief:
+
+| Movement | Prompt voice |
+|---|---|
+| Editorial | "Editorial photography, magazine spread quality, shallow depth of field, [subject], [lighting]" |
+| Bold | "High-contrast photography, dramatic single-source lighting, bold composition, [subject]" |
+| Minimal | "Minimalist composition, generous negative space, [subject] as single focal element, soft natural light" |
+| Photo-led | "Cinematic photography, full bleed frame, [subject], golden or blue hour, depth and atmosphere" |
+| Magazine | "Vintage editorial, slight film grain, [subject], composition leaving room for typography overlay" |
+| Brutalist | "Stark documentary photography, raw composition, hard lighting, [subject]" |
+
+**Anti-slop discipline** (image-brief variant of `copywriting-mastery.md`):
+- ❌ "vibrant colors, ultra detailed, masterpiece, 4K, photorealistic" — empty filler that bloats the prompt without specifying anything
+- ❌ "professional, beautiful, stunning" — non-specific quality adjectives
+- ❌ "in the style of [famous artist] but better" — vague aspirational refs
+- ✅ Specific scene, specific lighting, specific composition direction
+- ✅ Real visual references when applicable ("Henri Cartier-Bresson decisive moment", "Annie Leibovitz portrait gravity", "Wes Anderson centered symmetry")
+
+The prompt should read as a sentence and produce the same image consistently. If the agent itself can't picture the result from the prompt, the prompt is too vague.
+
+#### 9.1.5 The user-facing proposal — copy template
+
+Compact, justification-driven, cost-transparent, 4-5 commands. Example for the "morte do gosto pessoal" carousel:
+
+```
+🎨 Antes do preview — 2 slides que ganhariam imagem de fundo:
+
+   📍 Slide 1 (capa) — "A morte do gosto pessoal"
+      Imagem: estátua clássica de mármore quebrada sobre piso escuro
+      reflexivo, dramatic side lighting, deep shadows, editorial
+      photography monocromática com sutis tons quentes
+      FLUX 1.1 Pro · 4:5 · 70 créditos
+
+   📍 Slide 3 — "Spotify, 2019: 30M receberam a mesma playlist"
+      Imagem: silhueta humana de costas frente a uma tela mostrando
+      interface do Spotify em loop, neon cool blue, dystopian
+      editorial photography
+      FLUX 1.1 Pro · 4:5 · 70 créditos
+
+   Total: ~140 créditos  ·  Saldo atual: 4.500
+   Alternativa: carrossel typography-only — 0 créditos extras.
+
+   👉 "gera as 2"      — sigo com todas
+      "só capa"        — só o slide 1
+      "só 3"           — só o slide 3
+      "pula"           — render sem imagens
+      "outros prompts" — refaço as descrições
+```
+
+**Required elements**:
+- Slide number + headline / block summary (user knows which slide)
+- Prompt translated into the user's language (transparency about what's being generated)
+- Model + aspect + per-image credit cost
+- TOTAL credits + CURRENT balance (no surprises)
+- The typography-only alternative spelled out (it's a choice, not a requirement)
+- 4-5 commands covering: all / one / partial subset / skip / iterate-prompts
+
+**Voice**: editorial, neutral, no salesy adjectives. NOT "boost your carousel with stunning images!" — just: here's what I'd add, here's why, here's the cost.
+
+#### 9.1.6 Handling user response
+
+| Response | Action |
+|---|---|
+| `gera as N` / `todas` / `ok` / `vai` | Loop `POSTZEE_GENERATE_IMAGE` for each qualifying slide. Hold the returned `mediaUrl` from each. |
+| `só capa` / `só 1` | Generate only that one. |
+| `só 3` / `só 1 e 3` / numerical subset | Generate just the listed indices. |
+| `pula` / `não` / `vai sem` / `typography` | Skip step entirely. **ZERO** charge, NO retry, NO guilt-trip. Continue straight to Step 1 (compose preview, all slides typography-only). |
+| `outros prompts` / `refaz` | Re-write prompts for the SAME qualifying slides (the editorial decision of WHICH slides was correct — only prompt-text changes). Present again. Do not re-analyze qualification. |
+| Ambiguous / unclear | Ask ONE clarifying question, or default to "pula" if intent unreadable. Never re-propose if the user clearly declined. |
+
+After generation completes, the agent has N `(mediaUrl, mediaId)` pairs in working memory. These feed Step 1:
+
+- **Preview shape**: WebFetch each `mediaUrl` once, base64-encode, embed in the corresponding slide's HTML. Cache the bytes for the session (don't re-fetch).
+- **Render shape**: `carousel-visual-preview.md` §5.1 step 5 already swaps base64 → URL using the same `mediaUrl`. Zero re-work.
+
+#### 9.1.7 Insufficient credit balance
+
+If `POSTZEE_GET_CREDITS` shows balance insufficient for the proposed total:
+
+1. Compute the largest affordable subset. Typically "só capa" fits when "todas" doesn't.
+2. Surface the gap and the partial paths explicitly:
+
+```
+Saldo atual: 50 créditos.
+Proposta total: 140 créditos.
+
+Opções:
+- "só capa" (70 créditos) — também não cabe.
+- Comprar 1.000 créditos avulsos (~$1 USD) → cobre as 2.
+- "pula" — render sem imagens, 0 créditos.
+```
+
+The agent NEVER auto-purchases. User chooses.
+
+For **Free plan** users with 0 generation balance: same flow. Free supports AI generation via credit packs (avulso); surface the cheapest pack option contextually, not as a paywall.
+
+#### 9.1.8 Generation failure handling
+
+If `POSTZEE_GENERATE_IMAGE` fails for one slide (timeout, model down, content-policy rejection):
+- Skip that slide's image
+- Continue with the slides that succeeded
+- Surface to the user, briefly: *"Slide N não gerou (motivo: X). Sigo com as outras N-1 imagens; o slide N vai typography-only no preview."*
+- DO NOT auto-retry. User decides whether to request `outros prompts` for that slide or proceed.
+
+If ALL proposed images fail: skip the step entirely, surface a single combined message, proceed to typography-only Step 1. Don't loop on retries.
+
+#### 9.1.9 What Step 0 is NOT
+
+- ❌ **NOT an upsell mechanism.** The agent proposes ONLY when editorial necessity is real. If the carousel doesn't need internal images, propose "só capa" or skip the step entirely.
+- ❌ **NOT a place to re-decide visual direction** (movement, brand palette, headlines). Those were decided at brief. Images here REINFORCE, not REFRAME.
+- ❌ **NOT for slide reordering or structural changes.** The script is approved. Images plug into the existing structure.
+- ❌ **NOT replayed during Step 2 (iteration) or later.** If the user said "pula" or "só capa", that decision sticks for this carousel. User can still manually add images during Step 2 iteration (*"troca a imagem do slide 5 por essa: <url>"*), but the agent never re-proposes the strategy.
+- ❌ **NOT cap-driven.** Don't force ≥1 image just because the cover is a default candidate. If the design movement is typography-led, skip the cover proposal too.
+
+#### 9.1.10 Why this step exists — the user-value frame
+
+In carousel analysis, ~30% of carousels are weakened by shipping typography-only when an editorial image would have anchored the message. Step 0's role is to recognize those cases and surface a clear, actionable proposal — not to push images on every carousel.
+
+The right success rate for adoption isn't 100%. It's *"the agent proposed when it mattered, the user agreed or chose typography for the right reasons, and the carousel that shipped was the strongest version of itself."*
+
+### 9.2 Stage 7b — render path A: atomic (only path going forward)
 
 After the user approves the visual in stage 7a, render the whole carousel atomically. Apply the preview→render conversion from `carousel-visual-preview.md` §5.1 — same content + design system, render shape (per-slide independent HTML docs at full 1080×1350, `font-display: block` for the Puppeteer wait window):
 
@@ -351,7 +573,7 @@ POSTZEE_RENDER_CAROUSEL({
 
 The 7MB-per-slide and 50MB-total payload limits comfortably fit base64-embedded images alongside fonts. Save the returned `mediaGroupId` — you need it for any post-render tweaks.
 
-### 9.2 Legacy iterative path (still supported, rarely the right choice)
+### 9.3 Legacy iterative path (still supported, rarely the right choice)
 
 The old "render slide 1, then APPEND slide 2, 3, 4…" pattern still works, and the tool contract for `POSTZEE_APPEND_CAROUSEL_SLIDE` is unchanged. But with stage 7a doing the visual iteration upfront, slide-by-slide render mostly stops being useful: the user has already approved all slides as a unit before any render call.
 
@@ -361,7 +583,7 @@ Reserve this pattern for the rare case where a user explicitly says "renderiza s
 
 ⛔ Never call RENDER more than once for the same carousel. Postzee deduplicates identical RENDER payloads via a 1-hour idempotency cache, but the right answer is: don't re-issue RENDER at all — iterate in 7a before committing, then use REPLACE / APPEND for post-render tweaks. See SKILL.md §8.5.D.
 
-### 9.3 Iteration during stage 7a (PRIMARY path — no Postzee call)
+### 9.4 Iteration during stage 7a Step 2 (PRIMARY path — no Postzee call)
 
 While the user is still in the artifact preview, all iteration is local. Edit the master HTML, re-output the artifact, no tool call:
 
@@ -376,7 +598,7 @@ While the user is still in the artifact preview, all iteration is local. Edit th
 
 ⛔ NEVER call `POSTZEE_RENDER_CAROUSEL` / `REPLACE` / `APPEND` during 7a. The whole point is to spend zero credits while the user shapes the visual.
 
-### 9.4 Iteration tools — ESCAPE HATCHES after render (post-7b)
+### 9.5 Iteration tools — ESCAPE HATCHES after render (post-7b)
 
 Once the carousel is rendered, the artifact preview is gone — the user is now looking at the real PNGs in the gallery. If they want a tweak at that point, surgical primitives are the path:
 
@@ -390,7 +612,7 @@ Once the carousel is rendered, the artifact preview is gone — the user is now 
 
 These are **escape hatches**, not the iteration loop. The right pattern is: iterate in 7a, render once, publish. REPLACE/APPEND exist for the case where the user wanted to publish, got the carousel, then noticed something the artifact preview missed.
 
-### 9.5 Failure handling
+### 9.6 Failure handling
 
 See SKILL.md §8.5.C — never silently retry, surface raw response, ask user.
 
@@ -1172,9 +1394,11 @@ When in doubt, refer obliquely ("a maior fintech brasileira") rather than naming
 
 ## 18. Image distribution — when the user provides photos
 
+This section handles the case where the user supplies photos. For the complementary case where the **agent proactively proposes AI-generated images** before render, see §9.1 (Stage 7a Step 0 — Image Strategy).
+
 | Photos provided | Where they go |
 |---|---|
-| 0 | Typography-only carousel. Type carries identity. |
+| 0 | Run §9.1 image strategy (agent proposes generated images if editorially needed); otherwise typography-only |
 | 1 | Cover only (full-bleed photo + gradient + headline) |
 | 2 | Cover + slide 6 (case slide, full-bleed dark) |
 | 3 | Cover + slide 4 (friction, dark full-bleed) + slide 6 (case, dark full-bleed) |
@@ -1183,12 +1407,15 @@ When in doubt, refer obliquely ("a maior fintech brasileira") rather than naming
 
 If a photo doesn't fit the slide context — drop it. Forced photo placement looks worse than typographic clarity.
 
+When the user provides photos AND additional slides would still benefit from images (e.g. user provided 1 photo for the cover but slide 3 also qualifies), the agent can run §9.1 for the remaining qualifying slides — the two paths combine cleanly.
+
 ---
 
 ## 19. Quality checklist before publishing
 
 - [ ] Stage 5 (editorial validation gate) passed
 - [ ] Stage 6 (text approval) explicitly given by user
+- [ ] Stage 7a Step 0 (image strategy, §9.1) proposal made before preview — user accepted all / partial / said `pula`
 - [ ] Slide 1 headline visible at min 88px, fits in 5 lines
 - [ ] Same palette + typography across all 9 slides
 - [ ] Tags/labels present and consistent on internal slides
@@ -1219,6 +1446,11 @@ If a photo doesn't fit the slide context — drop it. Forced photo placement loo
 - ❌ Skip the editorial validation gate — text quality is the differentiator
 - ❌ Skip the frase-ponte (block 16) on slide 9 — CTA reads cold
 - ❌ Render before stage 6 (explicit approval) — wastes credits + clutters gallery
+- ❌ Skip Stage 7a Step 0 (image strategy proposal) — even on text-only-friendly carousels, propose at least the cover (unless the design movement is explicitly typography-led)
+- ❌ Force ≥1 image just because the cover is a default candidate — if the design movement is typography-led (Brutalist / Minimal / Magazine typography-only), skip the proposal entirely; the agent decides whether to propose at all
+- ❌ Propose 4+ images in any carousel — if the agent identified that many qualifying slides, the §9.1.2 filter wasn't applied strictly enough; re-evaluate with criterion #1 (loses force without image) as the hard gate
+- ❌ Frame the image strategy proposal as a sale (*"deixe seu carrossel mais bonito! gere imagens!"*) — frame it editorially (*"slide N ganha força com imagem por essa razão"*)
+- ❌ Re-propose images during Stage 7a Step 2 (iteration) — if user said `pula` or accepted a subset, the decision sticks
 - ❌ Re-render to "fix" — use REPLACE per slide
 - ❌ Use Google Fonts `<link>` in the PREVIEW shape — artifact CSP blocks the fetch → use base64 in preview, `<link>` in render (see §11.1)
 - ❌ Inline base64 for the render shape when the image has a known CDN URL — blows the model's output token budget for no benefit (see §11.4)
