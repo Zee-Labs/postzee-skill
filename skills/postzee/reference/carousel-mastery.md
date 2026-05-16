@@ -362,6 +362,8 @@ Before running the strategy, the agent checks whether the user already supplied 
 
 This step is silent — the agent doesn't surface anything to the user. It's a pre-filter on what's considered for the proposal.
 
+**Note on user-uploaded role assets** (avatar, brand logo, single reference photo for one slide): when the user attaches an image specifically for a role (not as a full-bleed slide background), the routine is **§9.1.6.2 + `media-memory.md` §8.2** — upload to Postzee CDN first, register in IMAGE_REGISTRY, then compose. This is a different code path from "user provided a full-bleed photo for a whole slide" handled in §18 + the table above. Both routines coexist; the agent picks based on the user's intent.
+
 #### 9.1.1 The cover slide — almost always a candidate
 
 Slide 1 (capa) is proposed as an image candidate by default, **except** when:
@@ -577,6 +579,14 @@ Briefly:
 
 ⛔ **NEVER fabricate a path** like `<img src="lucas_avatar.jpg">` or `<img src="cdn1.postzee.app/user_photo.jpg">`. If you're about to write a `src=` or `url(...)` and the asset isn't in IMAGE_REGISTRY: **STOP**, upload first (§8.2), then come back. The 2026-05-15 incident — avatar-empty on slides 1 and 9 of a rendered carousel — was exactly this anti-pattern. Two REPLACE calls + ~30s of extra work to recover. Prevent it by uploading-first, always.
 
+**Scope of this routine — not limited to Step 0**: §9.1.6.2 sits inside the Step 0 subsection because that's where most carousel images get generated, but the **routine applies any time** the user uploads an image during the carousel workflow:
+
+- **Step 0 declined** (user said `pula`): user can still upload an avatar later — run §8.2.
+- **During Step 2 iteration** (`§9.4`): user says *"coloca essa foto como avatar no slide 1"* — run §8.2 before editing the master HTML.
+- **Post-render in stage 7b** (escape hatches `§9.5`): user says *"troca o avatar pelo essa nova foto"* before issuing `POSTZEE_REPLACE_CAROUSEL_SLIDE` — run §8.2 first, then REPLACE.
+
+The principle is invariant: **assets in HTML always come from IMAGE_REGISTRY**; user-uploaded sources always reach the registry via §8.2.
+
 #### 9.1.7 Insufficient credit balance
 
 If `POSTZEE_GET_CREDITS` shows balance insufficient for the proposed total:
@@ -671,7 +681,8 @@ While the user is still in the artifact preview, all iteration is local. Edit th
 | "troca slide 4 e 5 de posição" | Reorder array → re-output |
 | "remove slide 7" | Filter out → re-output |
 | "insere slide entre 2 e 3 sobre X" | Splice new HTML → re-output |
-| "troca a imagem do slide 6 por essa: <url>" | Fetch new URL → base64 → embed → re-output |
+| "troca a imagem do slide 6 por essa: <url>" | Apply `media-memory.md` §8.2 (POSTZEE_UPLOAD_MEDIA → register in IMAGE_REGISTRY) → fetch the new mediaUrl → base64 → embed → re-output |
+| "coloca minha foto como avatar" (user attached an image) | §9.1.6.2 + §8.2: upload → IMAGE_REGISTRY → re-embed in master HTML → re-output. **Never** fabricate a path. |
 
 ⛔ NEVER call `POSTZEE_RENDER_CAROUSEL` / `REPLACE` / `APPEND` during 7a. The whole point is to spend zero credits while the user shapes the visual.
 

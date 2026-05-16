@@ -297,6 +297,22 @@ Step 2. Upload to Postzee CDN FIRST (before composing any HTML)
    })
    → { success: true, mediaId, url, type, sizeBytes, dimensions }
 
+   If UPLOAD_MEDIA returns `success: false`:
+   - Surface the friendly version of `error.message` to the user
+   - Do NOT silently keep the original bytes as huge base64 in the HTML
+     — that path detonates the model's output token budget at render
+     time and produces the exact pre-v3.7.2 stall behaviour
+   - Common cases + ask copy:
+     * Private URL (auth required): "essa URL parece privada. Pode
+       reenviar a foto pública, ou me mandar um link sem token?"
+     * 4xx/5xx unreachable: "não consegui buscar a foto (erro X).
+       Pode re-anexar?"
+     * >50 MB or wrong content-type: "esse arquivo é grande/inválido
+       (limite 50 MB, image/* ou video/*). Pode mandar comprimido?"
+     * Storage quota full: "seu storage tá cheio. Posso te listar
+       o que dá pra apagar?" (run POSTZEE_LIST_MEDIA + suggest)
+   - Wait for the user to provide a fixed source; then re-run Step 2.
+
 Step 3. Register in IMAGE_REGISTRY immediately
    IMAGE_REGISTRY[<role_key>] = { mediaId, mediaUrl: url, role, source: 'user-uploaded' }
 
@@ -310,14 +326,16 @@ Step 5. Confirm to user (one line, in their language)
 
 ### 8.3 Anti-pattern — NEVER fabricate a path
 
-⛔ **NEVER write a `src="..."` referencing an asset path the agent doesn't actually have.**
+⛔ **NEVER write a `src="..."` or `url(...)` referencing an asset path the agent doesn't actually have.**
 
 Examples of the anti-pattern:
 - `<img src="lucas_avatar.jpg">` — invented path, no upload ever happened
 - `<img src="cdn1.postzee.app/user_photo.png">` — agent guessed a CDN URL
-- `<div style="background: url('avatar_path.jpg')">` — same as above
+- `<div style="background: url('avatar_path.jpg')">` — same, inline style
+- `.avatar { background-image: url('photo.jpg'); }` — same, in a `<style>` block or stylesheet
+- `<image href="logo.png" />` inside SVG — same anti-pattern, different element
 
-If the agent is about to write a `src=` or `url(...)` and IMAGE_REGISTRY does NOT have an entry for that role: **STOP**. Run §8.2 first (upload the asset, get the real URL, register), then come back and compose the HTML with the real URL.
+If the agent is about to write a `src=`, `url(...)`, `href=`, or any other attribute referencing an asset, and IMAGE_REGISTRY does NOT have an entry for that role: **STOP**. Run §8.2 first (upload the asset, get the real URL, register), then come back and compose the HTML with the real URL.
 
 This pattern showed up in the 2026-05-15 carousel render incident: the agent composed slides referencing `lucas_avatar.jpg` (a path that never existed), Path A render produced empty avatars on slides 1 and 9, and required two follow-up `POSTZEE_REPLACE_CAROUSEL_SLIDE` calls to fix with proper base64. The IMAGE_REGISTRY discipline + the §8.2 routine prevent that class of bug.
 

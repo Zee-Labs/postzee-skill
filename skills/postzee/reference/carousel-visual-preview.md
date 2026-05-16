@@ -273,8 +273,10 @@ Before reaching §5.1 step-by-step, **these decisions are already taken by the s
 
 - *"Vou cortar fontes pra economizar tokens"* → NO. Google Fonts `<link>` is already cheap. Re-read §11.1.
 - *"Vou trocar pra system stack (Helvetica/Arial)"* → NO. The user approved a specific typography. System fallback is for when the brand-custom font is genuinely unavailable, not a token-saving tactic.
+- *"Vou comprimir ainda mais as imagens"* / *"compress further"* → NO. Image compression was decided at Step 0 (image strategy) or at the §7(f) edge case. Re-compressing at conversion time means the render PNG differs from the approved preview.
 - *"Vou inventar uma URL CDN pra essa imagem"* → ABSOLUTELY NO. Fabricated paths cause the avatar-empty bug. Run `media-memory.md` §8.2 to upload the asset and get the real URL.
 - *"Vou pular o slide N pra caber"* → NO. The user approved every slide. If size is the problem, fix upstream (image swap, font swap) — never drop slides silently.
+- *"Vou trocar a engine de render pra wkhtmltoimage / weasyprint / outra"* → NO. `smart-rendering.md` §1.1 is a hard rule: Path B is Playwright + Chromium or it's not Path B; fallback to Path A is the only correct alternative.
 
 The §5.1 step-by-step below is **mechanical**. Execute the decisions above without re-evaluating them.
 

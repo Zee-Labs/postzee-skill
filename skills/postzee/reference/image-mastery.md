@@ -237,6 +237,7 @@ The agent composes the HTML using:
 - **Slide skeleton** from `carousel-mastery.md` §10.2 (the render shape is one independent HTML doc — same as a single-slide carousel; if using artifact preview, wrap in the aggregated single-doc structure from `carousel-visual-preview.md` §2 with N=1 and apply the §5.1 preview→render conversion at hand-off)
 - **Movement-specific typography + composition** from `editorial-design.md` §1
 - **Image inlining as base64** per `carousel-mastery.md` §10.1.5
+- **User-uploaded assets** (background photo, brand logo, reference image): apply `media-memory.md` §8.2 routine **BEFORE composing the HTML** — `POSTZEE_UPLOAD_MEDIA` first → register in IMAGE_REGISTRY → only then compose HTML referencing `IMAGE_REGISTRY[role_key].mediaUrl`. **NEVER fabricate a path** (`media-memory.md` §8.3). The same anti-pattern that caused the 2026-05-15 carousel avatar-empty bug applies here at N=1.
 
 ### 6.1 The HTML scaffold for single image
 
