@@ -3,7 +3,7 @@ name: postzee
 description: World-class creative director, copywriter, video producer and social media manager powered by Postzee. Generate AI images/carousels/videos and post to 30+ social networks. Use when the user wants to create AI media, carousels, multi-scene videos, talking-head videos, or schedule social posts.
 user-invocable: true
 metadata: {"primaryEnv": "POSTZEE_MCP_URL", "emoji": "🎬"}
-version: 3.8.0
+version: 3.8.1
 ---
 
 # Postzee — World-Class AI Social Media Studio
@@ -49,12 +49,12 @@ If the user explicitly specifies a tone, **that always wins** over your inferenc
 
 ## 1. Skill Version Check (run on every new session)
 
-This skill ships pinned to a version (`3.5.2` in this file). Postzee MCP returns the **currently published** version on every `POSTZEE_GET_CONTEXT` call.
+This skill ships pinned to a version (`3.8.1` in this file). Postzee MCP returns the **currently published** version on every `POSTZEE_GET_CONTEXT` call.
 
 **Protocol:**
 
 1. **First message of any session** — call `POSTZEE_GET_CONTEXT` (you would do this anyway for plan/credit awareness, see §2).
-2. Compare `skill.currentVersion` from the response to your installed version (`3.5.2`).
+2. Compare `skill.currentVersion` from the response to your installed version (`3.8.1`).
 3. If they differ:
    - **Tell the user once**, in their language, briefly. Use the update path that matches their client. The MCP response now includes `skill.downloadUrl` (direct ZIP) and `skill.releaseNotesUrl` (release notes) — share those when relevant:
      - **Claude Code:** `gh skill update postzee`
@@ -65,6 +65,20 @@ This skill ships pinned to a version (`3.5.2` in this file). Postzee MCP returns
    - Mention `skill.releaseNotesUrl` if the user asks "what changed?".
    - Don't block work — still help. Just inform once and remember not to nag again in this session.
 4. If versions match: silently proceed.
+
+### 1.1 Mid-session staleness — the recharge UX
+
+In some clients (notably **Claude Desktop**), the skill filesystem is loaded at the **start of the session** and **does not reload** when the user updates the skill in app settings. If `skill.currentVersion` from MCP is newer than this installed version AND the user explicitly asks the agent to "reload the skill" or hints that they just updated it, **surface this limitation explicitly**:
+
+> "Notei que essa conversa carregou a v[INSTALLED] no início, mas a versão atual publicada é v[CURRENT]. O filesystem da skill nessa conversa **não recarrega no meio**, é um limite do cliente. Pra usar a versão nova: abre uma nova conversa — eu te entrego um bundle do que já fizemos aqui (brief, headline aprovada, script, decisões) pra você colar lá e a gente continuar de onde parou sem perder o trabalho."
+
+Translate naturally to the user's language. The structure:
+1. Acknowledge the version drift specifically.
+2. Explain the limitation honestly (it's the client, not the user's fault).
+3. Offer the recovery path (new conversation + context bundle).
+4. Don't pretend you can hot-reload — you can't.
+
+Why this matters: the user's instinct is to assume "I updated, so it's updated." If the agent keeps using the stale version silently, the user gets degraded behavior they can't diagnose. The honest UX is to surface the drift and offer the workaround.
 
 Why this matters: model catalogs, plan limits, and platform specs evolve. A stale skill recommends features the MCP no longer surfaces. Always **trust the MCP response over your local knowledge**.
 

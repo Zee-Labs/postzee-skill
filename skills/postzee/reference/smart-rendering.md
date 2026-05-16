@@ -46,6 +46,25 @@ The skill prefers Path B when usable but never blocks shipping on it — Path A 
 
 > **Note on token budget**: both paths benefit equally from the image→URL and font→`<link>` swaps in `carousel-visual-preview.md` §5.1. Path B doesn't bypass the model's output budget on its own (the agent still has to emit the slide HTML for Bash to write to disk), so do the swaps in Path B too. After swaps, ~10 KB/slide instead of ~270 KB.
 
+### 1.1 Hard rule — Path B is Playwright + Chromium. No substitutes.
+
+⛔ **The rendering engine for Path B is fixed**: **Playwright with Chromium** (the script template in §2.3). The skill does NOT substitute the engine, even if an alternative is more convenient or already installed on the host.
+
+**Explicitly rejected engines** (even if available):
+
+- `wkhtmltoimage` / `wkhtmltopdf` — WebKit Qt5 (~2015). Ignores `flexbox gap`, breaks `clip-path`, drops `filter: drop-shadow`, fails on large data: URI fonts and images.
+- `weasyprint` — Print engine, no modern web CSS.
+- `pdfkit` / `phantomjs` — Both EOL'd, last meaningful release in 2016.
+- `puppeteer-core` against a system Chromium older than current stable.
+- `html2canvas` — Reimplements rendering in JS, never pixel-fidelity for real CSS.
+- Any "headless browser" Docker image not explicitly Playwright + current Chromium.
+
+**Why the rule is absolute**: the carousel design system uses modern CSS features that legacy engines silently ignore or render incorrectly — `flexbox gap`, `clip-path: circle()`, `filter: drop-shadow()`, complex `box-shadow`, subpixel typography, large `data:` URI assets, pill backgrounds with `border-radius` + padding. Result: the PNG **diverges from the preview the user approved**. The "95% similar" Path B is not Path B — it's a quiet broken-promise to the user.
+
+**Detection (§2.1) verifies `playwright`** specifically. If unavailable, **fall back to Path A immediately**. Never improvise.
+
+Incident reference: a session running stale skill v3.7.x once improvised `wkhtmltoimage` for Path B. The 9-slide carousel rendered in 5s — but the avatar lost its circle, every `flexbox gap` collapsed (header sticker, bullets, body-to-headline spacing), the chip background on the "DUAS TRIBOS" pill disappeared, and the CTA button glow shadow vanished. The PNG was visibly different from the artifact the user approved. This rule prevents that class of regression.
+
 ---
 
 ## 2. Capability detection protocol
@@ -58,7 +77,7 @@ state ∈ { 'unknown', 'path-b-ready', 'path-a-only' }
 
 Detection flow (run once, at the first time the agent reaches stage 7b in a session):
 
-### 2.1 Quick capability check
+### 2.1 Quick capability check — Playwright-strict
 
 ```bash
 # 1. Is there a shell at all?
@@ -70,11 +89,15 @@ which node && which npm
 # Exit 0 = yes; non-zero = no.
 # → On non-zero: state = 'path-a-only'. Tell user once: "Tô em path-a (Postzee renderiza). Pra acelerar, instale Node + npm."
 
-# 3. Is playwright already installed (globally or in a known location)?
+# 3. Is Playwright specifically installed (not wkhtmltoimage, not weasyprint, not any substitute)?
 which playwright || npx --quiet playwright --version 2>/dev/null
 # Exit 0 = yes.
-# → On non-zero: optionally try to install ONCE.
+# → On non-zero: optionally try to install ONCE (§2.2).
+# → If install also fails: state = 'path-a-only'. The skill does NOT switch to wkhtmltoimage,
+#   weasyprint, pdfkit, html2canvas, or any other engine — see §1.1 hard rule.
 ```
+
+⛔ **Anti-pattern to refuse**: the host has `wkhtmltoimage` installed, agent thinks "good enough, I'll use it." **NO.** The check passes ONLY when Playwright + Chromium is real. Any other engine = `state = 'path-a-only'`, no exceptions. If the agent finds itself reaching for `wkhtmltopdf`, `wkhtmltoimage`, `weasyprint`, or similar — discipline break, go Path A.
 
 ### 2.2 Optional one-time install
 
