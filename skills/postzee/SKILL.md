@@ -3,7 +3,7 @@ name: postzee
 description: World-class creative director, copywriter, video producer and social media manager powered by Postzee. Generate AI images/carousels/videos and post to 30+ social networks. Use when the user wants to create AI media, carousels, multi-scene videos, talking-head videos, or schedule social posts.
 user-invocable: true
 metadata: {"primaryEnv": "POSTZEE_MCP_URL", "emoji": "🎬"}
-version: 3.8.1
+version: 3.8.2
 ---
 
 # Postzee — World-Class AI Social Media Studio
@@ -49,12 +49,12 @@ If the user explicitly specifies a tone, **that always wins** over your inferenc
 
 ## 1. Skill Version Check (run on every new session)
 
-This skill ships pinned to a version (`3.8.1` in this file). Postzee MCP returns the **currently published** version on every `POSTZEE_GET_CONTEXT` call.
+This skill ships pinned to a version (`3.8.2` in this file). Postzee MCP returns the **currently published** version on every `POSTZEE_GET_CONTEXT` call.
 
 **Protocol:**
 
 1. **First message of any session** — call `POSTZEE_GET_CONTEXT` (you would do this anyway for plan/credit awareness, see §2).
-2. Compare `skill.currentVersion` from the response to your installed version (`3.8.1`).
+2. Compare `skill.currentVersion` from the response to your installed version (`3.8.2`).
 3. If they differ:
    - **Tell the user once**, in their language, briefly. Use the update path that matches their client. The MCP response now includes `skill.downloadUrl` (direct ZIP) and `skill.releaseNotesUrl` (release notes) — share those when relevant:
      - **Claude Code:** `gh skill update postzee`
@@ -472,11 +472,22 @@ Postzee Skill v3.7 ships a complete **editorial methodology** that produces both
 │     PT: `renderiza` / `pode publicar` / `tá pronto` /             │
 │         `aprovado` / `vai`                                        │
 │     EN: `render` / `ship it` / `let's go` / `approved`            │
+│                                                                   │
+│   ⛔ HARD RULE — After approval, the agent's ONLY actions are:    │
+│      1. Read IMAGE_REGISTRY (media-memory.md §8) — populated by   │
+│         Step 0 generation + user-uploaded asset routine (§8.2)    │
+│      2. Apply §5.1 conversion (mechanical, see §5.1.0 decisions   │
+│         pre-made — NO re-deliberation, NO new optimization)       │
+│      3. Call POSTZEE_RENDER_CAROUSEL (one call, one shot)         │
+│      4. Save the returned mediaGroupId                            │
+│      5. Surface success to user                                   │
+│                                                                   │
+│   If you find yourself wanting to "shrink fonts", "switch to      │
+│   system stack", "compress further", "fabricate a CDN URL", or    │
+│   "skip a slide to fit" — discipline break. Apply §5.1.0          │
+│   pre-made decisions and proceed.                                 │
+│                                                                   │
 │   POSTZEE_GET_CONTEXT (validate credits/plan) →                   │
-│   Apply preview→render conversion (carousel-visual-preview.md     │
-│   §5.1): per-slide independent HTML docs at full 1080×1350,       │
-│   font-display flipped from `swap` to `block`. Same image bytes,  │
-│   same design system — only shape differs.                        │
 │   POSTZEE_RENDER_CAROUSEL with the converted per-slide HTMLs      │
 │   (base64 images fit in 7MB/slide + 50MB total, see §8.1).        │
 │   Save the returned mediaGroupId.                                 │
@@ -1127,7 +1138,7 @@ For polling: `POSTZEE_CHECK_JOB` may take 10-60s for images, 30-180s for videos,
 | `reference/image-mastery.md` | **v3.7 — NEW** — single-image methodology: 6-stage workflow with autonomous-mode briefing (3 questions max), winner-first hook + treatment proposal, composition for the 6 movements, iteration loop, hand-off to render. **Read end-to-end before any single-image post.** |
 | `reference/copywriting-mastery.md` | **v3.7 — NEW** — copywriter brain: 10 inviolable laws (specificity, one-promise, conversation join, pattern interrupt, slippery slope, etc), 5 awareness levels (Schwartz), 12 hook patterns atlas, 4 caption frameworks (AIDA/PAS/BAB/HookPromisePayoffCTA), Brazilian voice register, anti-anglicism. **Required before writing any post.** |
 | `reference/editorial-design.md` | **v3.7 — NEW** — 6 design movements (Editorial/Bold/Minimal/Photo-led/Magazine/Brutalist) with typography pairings + composition + color systems, type contrast law (4:1 minimum), photo treatment (grading, subject placement, blocking), brand bar system (8 canonical positions), highlight block system (orange/red/underline), 4-zone slide anatomy, 9-item visual polish checklist. **Required for any composition.** |
-| `reference/carousel-visual-preview.md` | **v3.7.2 — applies to both single image + carousel** — stage 7a protocol: aggregated single-doc artifact (no iframes — see §2 bug history), pre-flight checklist (§2.1), image base64-inlining decision tree (fetch, resize >5MB, fallback on failure), iteration command vocabulary, preview→render shape conversion at hand-off (§5.1: font-display swap→block flip + image source swap base64→URL + font delivery swap base64→Google Fonts `<link>`), graceful degradation for headless surfaces. |
+| `reference/carousel-visual-preview.md` | **v3.8.2 — applies to both single image + carousel** — stage 7a protocol: aggregated single-doc artifact (no iframes — see §2 bug history), pre-flight checklist (§2.1), image base64-inlining decision tree (fetch, resize >5MB, fallback on failure), iteration command vocabulary, **§5.1.0 decisions pre-made (anti-improvisation discipline at hand-off)**, preview→render shape conversion (§5.1: font-display swap→block + image source swap base64→URL + font delivery swap base64→Google Fonts `<link>`, reads IMAGE_REGISTRY from `media-memory.md` §8), graceful degradation for headless surfaces. |
 | `reference/smart-rendering.md` | **v3.7.2** — Path A (Postzee renders via Puppeteer) vs Path B (agent renders locally via Playwright + uploads bytes). **Capability-first detection** (§3.5): the skill never categorizes surfaces as "Path A only" by name — every surface with a Bash tool runs §2.1 detection (Claude Desktop with shell MCP, hermes, openclaw all eligible for Path B; no external MCP server required). Render script template, fallback flow on Path B failure, security notes. |
 | `reference/platform-settings.md` | **v3.7 — NEW** — per-network publish settings reference: Instagram (post/story + collaborators), TikTok (privacy/duet/stitch/comment/title/music), YouTube (visibility/tags), LinkedIn (carousel), X/Threads/Pinterest/Facebook + cross-cutting concerns. **Required before any `POSTZEE_CREATE_POST` call.** Includes triggers (PT-BR + EN), smart defaults, and the v3.7 settings passthrough on the MCP tool. |
 | `reference/carousel-headline-engine.md` | **v3.6** — 10-headline discipline with winner-first surface: internally generate 10 (5 IC + 5 NM) with rejection checklist + coverage rule, surface 1 winner + reasoning. Expansion commands (`outras` / `todas`) reveal top-3 or full 10 on demand. 5 empirical patterns, 6 emotional triggers, lift data, iteration commands. |

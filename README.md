@@ -4,11 +4,23 @@ The most complete AI agent skill for social media production. Turns your agent i
 
 All work goes through the **Postzee MCP HTTP** server. The skill never calls the REST API directly.
 
-**Current version:** `3.8.1` · **Compatible with:** Claude Code, Claude Desktop, Claude Web, OpenClaw, Hermes Agent.
+**Current version:** `3.8.2` · **Compatible with:** Claude Code, Claude Desktop, Claude Web, OpenClaw, Hermes Agent.
 
 ---
 
 ## What's new in v3.8
+
+### v3.8.2 — IMAGE_REGISTRY + anti-improvisation discipline at render hand-off (2026-05-15, patch)
+
+Two production-hardening fixes that close real failure modes observed on 2026-05-15:
+
+- **User-uploaded asset routine** (`media-memory.md` §8) — when the user uploads an image in the chat (file attachment, paste, URL) intended for a slide (avatar, logo, brand photo, reference), the agent now follows a mandatory routine: `POSTZEE_UPLOAD_MEDIA` first → real CDN URL in hand → register in IMAGE_REGISTRY → then compose HTML with the real URL. Hard rule: **never fabricate a path** like `lucas_avatar.jpg`. The 2026-05-15 incident had exactly that pattern — Path A rendered with empty avatars on slides 1 and 9, requiring two follow-up REPLACE calls to recover.
+
+- **IMAGE_REGISTRY as the single source of truth** (`media-memory.md` §8, `carousel-mastery.md` §9.1.6 + §9.1.6.2) — the agent now persists `{ slideIndex/role, mediaId, mediaUrl, source }` immediately after each Step 0 generation or user-asset upload. At render hand-off, the §5.1 conversion reads the registry mechanically — no improvisation, no re-derivation of "which image goes on which slide".
+
+- **§5.1.0 Decisions pre-made** (`carousel-visual-preview.md`) — a new block before the §5.1 step-by-step that codifies "these decisions are taken by the skill, you have no license to re-decide them at conversion time": image source (base64 preview, URL render), font delivery (base64 preview, Google Fonts render), font-display (swap preview, block render), aspect ratio. Explicit discipline-break signals: if the agent finds itself wanting to "shrink fonts", "switch to system stack", "fabricate a URL", or "skip a slide to fit" — STOP, apply pre-made decisions.
+
+- **Stage 7b hard rule** in `SKILL.md` workflow box — after approval, the agent's ONLY actions are: read IMAGE_REGISTRY → apply §5.1 mechanically → call RENDER → save mediaGroupId → surface success. Zero new optimization. Zero re-decision. Closes the "5 minutes of gymnastics before the first render call" pattern.
 
 ### v3.8.1 — Path B engine discipline + stale-version UX (2026-05-15, patch)
 

@@ -252,6 +252,34 @@ Stage 7b is triggered by **explicit visual approval**. Listen for these phrases 
 6. Offer the publish step (POSTZEE_CREATE_POST), if applicable.
 ```
 
+### 5.1.0 Decisions pre-made — DO NOT deliberate at conversion time
+
+Before reaching §5.1 step-by-step, **these decisions are already taken by the skill**. The agent has no license to re-decide or re-optimize them in the moment of conversion:
+
+| Decision | Pre-made value | Source |
+|---|---|---|
+| **Image source** | base64 (preview) → CDN URL (render) when URL exists in IMAGE_REGISTRY; KEEP base64 only if no URL | `media-memory.md` §8 IMAGE_REGISTRY |
+| **Font delivery** | base64 `@font-face` (preview) → Google Fonts `<link>` (render) for fonts in the pre-approved set | `carousel-mastery.md` §11.1 + §11.5 |
+| **font-display** | `swap` (preview) → `block` (render). Never `auto`, never omitted | `carousel-mastery.md` §11.3 |
+| **Aspect ratio** | Whatever was decided at briefing | brief context |
+
+**If the conversion is feeling tight on size, the bug is upstream — not at the conversion table:**
+
+- IMAGE_REGISTRY missing a URL for a slide → an upload step was skipped. Go back, run the user-uploaded asset routine (`media-memory.md` §8.2), or run Step 0 image generation if it was deferred.
+- Slide skeleton bloated → cut at the design level (fewer weights, simpler composition). NOT at the asset level.
+- A font is not in the pre-approved set (§11.5) → consult the fallback chain (§11.6), do not improvise a "system stack" substitution mid-conversion.
+
+⛔ **Discipline-break signals — STOP if you find yourself thinking any of these:**
+
+- *"Vou cortar fontes pra economizar tokens"* → NO. Google Fonts `<link>` is already cheap. Re-read §11.1.
+- *"Vou trocar pra system stack (Helvetica/Arial)"* → NO. The user approved a specific typography. System fallback is for when the brand-custom font is genuinely unavailable, not a token-saving tactic.
+- *"Vou inventar uma URL CDN pra essa imagem"* → ABSOLUTELY NO. Fabricated paths cause the avatar-empty bug. Run `media-memory.md` §8.2 to upload the asset and get the real URL.
+- *"Vou pular o slide N pra caber"* → NO. The user approved every slide. If size is the problem, fix upstream (image swap, font swap) — never drop slides silently.
+
+The §5.1 step-by-step below is **mechanical**. Execute the decisions above without re-evaluating them.
+
+---
+
 ### 5.1 Preview shape → Render shape conversion
 
 The preview is **one aggregated document** with all slides scaled to 540×675. The render expects **per-slide independent HTML documents** at full 1080×1350. The agent does this mechanical conversion at hand-off:

@@ -246,3 +246,83 @@ When the user attaches media in a client like the Hermes Telegram bot:
 > "Tive problema importando o anexo (a URL parece privada). Pode reenviar o arquivo? O bot vai me passar uma versão pública."
 
 This is a *client orchestration concern*, not yours. Just surface the error message clearly.
+
+---
+
+## 8. IMAGE_REGISTRY — carousel + image composition discipline
+
+When composing carousels or HTML-rendered single-image posts, the agent maintains a structured **IMAGE_REGISTRY** in working memory — a richer subset of the session manifest scoped to the current composition. It binds each slide / asset role to its real CDN URL so the `§5.1` preview→render conversion (`carousel-visual-preview.md`) executes mechanically, without improvisation.
+
+### 8.1 Structure
+
+```
+IMAGE_REGISTRY = {
+  // per-slide images from POSTZEE_GENERATE_IMAGE in §9.1 Step 0
+  slide_1_cover: { mediaId, mediaUrl, role: 'cover', source: 'generated' },
+  slide_3_case:  { mediaId, mediaUrl, role: 'inline', source: 'generated' },
+
+  // user-uploaded assets (avatar, logo, brand photo)
+  avatar:        { mediaId, mediaUrl, role: 'avatar', source: 'user-uploaded' },
+  brand_logo:    { mediaId, mediaUrl, role: 'logo',   source: 'user-uploaded' },
+
+  // assets the user pasted a URL for and the agent imported
+  reference_pic: { mediaId, mediaUrl, role: 'inline', source: 'imported' },
+}
+```
+
+The registry is **populated as each asset is acquired** — not at the end. Three populating events:
+
+| Event | Populate when |
+|---|---|
+| `POSTZEE_GENERATE_IMAGE` + `POSTZEE_CHECK_JOB` returns `success` | Step 0 image strategy generation |
+| `POSTZEE_UPLOAD_MEDIA` returns `success` | User pasted a URL the agent imported, OR user attached a file the agent uploaded |
+| Pre-existing media from `POSTZEE_LIST_MEDIA` selected | Agent retrieved a previous-session asset for reuse |
+
+### 8.2 User-uploaded asset routine (avatar / logo / brand photo)
+
+This is the routine that prevents incidents like the "lucas_avatar.jpg fabricated path" pattern.
+
+```
+User attaches a photo in the chat OR pastes a URL
+   ↓
+Step 1. Capture
+   - If file attachment: get the bytes the client surfaces, OR the
+     temporary URL the client wrapper provided
+   - If URL: take it as-is
+
+Step 2. Upload to Postzee CDN FIRST (before composing any HTML)
+   POSTZEE_UPLOAD_MEDIA({
+     url: <public URL the agent can reach>,
+     description: 'user-uploaded avatar' | 'brand logo' | 'reference photo'
+   })
+   → { success: true, mediaId, url, type, sizeBytes, dimensions }
+
+Step 3. Register in IMAGE_REGISTRY immediately
+   IMAGE_REGISTRY[<role_key>] = { mediaId, mediaUrl: url, role, source: 'user-uploaded' }
+
+Step 4. Use in BOTH shapes via §5.1
+   - Preview shape: WebFetch the mediaUrl → base64 inline (artifact CSP requires)
+   - Render shape: use mediaUrl direct (§5.1 step 5 image source swap)
+
+Step 5. Confirm to user (one line, in their language)
+   "Subi sua foto pro Postzee — vou usar como avatar nos slides 1 e 9."
+```
+
+### 8.3 Anti-pattern — NEVER fabricate a path
+
+⛔ **NEVER write a `src="..."` referencing an asset path the agent doesn't actually have.**
+
+Examples of the anti-pattern:
+- `<img src="lucas_avatar.jpg">` — invented path, no upload ever happened
+- `<img src="cdn1.postzee.app/user_photo.png">` — agent guessed a CDN URL
+- `<div style="background: url('avatar_path.jpg')">` — same as above
+
+If the agent is about to write a `src=` or `url(...)` and IMAGE_REGISTRY does NOT have an entry for that role: **STOP**. Run §8.2 first (upload the asset, get the real URL, register), then come back and compose the HTML with the real URL.
+
+This pattern showed up in the 2026-05-15 carousel render incident: the agent composed slides referencing `lucas_avatar.jpg` (a path that never existed), Path A render produced empty avatars on slides 1 and 9, and required two follow-up `POSTZEE_REPLACE_CAROUSEL_SLIDE` calls to fix with proper base64. The IMAGE_REGISTRY discipline + the §8.2 routine prevent that class of bug.
+
+### 8.4 Cross-references
+
+- `carousel-visual-preview.md` §5.1 — reads IMAGE_REGISTRY in step 5 (image source swap)
+- `carousel-mastery.md` §9.1.6.1 — populates IMAGE_REGISTRY after each `POSTZEE_CHECK_JOB` success in Step 0 parallel polling
+- `SKILL.md` workflow box Stage 7b — references IMAGE_REGISTRY as the "no new decisions" input

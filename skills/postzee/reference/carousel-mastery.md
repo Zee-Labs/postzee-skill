@@ -544,17 +544,38 @@ For N accepted slides:
    it stretches past 90s, treat as 'failed' for that slide and apply
    §9.1.8 handling).
 5. Collect (mediaUrl, mediaId, slideIndex) tuples from successful jobs.
-6. Surface a single combined message to the user:
+6. **REGISTER each tuple in IMAGE_REGISTRY** (`media-memory.md` §8) immediately:
+     IMAGE_REGISTRY[`slide_${slideIndex}_${role}`] = {
+       mediaId, mediaUrl, role, source: 'generated'
+     }
+7. Surface a single combined message to the user:
      "✅ Gerado: slide 1 + slide 3. Compondo o preview agora."
-7. Proceed to Step 1.
+8. Proceed to Step 1.
 ```
 
 **Why parallel**: 3 images sequential ≈ 30-90s of wall-clock; 3 images in parallel ≈ 10-30s. The backend's worker pool handles concurrent generation comfortably.
 
-After generation completes, the agent has N `(mediaUrl, mediaId)` pairs in working memory. These feed Step 1:
+**Why register in IMAGE_REGISTRY explicitly**: at hand-off to Stage 7b, the `§5.1` conversion (`carousel-visual-preview.md`) reads IMAGE_REGISTRY to know which slide gets which CDN URL in the render shape. Without persistence, the agent has to re-improvise the mapping — which is the exact pattern that caused the "fabricated `lucas_avatar.jpg` path" incident on 2026-05-15. The registry is the single source of truth for asset placement; populate it as soon as the asset exists.
+
+After generation completes, the agent has N `(mediaUrl, mediaId)` pairs in IMAGE_REGISTRY. These feed Step 1:
 
 - **Preview shape**: WebFetch each `mediaUrl` once, base64-encode, embed in the corresponding slide's HTML. Cache the bytes for the session (don't re-fetch).
-- **Render shape**: `carousel-visual-preview.md` §5.1 step 5 already swaps base64 → URL using the same `mediaUrl`. Zero re-work.
+- **Render shape**: `carousel-visual-preview.md` §5.1 step 5 swaps base64 → URL using the registry. Zero re-work, zero re-decision.
+
+### 9.1.6.2 User-uploaded assets (avatar, logo, brand photo)
+
+When the user **uploads an image in the chat** (file attachment, paste, or URL) intended for use in the carousel — typical roles: avatar on cover/CTA, brand logo on the brand bar, reference photo on a case slide:
+
+⚠️ **Mandatory: run `media-memory.md` §8.2 routine BEFORE composing any HTML that references that asset.**
+
+Briefly:
+
+1. Call `POSTZEE_UPLOAD_MEDIA` with the source (URL or temporary client URL) → receive `mediaUrl` on Postzee CDN
+2. Register in IMAGE_REGISTRY: `IMAGE_REGISTRY[role_key] = { mediaId, mediaUrl, role, source: 'user-uploaded' }`
+3. Confirm to user in one line: *"Subi sua foto pro Postzee — vou usar como avatar nos slides 1 e 9."*
+4. Then proceed to compose HTML referencing `IMAGE_REGISTRY[role_key].mediaUrl`
+
+⛔ **NEVER fabricate a path** like `<img src="lucas_avatar.jpg">` or `<img src="cdn1.postzee.app/user_photo.jpg">`. If you're about to write a `src=` or `url(...)` and the asset isn't in IMAGE_REGISTRY: **STOP**, upload first (§8.2), then come back. The 2026-05-15 incident — avatar-empty on slides 1 and 9 of a rendered carousel — was exactly this anti-pattern. Two REPLACE calls + ~30s of extra work to recover. Prevent it by uploading-first, always.
 
 #### 9.1.7 Insufficient credit balance
 
