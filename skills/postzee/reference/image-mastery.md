@@ -28,9 +28,9 @@ The result, when this methodology is followed: posts like the references in imag
 
 ---
 
-## 2. The 6-stage single-image workflow
+## 2. The 5-stage single-image workflow
 
-Mandatory stages, never skip. Same editorial-discipline rigor as the carousel workflow (carousel-mastery.md §2), but compressed to 6 stages since single image is one moment.
+Mandatory stages, never skip. Same editorial-discipline rigor as the carousel workflow (carousel-mastery.md §2), compressed because a single image is one moment.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -45,26 +45,22 @@ Mandatory stages, never skip. Same editorial-discipline rigor as the carousel wo
 ├─────────────────────────────────────────────────────────────────┤
 │ STAGE 3 — PHOTO + COPY DETAIL                                   │
 │   If hero photo: generate via POSTZEE_GENERATE_IMAGE OR use     │
-│   user-provided. Color-grade per editorial-design.md §8.        │
-│   Write the full hook + supporting body + CTA copy.             │
+│   user-provided (call POSTZEE_UPLOAD_MEDIA — SKILL.md §5).      │
+│   Color-grade per editorial-design.md §8. Write the full hook   │
+│   + supporting body + CTA copy.                                 │
 ├─────────────────────────────────────────────────────────────────┤
-│ STAGE 4 — VISUAL COMPOSITION (HTML artifact preview)            │
-│   Compose single HTML following editorial-design.md §1-§9.      │
-│   Inline images as base64 (carousel-mastery.md §10.1.5).        │
-│   Output as artifact for user to iterate.                       │
+│ STAGE 4 — RENDER & DISPLAY                                      │
+│   POSTZEE_GET_CONTEXT (credits, capability check) →             │
+│   POSTZEE_RENDER_IMAGE with the composed slide → returns        │
+│   mediaUrl. Display inline to the user via markdown image       │
+│   syntax (SKILL.md §8.6.D).                                     │
 ├─────────────────────────────────────────────────────────────────┤
-│ STAGE 5 — ITERATION LOOP                                        │
-│   User: "muda cor de fundo", "headline maior", "outra foto",    │
-│         "italic na palavra X", "tipografia mais editorial"      │
-│   Agent edits master HTML, re-outputs artifact. Zero render.    │
-│   ⛔ NEVER call POSTZEE_RENDER_IMAGE in this stage.              │
-├─────────────────────────────────────────────────────────────────┤
-│ STAGE 6 — RENDER & SHIP                                         │
-│   Triggered by `renderiza` / `pode publicar` / `tá pronto` /    │
-│   `aprovado` / `vai`.                                           │
-│   POSTZEE_GET_CONTEXT (credits) → POSTZEE_RENDER_IMAGE with     │
-│   the approved HTML → returns mediaUrl.                         │
-│   Optional: POSTZEE_CREATE_POST with the resulting mediaUrl.    │
+│ STAGE 5 — ITERATION (after the user sees the render)            │
+│   User: "muda cor de fundo pra preto", "headline maior",        │
+│         "troca a foto"                                          │
+│   Re-compose → POSTZEE_RENDER_IMAGE again. Each render is       │
+│   credit-free (only AI image generation in Stage 3 costs).      │
+│   Display the new result inline.                                │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -231,44 +227,27 @@ Comando: "boa, vai" pra eu montar o HTML.
 
 ---
 
-## 6. Stage 4 — Visual Composition (HTML artifact)
+## 6. Composing the slide (used by Stage 4)
 
-The agent composes the HTML using:
-- **Slide skeleton** from `carousel-mastery.md` §10.2 (the render shape is one independent HTML doc — same as a single-slide carousel; if using artifact preview, wrap in the aggregated single-doc structure from `carousel-visual-preview.md` §2 with N=1 and apply the §5.1 preview→render conversion at hand-off)
+Before calling `POSTZEE_RENDER_IMAGE` in Stage 4, the agent composes the slide using:
+- **Slide skeleton** from `carousel-mastery.md` §10.2 (one independent slide document — same scaffolding as a single-slide carousel)
 - **Movement-specific typography + composition** from `editorial-design.md` §1
-- **Image inlining as base64** per `carousel-mastery.md` §10.1.5
-- **User-uploaded assets** (background photo, brand logo, reference image): apply `media-memory.md` §8.2 routine **BEFORE composing the HTML** — `POSTZEE_UPLOAD_MEDIA` first → register in IMAGE_REGISTRY → only then compose HTML referencing `IMAGE_REGISTRY[role_key].mediaUrl`. **NEVER fabricate a path** (`media-memory.md` §8.3). The same anti-pattern that caused the 2026-05-15 carousel avatar-empty bug applies here at N=1.
+- **Image source rule** per `carousel-mastery.md` §10.1.5 (references images by Postzee CDN URL only)
+- **User-uploaded assets** (background photo, brand logo, reference image): apply `media-memory.md` §8.2 routine **BEFORE composing the slide** — `POSTZEE_UPLOAD_MEDIA` first → register in IMAGE_REGISTRY → only then compose, referencing `IMAGE_REGISTRY[role_key].mediaUrl`. **NEVER fabricate a path** (`media-memory.md` §8.3). The same anti-pattern that caused the 2026-05-15 carousel avatar-empty bug applies here at N=1.
 
-### 6.1 The HTML scaffold for single image
+### 6.1 The slide scaffold for single image
 
 ```html
 <!doctype html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@800&family=Inter:wght@500&display=block">
   <style>
-    /* PREVIEW shape: base64 @font-face + font-display: swap (artifact CSP).
-       RENDER shape: prefer Google Fonts <link> (smaller HTML, no token-budget
-       burn) — base64 only when the font isn't on Google Fonts or as fallback.
-       See carousel-mastery.md §11 + §11.3 + §11.4 for the full rationale
-       and visual-preview.md §5.1 step 3 for the preview→render swap. */
-
-    /* This example shows the PREVIEW-shape inline base64 block. At render
-       conversion, the agent replaces it with:
-       <link rel="stylesheet"
-         href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@800&family=Inter:wght@500&display=block"> */
-    @font-face { 
-      font-family: 'Playfair Display'; 
-      font-weight: 800; 
-      src: url(data:font/woff2;base64,...) format('woff2');
-      font-display: swap; /* preview: swap; render: block — see §11.3 */
-    }
-    @font-face { 
-      font-family: 'Inter'; 
-      font-weight: 500; 
-      src: url(data:font/woff2;base64,...) format('woff2');
-      font-display: swap;
-    }
+    /* Fonts from the design system stack — see carousel-mastery.md §11. */
     
     /* CSS variables from briefing + movement */
     :root {
@@ -375,7 +354,7 @@ The agent composes the HTML using:
   </style>
 </head>
 <body>
-  <img class="hero-photo" src="data:image/jpeg;base64,/9j/4AAQ..." alt="">
+  <img class="hero-photo" src="https://cdn1.postzee.app/abc123.jpg" alt="">
   <div class="overlay-gradient"></div>
   
   <div class="brand-bar">@gpt_academico</div>
@@ -392,81 +371,57 @@ The agent composes the HTML using:
 </html>
 ```
 
-### 6.2 Output as artifact
-
-Wrap in the artifact preview container per `carousel-visual-preview.md` §2 — same structure as carousels, just with N=1 slide. The user sees the rendered preview, can iterate.
-
-If the surface doesn't support artifact rendering: fall back to the textual variant per `carousel-visual-preview.md` §6 (fenced HTML block + summary).
-
 ---
 
-## 7. Stage 5 — Iteration Loop
+## 7. Stage 4 — Render & Display
 
-The user iterates on the artifact via natural language. The agent edits the master HTML and re-outputs the artifact. Zero Postzee call.
+After the script and (optionally) the hero photo are ready, render:
 
-**Vocabulary specific to single images** (carousels have more — iteration is per-slide; single image is just per-element):
-
-| User command | Agent action |
-|---|---|
-| "muda a cor de fundo" / "fundo mais escuro" | Adjust the background or gradient overlay |
-| "headline maior" / "fonte mais editorial" | Adjust font-size or swap typeface from the movement's options |
-| "outra foto" / "essa foto não tá boa" | If AI-generated: re-generate with adjusted prompt. If user-provided: ask for new URL. |
-| "italic em X" / "destaque a palavra Y" | Apply italic, highlight block, or color emphasis to specific word |
-| "move o texto pra esquerda" | Adjust .content positioning (left/right/center) |
-| "tira o gradient" / "deixa a foto inteira" | Remove the overlay-gradient element (test legibility first) |
-| "muda o CTA" / "tira o badge" | Adjust or remove the CTA element |
-| "mais minimalista" / "menos elementos" | Strip non-essential elements; reduce to headline + photo only |
-| "vira pra Story" | Change dimensions to 1080×1920, re-position elements for the new aspect |
-
-**Smart defaults during iteration**: if the user makes a change that breaks legibility (e.g., removes the gradient on a busy photo), the agent should WARN before applying: *"Vou tirar o gradient, mas o texto branco vai ficar difícil de ler nas áreas claras da foto. Continuo mesmo assim ou aumentar a opacidade?"*
-
----
-
-## 8. Stage 6 — Render & Ship
-
-Triggered by explicit visual approval phrase:
-- PT: `renderiza` / `pode publicar` / `tá pronto` / `aprovado` / `vai` / `manda ver`
-- EN: `render` / `ship it` / `let's go` / `approved` / `looks good`
-
-### 8.1 Render path selection
-
-The agent reads `smart-rendering.md` and chooses Path A (`POSTZEE_RENDER_IMAGE`) or Path B (local Playwright + `POSTZEE_UPLOAD_RENDERED_IMAGE`) based on surface capability.
-
-For Path A:
 ```
 POSTZEE_RENDER_IMAGE({
-  html: "<the approved HTML>",
+  html: "<the composed slide>",
   width: 1080,
   height: 1350,
-  name: "URGENTE - CNPq regras IA"  // optional human-friendly
+  name: "URGENTE - CNPq regras IA"  // optional human-friendly name
 })
 → Returns { mediaId, mediaUrl, width, height }
 ```
 
-For Path B (when capability is detected):
-```
-1. Write HTML to /tmp/postzee-image.html
-2. Run playwright script — viewport 1080×1350 — screenshot to PNG
-3. Base64 the PNG bytes
-4. POSTZEE_UPLOAD_RENDERED_IMAGE({ imageBase64, mimeType: "image/png", width, height, name })
-→ Returns { mediaId, mediaUrl, width, height }
-```
-
-Either way: same return shape. Agent surfaces success to user:
+The response is synchronous. Display the result inline to the user via markdown image syntax (per SKILL.md §8.6.D):
 
 ```
-🎨 Pronto. Imagem renderizada (1080×1350).
+🎨 Pronto!
 
-📎 mediaUrl: https://cdn.postzee.app/...
+![Post pronto](https://cdn1.postzee.app/abc.png)
 
-Quer publicar agora?
+Quer publicar agora ou ajustar algo?
 - Instagram feed (post normal)
 - Instagram story
 - Outra rede
-- Salva pro Postzee gallery, posto depois
+- Salva pro Postzee, posto depois
 ```
 
-### 8.2 Auto-publish flow
+---
+
+## 8. Stage 5 — Iteration
+
+After the user sees the rendered image inline, they can ask for tweaks:
+
+| User command | Agent action |
+|---|---|
+| "muda a cor de fundo" / "fundo mais escuro" | Re-compose with adjusted background → call `POSTZEE_RENDER_IMAGE` again |
+| "headline maior" / "fonte mais editorial" | Adjust font-size or swap typeface from the movement's options → re-render |
+| "outra foto" / "essa foto não tá boa" | If AI-generated: re-generate with adjusted prompt; if user-provided: ask for new image, upload via `POSTZEE_UPLOAD_MEDIA` (SKILL.md §5) → re-render |
+| "italic em X" / "destaque a palavra Y" | Apply italic, highlight, or color emphasis to specific word → re-render |
+| "tira o gradient" / "deixa a foto inteira" | Remove the overlay-gradient element → re-render (warn first if it breaks legibility) |
+| "muda o CTA" / "tira o badge" | Adjust or remove the CTA element → re-render |
+| "vira pra Story" | Change dimensions to 1080×1920, re-position elements → re-render |
+
+Each `POSTZEE_RENDER_IMAGE` call is **credit-free** (only AI image generation in Stage 3 costs credits — see SKILL.md §2.1). Re-render freely until the user approves.
+
+**Smart defaults during iteration**: if the user makes a change that breaks legibility (e.g., removes the gradient on a busy photo), the agent should WARN before applying: *"Se eu tirar o gradient, o texto branco vai ficar difícil de ler nas áreas claras da foto. Continuo mesmo assim ou aumentar a opacidade?"*
+
+### 8.1 Auto-publish flow
 
 If the user wants to publish immediately, the agent calls `POSTZEE_CREATE_POST` with:
 - The mediaUrl from rendering
@@ -513,29 +468,14 @@ Switch to typography-only Bold or Minimal movement. Headline dominates the slide
 
 Render 4 separate images (one per language) by calling `POSTZEE_RENDER_IMAGE` 4 times with different `text` content but same composition. Agent surfaces all 4 mediaUrls and lets user pick which to publish where.
 
-### 9.6 Realtime events — Path A vs Path B asymmetry
-
-Single-image renders emit DIFFERENT realtime event types depending on the path:
-
-| Path | Event emitted | Why |
-|---|---|---|
-| Path A (`POSTZEE_RENDER_IMAGE`) | `group.ready` | Internally creates a 1-slide MediaGroup, inherits the carousel emit path |
-| Path B (`POSTZEE_UPLOAD_RENDERED_IMAGE`) | `media.ready` | Bypasses the MediaGroup — produces a standalone Media directly |
-
-This is **intentional**, not a bug — the events reflect the underlying data model. The frontend `RealtimeProvider` handles both: `group.ready` triggers gallery SWR invalidation; `media.ready` does the same plus toast notification routing. From the user's perspective the behaviour is identical (gallery updates, no manual refresh).
-
-If you're writing a new consumer of single-image events (e.g. a third-party webhook listener), subscribe to BOTH event types and treat them as semantically equivalent for the "a single image is ready" intent.
-
 ---
 
 ## 10. Cross-references
 
 - `copywriting-mastery.md` — the 10 laws, 12 hook patterns, 4 caption frameworks, BR voice (REQUIRED reading for any image post)
 - `editorial-design.md` — the 6 movements, type contrast law, photo treatment, brand bar system (REQUIRED reading for composition)
-- `carousel-mastery.md` §10-§11 — slide skeleton + font embedding (shared infra)
-- `carousel-mastery.md` §10.1.5 — image inlining rule (applies identically here)
-- `carousel-visual-preview.md` — artifact preview protocol (single-image artifact is the same with N=1)
-- `smart-rendering.md` — Path A vs Path B render decision
+- `carousel-mastery.md` §10-§11 — slide skeleton + font discipline (shared infra)
+- `carousel-mastery.md` §10.1.5 — image source rule (applies identically here)
 - `platform-settings.md` — per-network publish settings (CRITICAL — without this the user's "story" goes to feed)
 
 The image-mastery workflow is shorter than the carousel workflow because single images don't need a narrative arc. But the editorial-design + copywriting + autonomous rigor is the same. A single image done right outperforms a carousel done lazy — every time.

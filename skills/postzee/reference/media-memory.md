@@ -251,13 +251,13 @@ This is a *client orchestration concern*, not yours. Just surface the error mess
 
 ## 8. IMAGE_REGISTRY — carousel + image composition discipline
 
-When composing carousels or HTML-rendered single-image posts, the agent maintains a structured **IMAGE_REGISTRY** in working memory — a richer subset of the session manifest scoped to the current composition. It binds each slide / asset role to its real CDN URL so the `§5.1` preview→render conversion (`carousel-visual-preview.md`) executes mechanically, without improvisation.
+When composing carousels or single-image posts, the agent maintains a structured **IMAGE_REGISTRY** in working memory — a richer subset of the session manifest scoped to the current composition. It binds each slide / asset role to its real Postzee CDN URL, so that when slides reference an image, the URL is always real (never improvised).
 
 ### 8.1 Structure
 
 ```
 IMAGE_REGISTRY = {
-  // per-slide images from POSTZEE_GENERATE_IMAGE in §9.1 Step 0
+  // per-slide images from POSTZEE_GENERATE_IMAGE in Stage 7 (§9.1)
   slide_1_cover: { mediaId, mediaUrl, role: 'cover', source: 'generated' },
   slide_3_case:  { mediaId, mediaUrl, role: 'inline', source: 'generated' },
 
@@ -274,7 +274,7 @@ The registry is **populated as each asset is acquired** — not at the end. Thre
 
 | Event | Populate when |
 |---|---|
-| `POSTZEE_GENERATE_IMAGE` + `POSTZEE_CHECK_JOB` returns `success` | Step 0 image strategy generation |
+| `POSTZEE_GENERATE_IMAGE` + `POSTZEE_CHECK_JOB` returns `success` | Stage 7 image strategy generation |
 | `POSTZEE_UPLOAD_MEDIA` returns `success` | User pasted a URL the agent imported, OR user attached a file the agent uploaded |
 | Pre-existing media from `POSTZEE_LIST_MEDIA` selected | Agent retrieved a previous-session asset for reuse |
 
@@ -290,7 +290,7 @@ Step 1. Capture
      temporary URL the client wrapper provided
    - If URL: take it as-is
 
-Step 2. Upload to Postzee CDN FIRST (before composing any HTML)
+Step 2. Upload to Postzee CDN FIRST (before composing any slide)
    POSTZEE_UPLOAD_MEDIA({
      url: <public URL the agent can reach>,
      description: 'user-uploaded avatar' | 'brand logo' | 'reference photo'
@@ -299,9 +299,6 @@ Step 2. Upload to Postzee CDN FIRST (before composing any HTML)
 
    If UPLOAD_MEDIA returns `success: false`:
    - Surface the friendly version of `error.message` to the user
-   - Do NOT silently keep the original bytes as huge base64 in the HTML
-     — that path detonates the model's output token budget at render
-     time and produces the exact pre-v3.7.2 stall behaviour
    - Common cases + ask copy:
      * Private URL (auth required): "essa URL parece privada. Pode
        reenviar a foto pública, ou me mandar um link sem token?"
@@ -316,9 +313,8 @@ Step 2. Upload to Postzee CDN FIRST (before composing any HTML)
 Step 3. Register in IMAGE_REGISTRY immediately
    IMAGE_REGISTRY[<role_key>] = { mediaId, mediaUrl: url, role, source: 'user-uploaded' }
 
-Step 4. Use in BOTH shapes via §5.1
-   - Preview shape: WebFetch the mediaUrl → base64 inline (artifact CSP requires)
-   - Render shape: use mediaUrl direct (§5.1 step 5 image source swap)
+Step 4. Reference in the slide composition
+   <img src="${IMAGE_REGISTRY[role_key].mediaUrl}">
 
 Step 5. Confirm to user (one line, in their language)
    "Subi sua foto pro Postzee — vou usar como avatar nos slides 1 e 9."
@@ -337,10 +333,10 @@ Examples of the anti-pattern:
 
 If the agent is about to write a `src=`, `url(...)`, `href=`, or any other attribute referencing an asset, and IMAGE_REGISTRY does NOT have an entry for that role: **STOP**. Run §8.2 first (upload the asset, get the real URL, register), then come back and compose the HTML with the real URL.
 
-This pattern showed up in the 2026-05-15 carousel render incident: the agent composed slides referencing `lucas_avatar.jpg` (a path that never existed), Path A render produced empty avatars on slides 1 and 9, and required two follow-up `POSTZEE_REPLACE_CAROUSEL_SLIDE` calls to fix with proper base64. The IMAGE_REGISTRY discipline + the §8.2 routine prevent that class of bug.
+This pattern showed up in the 2026-05-15 carousel render incident: the agent composed slides referencing `lucas_avatar.jpg` (a path that never existed), the render produced empty avatars on slides 1 and 9, and required two follow-up `POSTZEE_REPLACE_CAROUSEL_SLIDE` calls to fix. The IMAGE_REGISTRY discipline + the §8.2 routine prevent that class of bug.
 
 ### 8.4 Cross-references
 
-- `carousel-visual-preview.md` §5.1 — reads IMAGE_REGISTRY in step 5 (image source swap)
-- `carousel-mastery.md` §9.1.6.1 — populates IMAGE_REGISTRY after each `POSTZEE_CHECK_JOB` success in Step 0 parallel polling
-- `SKILL.md` workflow box Stage 7b — references IMAGE_REGISTRY as the "no new decisions" input
+- `carousel-mastery.md` §10.1.5 — image source rule (slides reference Postzee CDN URLs from IMAGE_REGISTRY)
+- `carousel-mastery.md` §9.1.6.1 — populates IMAGE_REGISTRY after each `POSTZEE_CHECK_JOB` success in Stage 7 parallel polling
+- `SKILL.md` workflow box Stage 8 (Render) — references IMAGE_REGISTRY for slide URLs

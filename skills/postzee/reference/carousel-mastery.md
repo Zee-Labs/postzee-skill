@@ -1,25 +1,23 @@
 # Carousel Mastery — The Editorial Carousel System
 
-This is the **central reference** for the carousel pipeline. Skill v3.7 extends the v3.6 editorial methodology with new disciplines for single-image posts, design depth, and copywriting:
+This is the **central reference** for the carousel pipeline. It orchestrates the editorial disciplines into a single end-to-end workflow:
 
 **Disciplines this file orchestrates** (carousel-specific):
 - `carousel-headline-engine.md` — 10-headline discipline with winner-first surface
-- `carousel-visual-preview.md` — stage 7a HTML artifact preview protocol
-- `carousel-editorial-filter.md` — anti-IA-slop language rules
+- `carousel-editorial-filter.md` — anti-AI-slop language rules
 - `carousel-quality-manual.md` — 18-block / 9-slide structure with word counts
-- `carousel-design-principles.md` — legacy carousel visual rules (most material migrated to `editorial-design.md` in v3.7)
+- `carousel-design-principles.md` — visual rules specific to carousel slide flow
 - `carousel-references.md` — two complete worked examples
 
-**v3.7 disciplines (apply to BOTH carousels and single images)**:
+**Shared disciplines (apply to both carousels and single images)**:
 - `copywriting-mastery.md` — 10 inviolable laws, 12 hook patterns, 4 caption frameworks, BR voice
 - `editorial-design.md` — 6 design movements, type contrast law, photo treatment, brand bar system
-- `smart-rendering.md` — Path A (Postzee renders) vs Path B (agent renders locally)
 - `platform-settings.md` — per-network publish settings (REQUIRED before any `POSTZEE_CREATE_POST`)
 
-**v3.7 parallel methodology**:
+**Parallel methodology**:
 - `image-mastery.md` — single-image methodology (6-stage workflow); read for any post that's NOT a carousel
 
-This file (carousel-mastery.md) is the orchestrator for carousels: it defines the workflow that runs the carousel disciplines together, the design-system CSS + HTML scaffolding for each slide type, the image and font inlining rules, the iteration playbook, and the control commands the user can issue. Pair it with `image-mastery.md` for single-image work — same disciplines, different methodology.
+This file is the orchestrator for carousels: it defines the workflow that runs the carousel disciplines together, the design-system scaffolding for each slide type, the image and font discipline, the iteration playbook, and the control commands the user can issue. Pair it with `image-mastery.md` for single-image work — same disciplines, different methodology.
 
 > **Hard rule:** before generating any carousel for a user, read this file end-to-end. Then dive into the discipline files only as needed during generation.
 
@@ -37,9 +35,9 @@ The promise: every carousel that comes out of Postzee is *indistinguishable from
 
 ## 1. The pipeline (split: agent vs Postzee)
 
-> **You design. Postzee renders.**
+> **You design. Postzee delivers.**
 >
-> *You* (the agent) write a complete HTML/CSS document for each slide — pixel-perfect text, exact typography, controlled hierarchy. *Postzee* runs Puppeteer and gives you back PNGs, atomically grouped as one MediaGroup.
+> *You* (the agent) compose a complete slide document for each slide — pixel-perfect text, exact typography, controlled hierarchy. *Postzee* returns the rendered slides, atomically grouped as one MediaGroup ready to publish.
 
 The 3 carousel tools (see SKILL.md §8.1):
 - `POSTZEE_RENDER_CAROUSEL` — atomic render of N slides as one MediaGroup
@@ -49,7 +47,7 @@ The 3 carousel tools (see SKILL.md §8.1):
 **Hard limits (render pipeline):**
 - 1-15 slides per carousel total
 - 256-2160 px per dimension
-- **7 MB max HTML per slide** (enough headroom for base64-inlined images alongside fonts — required by the visual-preview workflow, see `carousel-visual-preview.md`)
+- **7 MB max payload per slide** (room enough for rich compositions with inlined imagery)
 - 50 MB max **total payload** per RENDER call (sum of all slides combined)
 - 45s render timeout per slide
 - All-or-nothing: any slide failure rolls back the whole RENDER call
@@ -83,7 +81,7 @@ Postzee renders up to 15 slides, but each social network has its own ceiling. Al
 
 ## 2. The 8-stage workflow
 
-Every carousel goes through these 8 stages. Skipping any stage produces a worse carousel. **Never skip the editorial validation gate (stage 5).**
+Every carousel goes through these stages. Skipping any stage produces a worse carousel. **Never skip the editorial validation gate (stage 5).**
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -110,27 +108,32 @@ Every carousel goes through these 8 stages. Skipping any stage produces a worse 
 │   manual.md §7-§8 + carousel-design-principles.md §6            │
 ├─────────────────────────────────────────────────────────────────┤
 │ STAGE 6 — TEXT APPROVAL (hard stop, user types `aprovado`)      │
-│   Do NOT generate slide HTML until this happens.                │
+│   Do NOT render until this happens.                             │
 ├─────────────────────────────────────────────────────────────────┤
-│ STAGE 7a — VISUAL PREVIEW (HTML artifact, no Postzee call)      │
-│   Compose slides with base64-inlined images, output as ONE      │
-│   aggregated HTML doc (single document, scaled <section>s, NO   │
-│   iframes — see preview rationale §2). Iterate freely: "muda    │
-│   fundo do slide 3", "troca slide 4 e 5", etc. → edit master    │
-│   HTML, re-output. No call to POSTZEE_RENDER_CAROUSEL.          │
-│   See carousel-visual-preview.md                                │
+│ STAGE 7 — IMAGE STRATEGY (optional, per slide)                  │
+│   Decide which slides gain real impact from a background image. │
+│   Cover almost always; internal slides pass the 4-criterion     │
+│   filter (§9.1). For user-provided images, call                 │
+│   POSTZEE_UPLOAD_MEDIA per SKILL.md §5 rule. For AI-generated   │
+│   images, propose with cost (POSTZEE_ESTIMATE_GENERATION_COST), │
+│   await approval, generate in parallel, poll.                   │
 ├─────────────────────────────────────────────────────────────────┤
-│ STAGE 7b — RENDER & SHIP (user approves visual)                 │
-│   Triggered by "renderiza" / "pode publicar" / "tá pronto" /    │
-│   "aprovado" / "vai" (PT) or "render" / "ship it" / "let's go"  │
-│   / "approved" (EN). POSTZEE_RENDER_CAROUSEL with the SAME HTML │
-│   that was in the artifact. One call, no retry on failure.      │
-│   REPLACE / APPEND are escape hatches for POST-render tweaks    │
-│   only, not the main iteration loop (which lives in 7a).        │
+│ STAGE 8 — RENDER & DISPLAY                                      │
+│   POSTZEE_RENDER_CAROUSEL once with all composed slides. The    │
+│   response is synchronous — mediaUrls arrive populated. Display │
+│   inline to the user via markdown image syntax (one per slide). │
+│   No retry on failure — surface error to user.                  │
+├─────────────────────────────────────────────────────────────────┤
+│ STAGE 9 — ITERATION (primary path)                              │
+│   After the user sees the rendered slides, iterate via:         │
+│     "muda fundo do slide 3"  → POSTZEE_REPLACE_CAROUSEL_SLIDE   │
+│     "adiciona slide no fim"   → POSTZEE_APPEND_CAROUSEL_SLIDE   │
+│   After each, display the FULL updated carousel inline again    │
+│   (Display Contract — SKILL.md §8.6.D).                         │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-SKILL.md §8.0 references the same 8 stages — single shared terminology, no translation table needed.
+SKILL.md §8.0 references the same stages — single shared terminology, no translation table needed.
 
 ---
 
@@ -321,29 +324,23 @@ If the user gives a *partial* approval ("o slide 4 ainda tá fraco, ajusta") —
 
 If the user gives a *non-committal* response ("hmm tá bom") — ask once: "Posso renderizar?" Don't infer approval.
 
-**Why this matters:** RENDER costs credits and creates a MediaGroup that lives in the gallery. A premature render = the user has to clean up + re-do. Slow down here and save effort downstream.
+**Why this matters:** RENDER creates a MediaGroup that lives in the gallery. A premature render = the user has to clean up + re-do. Slow down here and save effort downstream. (RENDER itself is credit-free — see SKILL.md §2.1 — but rendering the wrong script wastes the user's time.)
 
 ---
 
-## 9. Stage 7a / 7b — Visual preview → Render & ship
+## 9. Stages 7-9 — Image strategy → Render → Iteration
 
-### 9.0 The shape of stage 7
+### 9.0 The shape of post-approval
 
-Stage 7 splits into **7a (visual preview)** and **7b (render & ship)**.
+After the user types `aprovado` in Stage 6, three sequential stages take the carousel from script to published-ready slides:
 
-**Stage 7a has 3 steps**, in order:
+- **Stage 7 — Image Strategy** (§9.1 below): proactively decide which slides gain real impact from a background image. User accepts / partial / skips. Costs land only on `POSTZEE_GENERATE_IMAGE` for accepted slides.
+- **Stage 8 — Render & display** (§9.2 below): one synchronous `POSTZEE_RENDER_CAROUSEL` call. Postzee returns the final rendered slides as one MediaGroup. Display them inline to the user via markdown image syntax.
+- **Stage 9 — Iteration** (§9.4 below): the user reacts to the rendered slides. Tweaks land via `POSTZEE_REPLACE_CAROUSEL_SLIDE` (per slide) or `POSTZEE_APPEND_CAROUSEL_SLIDE` (new slide). After each, display the full updated carousel inline again.
 
-1. **Step 0 — Image Strategy** (NEW in v3.8.0, §9.1 below): proactively propose background images for slides that lose editorial force without one. User accepts / partial / skips. Zero Postzee calls beyond `POSTZEE_GENERATE_IMAGE` for accepted slides.
-2. **Step 1 — Compose the preview HTML artifact**: typography + images (the ones generated in Step 0, if any) into the aggregated single-doc artifact. See `carousel-visual-preview.md`.
-3. **Step 2 — Iterate freely** on the artifact (§9.4 below). All edits are local, no Postzee calls.
+### 9.1 Stage 7 — Image Strategy
 
-**Stage 7b** (§9.2 below) happens once: a single commit to `POSTZEE_RENDER_CAROUSEL` after explicit visual approval. By that point the HTML is final and the mediaGroupId comes back, ready to publish.
-
-See `carousel-visual-preview.md` for the artifact protocol, image inlining rules, and surface fallbacks.
-
-### 9.1 Stage 7a Step 0 — Image Strategy (NEW in v3.8.0)
-
-Before composing the preview HTML, the agent runs a strategic analysis: **which slides (if any) would gain real editorial impact from a background image?** This is an editorial decision, not an upsell.
+Before composing the slides, the agent runs a strategic analysis: **which slides (if any) would gain real editorial impact from a background image?** This is an editorial decision, not an upsell.
 
 The default mental model: a typography-only carousel is the **baseline**. Images are added only when the slide LOSES force without them. Carousels that need images and ship typography-only underperform; carousels that don't need images and ship with them visually saturate. The agent must know the difference.
 
@@ -551,18 +548,15 @@ For N accepted slides:
        mediaId, mediaUrl, role, source: 'generated'
      }
 7. Surface a single combined message to the user:
-     "✅ Gerado: slide 1 + slide 3. Compondo o preview agora."
-8. Proceed to Step 1.
+     "✅ Gerado: slide 1 + slide 3. Vou montar o carrossel agora."
+8. Proceed to Stage 8 (Render).
 ```
 
 **Why parallel**: 3 images sequential ≈ 30-90s of wall-clock; 3 images in parallel ≈ 10-30s. The backend's worker pool handles concurrent generation comfortably.
 
-**Why register in IMAGE_REGISTRY explicitly**: at hand-off to Stage 7b, the `§5.1` conversion (`carousel-visual-preview.md`) reads IMAGE_REGISTRY to know which slide gets which CDN URL in the render shape. Without persistence, the agent has to re-improvise the mapping — which is the exact pattern that caused the "fabricated `lucas_avatar.jpg` path" incident on 2026-05-15. The registry is the single source of truth for asset placement; populate it as soon as the asset exists.
+**Why register in IMAGE_REGISTRY explicitly**: when the agent composes each slide for Stage 8, it reads IMAGE_REGISTRY to know which CDN URL to reference per slide. Without persistence, the agent has to re-improvise the mapping — which is the exact pattern that caused the "fabricated `lucas_avatar.jpg` path" incident (2026-05-15: avatar empty on slides 1 and 9 of a rendered carousel; recovery cost ~30s + 2 REPLACE calls). The registry is the single source of truth for asset placement; populate it as soon as the asset exists.
 
-After generation completes, the agent has N `(mediaUrl, mediaId)` pairs in IMAGE_REGISTRY. These feed Step 1:
-
-- **Preview shape**: WebFetch each `mediaUrl` once, base64-encode, embed in the corresponding slide's HTML. Cache the bytes for the session (don't re-fetch).
-- **Render shape**: `carousel-visual-preview.md` §5.1 step 5 swaps base64 → URL using the registry. Zero re-work, zero re-decision.
+After generation completes, the agent has N `(mediaUrl, mediaId)` pairs in IMAGE_REGISTRY. The compose step in Stage 8 references those URLs directly.
 
 ### 9.1.6.2 User-uploaded assets (avatar, logo, brand photo)
 
@@ -579,13 +573,12 @@ Briefly:
 
 ⛔ **NEVER fabricate a path** like `<img src="lucas_avatar.jpg">` or `<img src="cdn1.postzee.app/user_photo.jpg">`. If you're about to write a `src=` or `url(...)` and the asset isn't in IMAGE_REGISTRY: **STOP**, upload first (§8.2), then come back. The 2026-05-15 incident — avatar-empty on slides 1 and 9 of a rendered carousel — was exactly this anti-pattern. Two REPLACE calls + ~30s of extra work to recover. Prevent it by uploading-first, always.
 
-**Scope of this routine — not limited to Step 0**: §9.1.6.2 sits inside the Step 0 subsection because that's where most carousel images get generated, but the **routine applies any time** the user uploads an image during the carousel workflow:
+**Scope of this routine — not limited to Stage 7**: §9.1.6.2 sits inside the Image Strategy subsection because that's where most carousel images get added, but the **routine applies any time** the user uploads an image during the carousel workflow:
 
-- **Step 0 declined** (user said `pula`): user can still upload an avatar later — run §8.2.
-- **During Step 2 iteration** (`§9.4`): user says *"coloca essa foto como avatar no slide 1"* — run §8.2 before editing the master HTML.
-- **Post-render in stage 7b** (escape hatches `§9.5`): user says *"troca o avatar pelo essa nova foto"* before issuing `POSTZEE_REPLACE_CAROUSEL_SLIDE` — run §8.2 first, then REPLACE.
+- **Stage 7 declined** (user said `pula`): user can still upload an avatar later — run §8.2.
+- **Stage 9 iteration** (`§9.4`): user says *"coloca essa foto como avatar no slide 1"* — run §8.2 first, then `POSTZEE_REPLACE_CAROUSEL_SLIDE`.
 
-The principle is invariant: **assets in HTML always come from IMAGE_REGISTRY**; user-uploaded sources always reach the registry via §8.2.
+The principle is invariant: **assets referenced in slides always come from IMAGE_REGISTRY**; user-uploaded sources always reach the registry via §8.2.
 
 #### 9.1.7 Insufficient credit balance
 
@@ -628,28 +621,28 @@ Failures can surface at two points in the flow:
 
 If ALL proposed images fail: skip the step entirely, surface a single combined message, proceed to typography-only Step 1. Don't loop on retries.
 
-#### 9.1.9 What Step 0 is NOT
+#### 9.1.9 What Stage 7 is NOT
 
-- ❌ **NOT an upsell mechanism.** The agent proposes ONLY when editorial necessity is real. If the carousel doesn't need internal images, propose "só capa" or skip the step entirely.
+- ❌ **NOT an upsell mechanism.** The agent proposes ONLY when editorial necessity is real. If the carousel doesn't need internal images, propose "só capa" or skip the stage entirely.
 - ❌ **NOT a place to re-decide visual direction** (movement, brand palette, headlines). Those were decided at brief. Images here REINFORCE, not REFRAME.
 - ❌ **NOT for slide reordering or structural changes.** The script is approved. Images plug into the existing structure.
-- ❌ **NOT replayed during Step 2 (iteration) or later.** If the user said "pula" or "só capa", that decision sticks for this carousel. User can still manually add images during Step 2 iteration (*"troca a imagem do slide 5 por essa: <url>"*), but the agent never re-proposes the strategy.
+- ❌ **NOT replayed during Stage 9 iteration.** If the user said "pula" or "só capa", that decision sticks for this carousel. User can still add images later by uploading one (`POSTZEE_UPLOAD_MEDIA` per SKILL.md §5) and asking for a REPLACE, but the agent never re-proposes the strategy.
 - ❌ **NOT cap-driven.** Don't force ≥1 image just because the cover is a default candidate. If the design movement is typography-led, skip the cover proposal too.
 
-#### 9.1.10 Why this step exists — the user-value frame
+#### 9.1.10 Why this stage exists — the user-value frame
 
-In carousel analysis, ~30% of carousels are weakened by shipping typography-only when an editorial image would have anchored the message. Step 0's role is to recognize those cases and surface a clear, actionable proposal — not to push images on every carousel.
+In carousel analysis, ~30% of carousels are weakened by shipping typography-only when an editorial image would have anchored the message. Stage 7's role is to recognize those cases and surface a clear, actionable proposal — not to push images on every carousel.
 
 The right success rate for adoption isn't 100%. It's *"the agent proposed when it mattered, the user agreed or chose typography for the right reasons, and the carousel that shipped was the strongest version of itself."*
 
-### 9.2 Stage 7b — render path A: atomic (only path going forward)
+### 9.2 Stage 8 — Render & display
 
-After the user approves the visual in stage 7a, render the whole carousel atomically. Apply the preview→render conversion from `carousel-visual-preview.md` §5.1 — same content + design system, render shape (per-slide independent HTML docs at full 1080×1350, `font-display: block` for the Puppeteer wait window):
+After Stage 7 completes (image generation done or user said `pula`), compose each slide and call `POSTZEE_RENDER_CAROUSEL` once with the full slide array:
 
 ```ts
 POSTZEE_RENDER_CAROUSEL({
   slides: [
-    { html: "<!doctype html>...slide 1 with base64-inlined cover image...", width: 1080, height: 1350 },
+    { html: "<!doctype html>...slide 1 capa...", width: 1080, height: 1350 },
     { html: "<!doctype html>...slide 2 dark...", width: 1080, height: 1350 },
     // ... 9 total
   ],
@@ -658,47 +651,51 @@ POSTZEE_RENDER_CAROUSEL({
 })
 ```
 
-The 7MB-per-slide and 50MB-total payload limits comfortably fit base64-embedded images alongside fonts. Save the returned `mediaGroupId` — you need it for any post-render tweaks.
+The response is **synchronous** — `mediaUrls[]` is populated when the promise resolves. Save the returned `mediaGroupId` (needed for Stage 9 iteration). The 7MB-per-slide and 50MB-total payload limits give comfortable headroom for rich compositions.
 
-### 9.3 Legacy iterative path (still supported, rarely the right choice)
+**Display the result inline.** Per SKILL.md §8.6.D, show ALL slides as markdown images in your reply so the user sees the rendered carousel in the conversation:
 
-The old "render slide 1, then APPEND slide 2, 3, 4…" pattern still works, and the tool contract for `POSTZEE_APPEND_CAROUSEL_SLIDE` is unchanged. But with stage 7a doing the visual iteration upfront, slide-by-slide render mostly stops being useful: the user has already approved all slides as a unit before any render call.
+```
+Pronto! Aqui está seu carrossel:
 
-Reserve this pattern for the rare case where a user explicitly says "renderiza só o slide 1, quero ver pixel-perfeito antes dos outros" — then `POSTZEE_RENDER_CAROUSEL([slide1])` followed by sequential awaited `APPEND` calls.
+![Slide 1 — Capa](https://cdn.../slide-0.png)
+![Slide 2 — Hook](https://cdn.../slide-1.png)
+...
+![Slide 9 — CTA](https://cdn.../slide-8.png)
 
-⛔ **Never parallelise APPEND on the same `mediaGroupId`.** Two concurrent appends race on `MAX(orderInGroup) + 1`; the loser's render is discarded server-side and surfaces as an invariant-violation error to the agent — which then panics and retries, compounding the problem. Always await the previous append before issuing the next. Mutations on different groups parallelise fine.
+Posso ajustar algum ou já publicamos?
+```
 
-⛔ Never call RENDER more than once for the same carousel. Postzee deduplicates identical RENDER payloads via a 1-hour idempotency cache, but the right answer is: don't re-issue RENDER at all — iterate in 7a before committing, then use REPLACE / APPEND for post-render tweaks. See SKILL.md §8.5.D.
+⛔ Never call RENDER more than once for the same carousel. Postzee deduplicates identical payloads via a 1-hour idempotency cache, but the right answer is: don't re-issue RENDER at all — use Stage 9 primitives (REPLACE / APPEND) for any tweak. See SKILL.md §8.5.D.
 
-### 9.4 Iteration during stage 7a Step 2 (PRIMARY path — no Postzee call)
+### 9.3 Iterative authoring path (slide-by-slide previews)
 
-While the user is still in the artifact preview, all iteration is local. Edit the master HTML, re-output the artifact, no tool call:
+For users who explicitly want to see slides one at a time ("renderiza só o slide 1, quero ver antes dos outros") — `POSTZEE_RENDER_CAROUSEL([slide1])` followed by sequential awaited `POSTZEE_APPEND_CAROUSEL_SLIDE` calls for slides 2…N. Same MediaGroup grows; same `mediaGroupId` is used throughout.
 
-| User asks | Action |
+⛔ **Never parallelise APPEND on the same `mediaGroupId`.** Two concurrent appends race on `MAX(orderInGroup) + 1`; the loser's render is discarded server-side and surfaces as an invariant-violation error. Always await the previous append before issuing the next. Mutations on different groups parallelise fine.
+
+### 9.4 Stage 9 — Iteration (PRIMARY path)
+
+After the user sees the rendered slides inline, iteration is the main loop. REPLACE and APPEND are the **workhorses**, not escape hatches:
+
+| User asks | Tool |
 |---|---|
-| "muda cor de fundo do slide 3 pra preto" | Edit slide 3 CSS in master HTML → re-output artifact |
-| "headline do slide 1 maior" | Adjust font-size → re-output |
-| "troca slide 4 e 5 de posição" | Reorder array → re-output |
-| "remove slide 7" | Filter out → re-output |
-| "insere slide entre 2 e 3 sobre X" | Splice new HTML → re-output |
-| "troca a imagem do slide 6 por essa: <url>" | Apply `media-memory.md` §8.2 (POSTZEE_UPLOAD_MEDIA → register in IMAGE_REGISTRY) → fetch the new mediaUrl → base64 → embed → re-output |
-| "coloca minha foto como avatar" (user attached an image) | §9.1.6.2 + §8.2: upload → IMAGE_REGISTRY → re-embed in master HTML → re-output. **Never** fabricate a path. |
+| "muda o fundo do slide 4 pra preto" | `POSTZEE_REPLACE_CAROUSEL_SLIDE({ mediaGroupId, orderInGroup: 3, slide })` |
+| "headline do slide 1 maior" | `POSTZEE_REPLACE_CAROUSEL_SLIDE` on slide 1 |
+| "troca a imagem do slide 6 por essa" + new image | Apply `media-memory.md` §8.2 (`POSTZEE_UPLOAD_MEDIA` → register in IMAGE_REGISTRY) → `POSTZEE_REPLACE_CAROUSEL_SLIDE` on slide 6 |
+| "coloca minha foto como avatar" (user attached photo) | §9.1.6.2 + §8.2 routine: upload → IMAGE_REGISTRY → REPLACE the affected slide(s). **Never** fabricate a path. |
+| "adiciona um slide no final sobre X" | `POSTZEE_APPEND_CAROUSEL_SLIDE({ mediaGroupId, slide })` |
+| "insere um slide entre 4 e 5" | No primitive — offer rebuild ("posso refazer o carrossel inteiro com a nova ordem") |
+| "remove o slide 5" | No primitive — offer rebuild |
+| "troca a ordem dos slides" | No primitive — offer rebuild |
 
-⛔ NEVER call `POSTZEE_RENDER_CAROUSEL` / `REPLACE` / `APPEND` during 7a. The whole point is to spend zero credits while the user shapes the visual.
+**After every REPLACE or APPEND**, display the FULL updated carousel inline again (markdown images of all N slides). Never show only the modified one — the user needs to confirm the whole composition stayed intact. See SKILL.md §8.6.D.
 
-### 9.5 Iteration tools — ESCAPE HATCHES after render (post-7b)
+### 9.5 Cost transparency during iteration
 
-Once the carousel is rendered, the artifact preview is gone — the user is now looking at the real PNGs in the gallery. If they want a tweak at that point, surgical primitives are the path:
+REPLACE and APPEND are **credit-free** (only AI image generation in Stage 7 costs credits, per SKILL.md §2.1). Tell the user this proactively if they hesitate:
 
-| User asks (post-render) | Tool |
-|---|---|
-| "muda o slide 4" | `POSTZEE_REPLACE_CAROUSEL_SLIDE({ mediaGroupId, orderInGroup: 3, slide })` |
-| "agora faça o slide N+1" | `POSTZEE_APPEND_CAROUSEL_SLIDE({ mediaGroupId, slide })` |
-| "insere um slide entre 4 e 5" | No primitive — back to stage 7a (rebuild the artifact, render fresh) |
-| "remove o slide 5" | No primitive — same as above |
-| "troca a ordem dos slides" | No primitive — same as above |
-
-These are **escape hatches**, not the iteration loop. The right pattern is: iterate in 7a, render once, publish. REPLACE/APPEND exist for the case where the user wanted to publish, got the carousel, then noticed something the artifact preview missed.
+> *"Pode pedir as alterações que quiser — refazer slide é livre. Só geração de imagens nova consome créditos."*
 
 ### 9.6 Failure handling
 
@@ -726,54 +723,33 @@ See SKILL.md §8.5.C — never silently retry, surface raw response, ask user.
 
 The agent fills `--P`, `--LB`, `--DB`, `--F-HEAD`, `--F-BODY` based on the briefing answers. The other variables derive.
 
-### 10.1.5 Image source rule (paralela à de fontes em §11)
+### 10.1.5 Image source rule
 
-Two delivery modes, used in different contexts:
-
-| Mode | Used in | When |
-|---|---|---|
-| **base64 `data:image/...` URI** | preview shape | Default for preview. Artifact CSP blocks external image fetches, so the data: URI is the only thing that renders. |
-| **CDN URL** | render shape (PREFERRED when available) | Default for render when the image has a known CDN URL (POSTZEE_GENERATE_IMAGE output, POSTZEE_UPLOAD_MEDIA result, or any postzee CDN reference). Puppeteer fetches server-side — no CSP. |
+Images in slides are referenced by **their Postzee CDN URL**. There is one delivery mode and one rule.
 
 ```html
-<!-- Preview shape: base64 ONLY — artifact CSP blocks external -->
-<img src="data:image/jpeg;base64,/9j/4AAQSk...">
-
-<!-- Render shape: CDN URL when available -->
-<img src="https://cdn.postzee.app/r2/abc.jpg">
-
-<!-- Render shape: base64 when no CDN URL (e.g. user pasted data: URI directly) -->
-<img src="data:image/jpeg;base64,/9j/4AAQSk...">
+<!-- Always reference images by their Postzee CDN URL -->
+<img src="https://cdn1.postzee.app/abc123.jpg">
 ```
 
-The swap from base64 → CDN URL happens at the preview→render conversion (`carousel-visual-preview.md` §5.1 step 5). Don't second-guess it: same image bytes either way; render output is byte-identical.
+```html
+<!-- Background-image variant — same rule -->
+<div style="background: url('https://cdn1.postzee.app/abc123.jpg') center/cover;"></div>
+```
 
-**Why this matters:**
-- The Claude artifact CSP blocks fetches to external CDN URLs. A slide with `<img src="https://...">` renders with a missing image in the artifact preview — breaks the visual fidelity of stage 7a.
-- The render shape has no CSP (Puppeteer fetches freely), and CDN URL refs are ~50 chars vs ~120 KB of base64 — same image, ~99% smaller. This is one half of the token-budget fix (see `carousel-mastery.md` §11.4 for the other half: fonts).
-- The 7 MB per-slide ceiling has enough headroom: a 1080×1350 JPEG at quality 85 is ~250-800 KB raw → ~330 KB-1 MB base64. Comfortably fits with fonts (~200 KB) and HTML/CSS. The ceiling isn't the binding constraint — the model's output token budget is, which is why we prefer URLs over base64 for render.
+**Where the URLs come from**:
 
-**How the agent gets images:**
-
-| Source | How to inline |
+| Source | Path to a Postzee CDN URL |
 |---|---|
-| User pasted a CDN URL | Fetch via WebFetch (or available HTTP tool) → base64 encode → embed |
-| `POSTZEE_GENERATE_IMAGE` returned URL | Same — fetch the result URL, base64, embed |
-| User pasted a `data:image/...` URI directly | Use as-is |
-| Image is >5MB raw | Resize/recompress before embed (target 2160px max dimension, JPEG quality 80-85). If still too large after compression, use the CDN URL and warn the user that **the preview slide will show a placeholder** but the server-side render will still work. |
-| Fetch fails (401, 404, timeout, CORS) | Fall back to CDN URL with the same placeholder warning. Surface the failure to the user — don't silently degrade the preview. |
+| AI-generated for a slide | `POSTZEE_GENERATE_IMAGE` → CHECK_JOB returns `mediaUrl` (already a Postzee URL) |
+| User-provided image (attachment, paste, external URL) | `POSTZEE_UPLOAD_MEDIA` returns `mediaUrl` (a Postzee URL) — see SKILL.md §5 |
+| Asset already in the user's library | `POSTZEE_LIST_MEDIA` → use the `path` from the matching item |
 
-**Background-image variant** (CSS, used by `.img-box` and full-bleed dark slides):
+⛔ **Never reference an external URL directly** in a slide (Drive, Imgur, S3, Telegram). Always upload first; reference the returned Postzee URL.
 
-```html
-<!-- ❌ DON'T -->
-<div style="background: url('https://cdn.postzee.app/...') center/cover;"></div>
+⛔ **Never fabricate a CDN path**. If you're about to write `src="cdn1.postzee.app/something.jpg"` and that URL didn't come from a real tool response, STOP. Upload the asset first (per SKILL.md §5), then use the URL the tool actually returned. The 2026-05-15 incident — avatar empty on slides 1 and 9 of a rendered carousel — was caused by fabrication.
 
-<!-- ✅ DO -->
-<div style="background: url('data:image/jpeg;base64,/9j/...') center/cover;"></div>
-```
-
-See `carousel-visual-preview.md` for the full image-inlining workflow and the aggregated single-document preview shape.
+For routing user-provided images to specific slides, see §18 (Image distribution — when the user provides photos).
 
 ### 10.2 The slide skeleton (every slide is built from this)
 
@@ -783,10 +759,9 @@ See `carousel-visual-preview.md` for the full image-inlining workflow and the ag
 <head>
   <meta charset="UTF-8">
   <style>
-    /* Embedded fonts via @font-face base64 — see §11 */
+    /* Fonts — design system stack (see §11) */
     /* CSS variables — see §10.1 */
-    /* Images: base64 data: URIs in the preview shape (CSP requires it);
-       swapped to CDN URL at render-shape conversion when available — see §10.1.5 */
+    /* Images: referenced by Postzee CDN URL (see §10.1.5) */
     /* Slide-type-specific styles */
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -855,10 +830,8 @@ See `carousel-visual-preview.md` for the full image-inlining workflow and the ag
       background: #fff; border: 3px solid #fff;
       box-shadow: 0 6px 18px rgba(0,0,0,0.3);
     ">
-      <!-- Preview shape: src is a base64 data URI (artifact CSP requires it).
-           At render-shape conversion (visual-preview §5.1 step 5), the agent
-           swaps base64 → CDN URL when the image has a known CDN URL.
-           Example preview src: "data:image/jpeg;base64,/9j/4AAQSk..." -->
+      <!-- Reference images by Postzee CDN URL — see §10.1.5.
+           Example: src="https://cdn1.postzee.app/abc123.jpg" -->
       <img src="USER_LOGO_BASE64_DATA_URI"
            style="width:100%;height:100%;object-fit:cover;" alt="">
     </div>
@@ -1156,10 +1129,8 @@ See `carousel-visual-preview.md` for the full image-inlining workflow and the ag
       background: #fff; border: 3px solid #fff;
       box-shadow: 0 4px 12px rgba(0,0,0,0.25);
     ">
-      <!-- Preview shape: src is a base64 data URI (artifact CSP requires it).
-           At render-shape conversion (visual-preview §5.1 step 5), the agent
-           swaps base64 → CDN URL when the image has a known CDN URL.
-           Example preview src: "data:image/jpeg;base64,/9j/4AAQSk..." -->
+      <!-- Reference images by Postzee CDN URL — see §10.1.5.
+           Example: src="https://cdn1.postzee.app/abc123.jpg" -->
       <img src="USER_LOGO_BASE64_DATA_URI"
            style="width:100%;height:100%;object-fit:cover;" alt="">
     </div>
@@ -1226,18 +1197,9 @@ See `carousel-visual-preview.md` for the full image-inlining workflow and the ag
 
 ---
 
-## 11. Font delivery rule
+## 11. Font discipline
 
-Two delivery modes, used in different contexts:
-
-| Delivery mode | Used in | When |
-|---|---|---|
-| **Google Fonts `<link>`** | render shape (PREFERRED) | Default for render. Puppeteer waits for `document.fonts.ready` before screenshotting — fonts always arrive. Works for any font in the pre-approved set (§11.5). |
-| **base64 `@font-face`** | preview shape | Default for preview (artifact CSP blocks external font fetches). Also a render fallback when the font isn't on Google Fonts. |
-
-### 11.1 Render shape — prefer Google Fonts `<link>`
-
-In the render shape (HTML sent to `POSTZEE_RENDER_CAROUSEL` / `POSTZEE_RENDER_IMAGE`), use Google Fonts:
+Slides use **fonts from the design system stack** — Google Fonts loaded via standard `<link>`:
 
 ```html
 <head>
@@ -1248,72 +1210,20 @@ In the render shape (HTML sent to `POSTZEE_RENDER_CAROUSEL` / `POSTZEE_RENDER_IM
 </head>
 ```
 
-**Why this works in render but not in preview**: the backend Puppeteer (`canvas/src/services/html-render.service.ts:239-255`) calls `await page.evaluate(() => document.fonts.ready)` AFTER `networkidle0` — fonts are guaranteed loaded before the screenshot. The artifact preview has no equivalent guarantee (and CSP often blocks the fetch entirely), which is why the preview shape uses base64.
-
-This rule was previously inverted in the skill (legacy: an earlier worker didn't wait for fonts and Google Fonts arrived too late). The worker was made font-aware; the skill rule lagged. Fixed in v3.7.2 — Google Fonts `<link>` in render is now correct and PREFERRED.
-
-### 11.2 Render shape — base64 `@font-face` as fallback
-
-Acceptable when:
-- The font isn't on Google Fonts (brand-custom face the agent has bytes for)
-- The agent already has the base64 in hand AND the carousel total HTML is comfortably small (uncommon — image swap and font `<link>` together already keep slides ~10 KB)
-
-When using base64 in the render shape, the block looks like the preview-shape block but with `font-display: block`:
-
-```html
-<style>
-@font-face {
-  font-family: 'BrandCustom';
-  font-weight: 700;
-  src: url(data:font/woff2;base64,d09GMgABAA...) format('woff2');
-  font-display: block; /* Render: Puppeteer waits. Preview uses swap. See §11.3. */
-}
-</style>
-```
-
-### 11.3 `font-display` by context — DO NOT GET THIS WRONG
-
-The same `@font-face` block needs **different `font-display` values** depending on which surface will consume the HTML:
-
-| Surface | `font-display` | Why |
-|---|---|---|
-| Render HTML (sent to `POSTZEE_RENDER_CAROUSEL`) | `block` | Puppeteer waits up to 3s for the font before capturing the PNG — we WANT the correct typography, not a fallback. Puppeteer is not subject to artifact CSP, so data: URI fonts always load. |
-| Preview HTML (Stage 7a artifact) | `swap` | The artifact CSP can block `data:` URI font loads. With `block`, text stays invisible forever when the font is blocked. With `swap`, text renders immediately using the fallback chain (`Inter, system-ui, sans-serif`) — degraded typography is fine; invisible text is not. |
-
-Always pair `font-display: swap` (in the preview) with an **explicit system fallback chain** on every `font-family` declaration, otherwise the swap target has nothing to swap to. Example:
+Pair every primary face with a system fallback chain — if the primary fails to load for any reason, the slide still renders with degraded typography rather than invisible text:
 
 ```css
-/* ✅ Preview-safe */
+/* ✅ Safe */
 .headline { font-family: 'Anton', Impact, "Arial Black", sans-serif; }
+.body     { font-family: 'Inter', system-ui, sans-serif; }
 
-/* ❌ Will be invisible if Anton fails */
+/* ❌ Will be invisible if 'Anton' fails to load */
 .headline { font-family: 'Anton'; }
 ```
 
-The mechanical preview→render conversion (see `carousel-visual-preview.md` §5.1) is the moment to flip `swap` → `block`. Get this wrong in either direction:
-- `block` in preview → invisible text in the artifact, user thinks the carousel is broken
-- `swap` in render → Puppeteer may capture before the font loads → PNG ships with fallback typography
+### 11.1 Pre-approved font set
 
-### 11.4 The token-budget reason for moving font delivery off base64
-
-Path A's user-visible bottleneck is NOT the backend's 7 MB/slide + 50 MB total payload limit. It's the model's **output token budget** — every byte of base64 in the tool-call argument costs ~0.25 tokens to emit, and Claude has only ~8K–32K output tokens per turn.
-
-Worked example, 9-slide carousel:
-
-| Strategy | Per slide | 9 slides total | Output tokens |
-|---|---|---|---|
-| Naive (4 weights base64 fonts + base64 cover) | ~270 KB | ~2.4 MB | ~600 K (impossible) |
-| After image swap (cover → CDN URL) | ~150 KB | ~1.4 MB | ~340 K (impossible) |
-| After font swap (Google Fonts `<link>`) | ~5 KB | ~45 KB | ~12 K (comfortable) |
-| Combined (image + font swap) | ~10 KB | ~90 KB | ~22 K (comfortable) |
-
-Without these swaps, the agent on Path A burns minutes doing "shrink gymnastics" (removing covers from slides 2–N, recompressing, switching font weights) and often still can't fit the response. With the swaps, the same carousel goes through in one shot.
-
-The optimizations move bytes from `model output → server-side fetches`. The render PNG is byte-identical. The bottleneck disappears.
-
-### 11.5 Pre-approved font set
-
-To keep slide HTML compact and rendering fast, restrict to these fonts (each weight is ~30-50KB base64):
+To keep slides compact and consistent, restrict to these fonts:
 
 | Style | Display | Body |
 |---|---|---|
@@ -1322,16 +1232,15 @@ To keep slide HTML compact and rendering fast, restrict to these fonts (each wei
 | Minimalista | Inter 700/800/900 | Inter 500 |
 | Bold | Anton 400 (visually bold by design — single weight on Google Fonts) | Inter 500/700 |
 
-Maximum weights per slide: **5**. The 7MB per-slide ceiling can technically fit more (with base64 images plus fonts), but disciplined typography produces better carousels — 5 weights is more than enough to express the four design styles.
+Maximum weights per slide: **5**. Disciplined typography produces better carousels — 5 weights is more than enough to express any of the design styles.
 
-### 11.6 Font fallback chain
+### 11.2 Fonts outside the pre-approved set
 
-If the preferred Google Fonts `<link>` fetch fails (rare — backend allowlist permits it and Puppeteer waits) OR the requested font isn't on Google Fonts:
+If the user explicitly requests a brand-custom face that isn't on Google Fonts (rare):
+1. Surface the constraint clearly: *"essa fonte específica eu não tenho — quer que eu use [Playfair Display / Inter / Anton / Bricolage Grotesque] como aproximação visual?"*
+2. If the user provides the font file itself, escalate — that's a brand asset request beyond the standard carousel flow.
 
-1. **Render shape**: try base64 `@font-face` (only if the agent actually has the base64 bytes — don't fabricate). Use `font-display: block`.
-2. **Both shapes**: fall back to system stack `font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;`. The slide still renders, brand fidelity drops. Surface to the user: "I rendered with system fonts because I couldn't embed [Font]. If you have the file, I can embed it for the next render."
-
-For the pre-approved set (§11.5 — Anton, Inter, Playfair Display, Bricolage Grotesque), Google Fonts `<link>` always works. The fallback chain is real but rarely exercised.
+For routine carousels, the pre-approved set covers every editorial direction.
 
 ---
 
@@ -1375,7 +1284,7 @@ The user can issue these at any stage. Map their phrases to actions.
 | `aprovado` | Advance to render |
 | `pode mandar` / `vamos` | Same |
 | `o slide [N] ainda tá fraco` | Revision request, NOT approval — iterate slide N |
-| `gera só o slide 1 pra ver` | Iterative path B (RENDER with [slide1] only) |
+| `gera só o slide 1 pra ver` | Iterative authoring (§9.3): RENDER with [slide1] only, then APPEND subsequent slides |
 | `próximo` after slide 1 was rendered | APPEND slide 2 |
 
 ### 12.5 Post-render iteration
@@ -1482,7 +1391,7 @@ When in doubt, refer obliquely ("a maior fintech brasileira") rather than naming
 
 ## 18. Image distribution — when the user provides photos
 
-This section handles the case where the user supplies photos. For the complementary case where the **agent proactively proposes AI-generated images** before render, see §9.1 (Stage 7a Step 0 — Image Strategy).
+This section handles the case where the user supplies photos. For the complementary case where the **agent proactively proposes AI-generated images** before render, see §9.1 (Stage 7 — Image Strategy).
 
 | Photos provided | Where they go |
 |---|---|
@@ -1503,7 +1412,7 @@ When the user provides photos AND additional slides would still benefit from ima
 
 - [ ] Stage 5 (editorial validation gate) passed
 - [ ] Stage 6 (text approval) explicitly given by user
-- [ ] Stage 7a Step 0 (image strategy, §9.1) considered before preview — either proposal presented (user accepted/partial/`pula`) OR agent decided to skip (movement typography-led; user-provided photos cover all qualifying slides; zero qualifying slides after the filter)
+- [ ] Stage 7 (image strategy, §9.1) considered before render — either proposal presented (user accepted/partial/`pula`) OR agent decided to skip (movement typography-led; user-provided photos cover all qualifying slides; zero qualifying slides after the filter)
 - [ ] Slide 1 headline visible at min 88px, fits in 5 lines
 - [ ] Same palette + typography across all 9 slides
 - [ ] Tags/labels present and consistent on internal slides
@@ -1514,9 +1423,8 @@ When the user provides photos AND additional slides would still benefit from ima
 - [ ] CTA slide contains: frase-ponte (block 16) + verb-first action (17) + keyword box (18)
 - [ ] Caption draft has hook in first 125 chars (IG) or first 3 lines (LinkedIn)
 - [ ] Hashtags 3-5, niche-relevant, not spam
-- [ ] Render shape uses Google Fonts `<link>` (preferred) or base64 @font-face fallback for non-Google fonts — see §11.0
-- [ ] Render shape images use CDN URL when available, base64 only when no URL exists — see §10.1.5 + visual-preview §5.1
-- [ ] Preview shape uses base64 for both images and fonts (CSP requirement)
+- [ ] Fonts from the pre-approved set (§11.1) with system fallback chain
+- [ ] Images referenced by Postzee CDN URL (§10.1.5) — no external URLs, no fabricated paths
 - [ ] mediaUrls passed to POSTZEE_CREATE_POST in original order
 
 ---
@@ -1534,14 +1442,14 @@ When the user provides photos AND additional slides would still benefit from ima
 - ❌ Skip the editorial validation gate — text quality is the differentiator
 - ❌ Skip the frase-ponte (block 16) on slide 9 — CTA reads cold
 - ❌ Render before stage 6 (explicit approval) — wastes credits + clutters gallery
-- ❌ Skip Stage 7a Step 0 (image strategy proposal) — even on text-only-friendly carousels, propose at least the cover (unless the design movement is explicitly typography-led)
-- ❌ Force ≥1 image just because the cover is a default candidate — if the design movement is typography-led (Brutalist / Minimal / Magazine typography-only), skip the proposal entirely; the agent decides whether to propose at all
+- ❌ Skip Stage 7 (image strategy) — even on text-only-friendly carousels, propose at least the cover (unless the design movement is explicitly typography-led)
+- ❌ Force ≥1 image just because the cover is a default candidate — if the design movement is typography-led (Brutalist / Minimal / Magazine typography-only), skip the proposal entirely
 - ❌ Propose 4+ images in any carousel — if the agent identified that many qualifying slides, the §9.1.2 filter wasn't applied strictly enough; re-evaluate with criterion #1 (loses force without image) as the hard gate
 - ❌ Frame the image strategy proposal as a sale (*"deixe seu carrossel mais bonito! gere imagens!"*) — frame it editorially (*"slide N ganha força com imagem por essa razão"*)
-- ❌ Re-propose images during Stage 7a Step 2 (iteration) — if user said `pula` or accepted a subset, the decision sticks
-- ❌ Re-render to "fix" — use REPLACE per slide
-- ❌ Use Google Fonts `<link>` in the PREVIEW shape — artifact CSP blocks the fetch → use base64 in preview, `<link>` in render (see §11.1)
-- ❌ Inline base64 for the render shape when the image has a known CDN URL — blows the model's output token budget for no benefit (see §11.4)
+- ❌ Re-propose images during Stage 9 iteration — if user said `pula` or accepted a subset in Stage 7, the decision sticks
+- ❌ Re-render the whole carousel to "fix" one slide — use `POSTZEE_REPLACE_CAROUSEL_SLIDE` per slide
+- ❌ Reference images by external URL or fabricated path — always upload first via `POSTZEE_UPLOAD_MEDIA` and use the returned Postzee URL (§10.1.5)
+- ❌ Use fonts outside the pre-approved set (§11.1) without surfacing the constraint to the user
 - ❌ Place body text centered on internal slides — only cover and CTA verb are centered
 - ❌ Apply accent color to more than 3 words per slide
 - ❌ Show the user the triagem, the 7-parameter scoring, or the visual checklist — invisible scaffolding rule
@@ -1595,6 +1503,6 @@ await POSTZEE_CREATE_POST({
 
 Every carousel that ships from this system should be **indistinguishable from** what a top human editorial team would publish — not "in the style of", but "actually equivalent". If a slide reads as AI-generated, the system failed. If a headline reads as templated, the system failed. If the visual rhythm feels random, the system failed.
 
-The discipline is the difference. Run all 8 stages. Don't skip the gate. Iterate on the visual preview before committing to a render. Use REPLACE/APPEND only as a post-render escape hatch. Embed fonts AND images as base64. Show only the result, never the scaffolding.
+The discipline is the difference. Run every stage. Don't skip the gate. Render once, then iterate via REPLACE/APPEND with the user looking at the real slides. Use the pre-approved typography. Reference images by their Postzee URLs only. Show only the result, never the scaffolding.
 
 That's the bar. Ship at the bar.

@@ -476,10 +476,9 @@ Three things that mark a carousel/image as "made by an amateur with a template" 
 ## 11. Cross-references
 
 - `carousel-mastery.md` §10 — slide skeleton + CSS variables (base layer this doc layers on top of)
-- `carousel-mastery.md` §11 — font embedding (you reference these specs, this doc tells you WHICH fonts pair editorially)
-- `carousel-design-principles.md` — the legacy visual rules; this doc extends them with the 6 movements
+- `carousel-mastery.md` §11 — font discipline (you reference these specs, this doc tells you WHICH fonts pair editorially)
+- `carousel-design-principles.md` — visual rules specific to carousel slide flow; this doc extends them with the 6 movements
 - `copywriting-mastery.md` — the WORDS that go inside this design system
 - `image-mastery.md` — single-image specific application of these rules
-- `carousel-visual-preview.md` — the artifact preview that renders this design before commit
 
 The 6 movements + 9-item checklist are the difference between "generic AI carousel" and "this looks like the publication's design team made it". Every render passes through both before commit.

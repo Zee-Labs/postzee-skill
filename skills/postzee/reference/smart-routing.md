@@ -130,7 +130,7 @@ platform == bluesky                         → 1:1
 - ❌ **Ignore explicit user override** — even if the model is "wrong" for the use case, the user's named choice wins.
 - ❌ **Switch family mid-flow when a generation stalls** — try the same family at a lower tier first (e.g. `ideogram-v3-quality` slow → try `ideogram-v3-balanced`).
 - ❌ **Hardcode the registry** — always read from `POSTZEE_LIST_MODELS_DETAILED`. The list evolves.
-- ❌ **Batch-validate cost via `slideCount` for carousels** — that parameter exists for *image batch* generation (N variations of one prompt). Carousel cost is compute-side; for sizing, use `POSTZEE_GET_CONTEXT.credits` against your slide count + any backgrounds you plan to generate via Nano Banana.
+- ❌ **Batch-validate cost via `slideCount` for carousels** — that parameter exists for *image batch* generation (N variations of one prompt). Carousel rendering itself is credit-free (SKILL.md §2.1); for cost sizing, count only the AI image backgrounds you plan to generate.
 - ❌ **Ask the user a question you could grep** — "what aspect ratio?" is forbidden when you know the platform.
 
 ---

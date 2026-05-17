@@ -36,7 +36,7 @@ Combined with the **planned action**:
 }
 ```
 
-**Carousel cost is NOT modelled by `itemCount`** — `POSTZEE_RENDER_CAROUSEL` has its own compute-side cost. Optional Nano Banana backgrounds you generate for some slides do count individually under image generation.
+**Carousel rendering is credit-free** — `POSTZEE_RENDER_CAROUSEL`, `POSTZEE_REPLACE_CAROUSEL_SLIDE`, and `POSTZEE_APPEND_CAROUSEL_SLIDE` do not consume credits (see SKILL.md §2.1). Only AI image generation (`POSTZEE_GENERATE_IMAGE` for optional slide backgrounds) and AI video generation cost credits. `itemCount` is for batch image generation (N variations of one prompt), not carousel slides.
 
 ---
 
