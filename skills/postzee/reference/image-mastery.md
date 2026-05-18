@@ -6,6 +6,15 @@ Why a separate methodology: a single image is a **moment**, not a narrative arc.
 
 The result, when this methodology is followed: posts like the references in image #18 — editorial portrait + magazine typography + branded composition. Posts that look like a designer made them.
 
+> **Read first** — these hard rules from `SKILL.md` apply to every single image:
+> - **§2.3 Image generation gate** — never call `POSTZEE_GENERATE_IMAGE` without explicit user approval (prompt + model + cost in writing)
+> - **§2.4 Text in images** — never ask the AI image model to render text; words go through HTML overlay → render
+> - **§2.5 Image-zone analysis** — write the 3-line zone read before any CSS over an image
+>
+> Companion docs for composition + copy quality:
+> - `cover-design-mastery.md` — 8 composition patterns, zone analysis protocol, anti-mask rule, typography
+> - `cover-copywriting-mastery.md` — 6 hook patterns, specificity rule, anti-platitudes, copy+visual synergy
+
 ---
 
 ## 1. When to use single image vs carousel
@@ -176,15 +185,28 @@ Before surfacing, the agent runs the headline engine `carousel-headline-engine.m
      in the prompt for AI-generated overlays (e.g. logo).
 
 2. POSTZEE_GENERATE_IMAGE is needed?
-   → Yes: compose the prompt following editorial-design.md §8.1 
+   → 🔒 Gate first (SKILL.md §2.3): propose prompt + model + cost,
+     wait for explicit approval. NEVER call generate without it.
+   
+   → 🔒 No text in the prompt (SKILL.md §2.4): describe the
+     image as a photograph, not a poster. Words go on later
+     via HTML.
+   
+   → Compose the prompt following editorial-design.md §8.1 
      (explicit grade instructions in the prompt itself).
    
    Standard prompt template for editorial portrait:
    "Editorial portrait of a {subject description}, 
     {lighting} from a {direction}, slightly desaturated -15%, 
     medium contrast, subject's eyes on upper third, 3/4 angle, 
-    negative space on the {left/right} for text overlay, 
+    leave the {upper-left third / lower band} calm and uniform 
+    (gradient or out-of-focus background), 
     shot on Hasselblad H6D-50c, 80mm lens, f/2.8"
+   
+   ⚠️ The "leave [zone] calm" clause is critical — it gives the
+   subsequent zone read (§6, SKILL.md §2.5) a real calm region
+   to drop type on. Without it, you'll fight the photo or fall
+   back to pattern 1.6 text-on-color-block.
 
    Wait for POSTZEE_CHECK_JOB → success → use resultUrl.
 
@@ -229,11 +251,26 @@ Comando: "boa, vai" pra eu montar o HTML.
 
 ## 6. Composing the slide (used by Stage 4)
 
+🔒 **Zone read first** (SKILL.md §2.5). Before *any* CSS for an image-backed post, output the 3-line zone read:
+
+```
+🔍 Zone read:
+   • Subject zone:  <e.g. "upper-right third, woman's face">
+   • Calm zones:    <e.g. "lower band 25%, upper-left third">
+   • Luminance:     <e.g. "upper half mid-bright, lower band dark">
+```
+
+Then pick a composition pattern from `cover-design-mastery.md` §1 (eight patterns mapped from zone reads at §2.3). The pattern dictates the slide skeleton — don't default to "headline centered in the middle".
+
 Before calling `POSTZEE_RENDER_IMAGE` in Stage 4, the agent composes the slide using:
+- **Zone read** (above) — locks the composition pattern
 - **Slide skeleton** from `carousel-mastery.md` §10.2 (one independent slide document — same scaffolding as a single-slide carousel)
-- **Movement-specific typography + composition** from `editorial-design.md` §1
+- **Composition pattern** from `cover-design-mastery.md` §1
+- **Typography style** from `cover-design-mastery.md` §4 (editorial serif / display sans / modern sans / hand-script)
+- **Movement-specific typography + composition** from `editorial-design.md` §1 (for movement-aligned overrides)
 - **Image source rule** per `carousel-mastery.md` §10.1.5 (references images by Postzee CDN URL only)
 - **User-uploaded assets** (background photo, brand logo, reference image): apply `media-memory.md` §8.2 routine **BEFORE composing the slide** — `POSTZEE_UPLOAD_MEDIA` first → register in IMAGE_REGISTRY → only then compose, referencing `IMAGE_REGISTRY[role_key].mediaUrl`. **NEVER fabricate a path** (`media-memory.md` §8.3). The same anti-pattern that caused the 2026-05-15 carousel avatar-empty bug applies here at N=1.
+- **Anti-mask rule** (`cover-design-mastery.md` §3): no dark overlay >30%, no blur for readability, no black box behind text used as a cover-up. If you need any of those, the wrong zone was picked — re-read the image.
 
 ### 6.1 The slide scaffold for single image
 

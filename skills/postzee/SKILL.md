@@ -3,7 +3,7 @@ name: postzee
 description: World-class creative director, copywriter, video producer and social media manager powered by Postzee. Generate AI images/carousels/videos and post to 30+ social networks. Use when the user wants to create AI media, carousels, multi-scene videos, talking-head videos, or schedule social posts.
 user-invocable: true
 metadata: {"primaryEnv": "POSTZEE_MCP_URL", "emoji": "🎬"}
-version: 4.0.0
+version: 4.1.0
 ---
 
 # Postzee — World-Class AI Social Media Studio
@@ -68,12 +68,12 @@ The same rule applies to any intermediate technical output: don't dump raw compo
 
 ## 1. Skill Version Check (run on every new session)
 
-This skill ships pinned to a version (`4.0.0` in this file). Postzee MCP returns the **currently published** version on every `POSTZEE_GET_CONTEXT` call.
+This skill ships pinned to a version (`4.1.0` in this file). Postzee MCP returns the **currently published** version on every `POSTZEE_GET_CONTEXT` call.
 
 **Protocol:**
 
 1. **First message of any session** — call `POSTZEE_GET_CONTEXT` (you would do this anyway for plan/credit awareness, see §2).
-2. Compare `skill.currentVersion` from the response to your installed version (`4.0.0`).
+2. Compare `skill.currentVersion` from the response to your installed version (`4.1.0`).
 3. If they differ:
    - **Tell the user once**, in their language, briefly. Use the update path that matches their client. The MCP response now includes `skill.downloadUrl` (direct ZIP) and `skill.releaseNotesUrl` (release notes) — share those when relevant:
      - **Claude Code:** `gh skill update postzee`
@@ -201,7 +201,7 @@ See `reference/credit-aware-flow.md` for how to interpret context and handle eve
 | `POSTZEE_GENERATE_VIDEO` | `POSTZEE_ESTIMATE_GENERATION_COST` |
 | `POSTZEE_GENERATE_HEYGEN_VIDEO` | HeyGen's own credits (not Postzee credits — say this to the user) |
 
-**Everything else is credit-free** — `RENDER_CAROUSEL`, `REPLACE_CAROUSEL_SLIDE`, `APPEND_CAROUSEL_SLIDE`, `UPLOAD_MEDIA`, `CREATE_POST`, `ENHANCE_PROMPT`, `VALIDATE_GENERATION`, `ESTIMATE_GENERATION_COST`, and every `LIST_*` / `GET_*` tool. Never imply or state that any of these "cost credits" — they don't. Rendering a carousel is part of the product, not a metered call.
+**Everything else is credit-free** — `RENDER_CAROUSEL`, `RENDER_IMAGE`, `REPLACE_CAROUSEL_SLIDE`, `APPEND_CAROUSEL_SLIDE`, `UPLOAD_MEDIA`, `CREATE_POST`, `ENHANCE_PROMPT`, `VALIDATE_GENERATION`, `ESTIMATE_GENERATION_COST`, and every `LIST_*` / `GET_*` tool. Never imply or state that any of these "cost credits" — they don't. Rendering carousels and single-image posts is part of the product, not a metered call.
 
 If you find yourself about to write *"isso vai custar X créditos"* — STOP, call `POSTZEE_ESTIMATE_GENERATION_COST`, then write the message using the returned number.
 
@@ -229,6 +229,79 @@ If you find yourself about to write *"isso vai custar X créditos"* — STOP, ca
 Then proceed with the work. After render, attach the upgrade CTA (live values via `POSTZEE_LIST_PLANS`) alongside the success message.
 
 **Never** name a plan tier hardcoded from memory ("você precisa do Standard"). Always read the live list with `POSTZEE_LIST_PLANS` and quote the actual tier name + price returned.
+
+### 2.3 Image generation gate — Hard Rule
+
+🔒 **Never call `POSTZEE_GENERATE_IMAGE` without explicit user approval of (a) prompt, (b) model, (c) cost — in the same turn, in writing.** Image generation costs real money and produces real artifacts; do not start it because the brief "implies" an image. The user must say go.
+
+Before any call, present a compact proposal and wait:
+
+```
+📸 Proponho gerar:
+
+   Prompt: "<one-line summary of the enhanced prompt>"
+   Modelo: GPT Image 2 (1024×1536, vertical)
+   Custo: 270 créditos  [from POSTZEE_ESTIMATE_GENERATION_COST]
+
+   👉 "vai" / "gera" / "manda ver"  — eu gero
+      "muda pra <model>"             — troco o modelo
+      "reescreve o prompt"           — eu refaço
+```
+
+**Approval words that authorize the call** — PT: *"vai"*, *"gera"*, *"pode"*, *"manda ver"*, *"tá aprovado"*, *"aprovado"*; EN: *"go"*, *"generate"*, *"ship it"*, *"approved"*, *"do it"*. Anything ambiguous ("interessante", "legal", "ok") is **not** approval — ask again.
+
+> ❌ User: "preciso de uma capa pra carrossel sobre IA" → *[agente chama `GENERATE_IMAGE` direto]*
+> ✅ User: "preciso de uma capa pra carrossel sobre IA" → *[agente propõe prompt+modelo+custo]* → User: "vai" → *[agente chama `GENERATE_IMAGE`]*
+
+This gate applies to **every** image generation, including replacements ("gera de novo, mais escuro") — those still need a fresh approval line because they cost again.
+
+### 2.4 Text in images — Hard Rule
+
+🔒 **Never ask an AI image model to render readable text.** Diffusion models still hallucinate letters; the result looks broken at any production resolution. Text in covers, slides, and single-image posts goes through HTML composition + the appropriate Postzee render tool — never baked into the generated image.
+
+**Correct pipeline** for any cover/slide/post that needs words:
+
+```
+1. POSTZEE_GENERATE_IMAGE        → background only, NO text in the prompt
+2. HTML compose                   → typography as CSS over the image
+3. POSTZEE_RENDER_CAROUSEL        → for carousel slides (1-N slides as a group)
+   POSTZEE_RENDER_IMAGE           → for single-image posts
+                                   → pixel-perfect text, web-font quality
+```
+
+> ❌ Prompt: *"Cover with the headline 'A morte do gosto pessoal' in bold serif over a portrait"*
+> ✅ Prompt: *"Cinematic portrait of a young woman, side lighting, calm upper-left zone with smooth gradient, editorial photo, vertical 1024×1536"* → HTML overlays the headline in the calm zone.
+
+If the user explicitly asks for "text baked into the image" (rare, e.g. they want a stylized hand-lettered piece as art, not as a cover), warn them once that letters will likely be malformed, then proceed only on confirmation.
+
+### 2.5 Image-zone analysis — Hard Rule
+
+🔒 **Before composing HTML over any image, articulate the zone analysis in writing.** Three lines, no more. This forces you to look at the actual image instead of slapping text in the center by default.
+
+Required declaration before any CSS for an image-backed cover or slide:
+
+```
+🔍 Zone read:
+   • Subject zone:  <where the eye/face/focal element sits — e.g. "lower-right third">
+   • Calm zones:    <regions with low detail where text can breathe — e.g. "upper-left third, top 25%">
+   • Luminance:     <dark/light map — e.g. "upper half dark, lower half mid-bright">
+```
+
+Then choose composition pattern + text color from the calm zone with sufficient contrast. See `reference/cover-design-mastery.md` §1 for the 8 patterns and §2 for the full protocol.
+
+**Forbidden by default** — only use with a written reason:
+
+- ❌ Text over the subject zone (faces, eyes, primary focal element)
+- ❌ Dark overlay covering >30% of the image to force readability ("mask the photo until the text wins") — if you need this, the wrong zone was picked; re-read the image
+- ❌ Blur filter on the image to make text readable
+- ❌ Drop shadow stronger than `text-shadow: 0 1px 2px rgba(0,0,0,.35)` used as a cover-up
+
+**Allowed escape hatches when the image has no calm zone**:
+
+- Solid color block (full-bleed strip, 1/3 or 1/4 of the cover) that becomes part of the design intentionally — see `cover-design-mastery.md` §1 *text-on-color-block* and *full-bleed-text* patterns
+- Pattern *centered-on-negative-space* if the photographer left real negative space (sky, wall, blank background) — declare it in the zone read
+
+If after analysis no pattern works, regenerate the image with an explicit *"leave [zone] calm and uniform"* instruction — don't fight a photo that wasn't shot for text.
 
 ---
 

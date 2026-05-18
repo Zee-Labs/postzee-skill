@@ -31,6 +31,17 @@ The system in this file produces carousels that **pass an editor's red pen**: sp
 
 The promise: every carousel that comes out of Postzee is *indistinguishable from* — not in the style of — what a top-tier human editorial team would ship.
 
+> **Read first** — hard rules from `SKILL.md` that govern every carousel with imagery:
+> - **§2.3 Image generation gate** — never call `POSTZEE_GENERATE_IMAGE` without explicit user approval (prompt + model + cost in writing)
+> - **§2.4 Text in images** — never ask the AI image model to render text; words go through HTML overlay → render
+> - **§2.5 Image-zone analysis** — write the 3-line zone read before any CSS over an image-backed slide
+>
+> Cover discipline lives in dedicated docs — read before designing any cover slide:
+> - **`cover-design-mastery.md`** — 8 composition patterns, zone analysis protocol, anti-mask rule, typography
+> - **`cover-copywriting-mastery.md`** — 6 hook patterns, specificity rule, anti-platitudes, copy+visual synergy
+>
+> A carousel cover is **advertising** (loud, committed); the slides inside are **editorial** (calm, structured). Do not let the cover bleed editorial; do not let the slides bleed ad. Both reinforce each other only when they stay in their lane.
+
 ---
 
 ## 1. The pipeline (split: agent vs Postzee)
@@ -369,6 +380,25 @@ Slide 1 (capa) is proposed as an image candidate by default, **except** when:
 
 For all other carousels, propose an image for the cover. The cover is the scroll-stopper — without strong visual on slide 1, even brilliant text loses the feed.
 
+**Cover ≠ slide.** A cover is an ad — louder, sharper, more committed. Before composing the cover HTML:
+
+1. **Pick the hook pattern** from `cover-copywriting-mastery.md` §1 (anti-claim / pair+outcome / pessoal-confessional / proof-by-number / slow-burn / direct provocation). The headline engine generates 10 internally and surfaces 1 — but the winner must clearly belong to one of these 6 patterns, defended in one line.
+2. **Pick the composition pattern** from `cover-design-mastery.md` §1 (lower-third, upper-third, left-third, right-third, full-bleed-text, text-on-color-block, diagonal, centered-on-negative-space). Pick by zone read (§2 of that doc), not by habit.
+3. **Synergize** copy voice with design pattern via `cover-copywriting-mastery.md` §4.1 voice→pattern map. A confessional headline in display sans on a diagonal background is wrong — match the volume.
+
+When proposing the cover image to the user, the prompt instruction must end with an explicit **"leave [zone] calm and uniform"** clause (e.g. *"leave the upper-left third calm and uniform — gradient or out-of-focus background"*). This gives the subsequent zone read a real calm region to land type on. Without it, you'll fight the photo or be forced into pattern 1.6 text-on-color-block as a rescue.
+
+🔒 **Before composing the cover HTML**, output the 3-line zone read (SKILL.md §2.5; `cover-design-mastery.md` §2.2):
+
+```
+🔍 Zone read:
+   • Subject zone:  <where the focal element sits>
+   • Calm zones:    <regions with low detail variance>
+   • Luminance:     <dark/mid/bright map>
+```
+
+Then declare the pattern picked + why before any CSS. This is non-negotiable for covers.
+
 #### 9.1.2 Internal slides — the rigorous filter
 
 For ANY internal slide (2 through N), apply the filter. The slide qualifies ONLY when ALL four criteria are simultaneously true:
@@ -385,6 +415,8 @@ Slides that systematically FAIL the filter:
 - Data-heavy slides (the number is the protagonist)
 - Bridge / transition slides
 - Text-driven CTAs (verb-first action + keyword box — typography wins)
+
+🔒 **Zone read applies to every image-backed slide, not only covers.** When an internal slide passes the filter and gets an image, the agent declares the 3-line zone read (SKILL.md §2.5) before composing the slide's HTML. Internal slides typically use a quieter pattern (1.1 lower-third or 1.6 text-on-color-block) — covers are advertising, slides are editorial.
 
 **Worked example — 9-slide carousel "A morte do gosto pessoal":**
 
@@ -456,8 +488,15 @@ One prompt per qualifying slide. Structure:
 centered / negative space / off-center], [lighting: cinematic /
 editorial / documentary / golden hour], [mood: tense / hopeful /
 nostalgic / dystopian], [style: editorial photography / fine art /
-minimalist design / documentary], [color hint from brand palette], 4:5
+minimalist design / documentary], [color hint from brand palette],
+leave [zone] calm and uniform (gradient or out-of-focus background)
+for type overlay, 4:5
 ```
+
+🔒 **Two hard rules apply to every image prompt** (SKILL.md §2.4 + §2.5):
+
+1. **No text in the prompt.** Never ask the model to render a headline, a number, a logo, a word. Diffusion models hallucinate letters; text on the image goes through HTML overlay → render.
+2. **Always include a calm-zone clause.** "Leave [upper-left third / lower band / right column] calm and uniform" — pick the zone that matches the composition pattern you'll use in the cover/slide design (`cover-design-mastery.md` §1). Without this clause the model fills every pixel with detail and the zone read returns "no calm zones".
 
 Tie the style to the design movement chosen at brief:
 
