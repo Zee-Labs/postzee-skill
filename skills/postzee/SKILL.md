@@ -3,7 +3,7 @@ name: postzee
 description: World-class creative director, copywriter, video producer and social media manager powered by Postzee. Generate AI images/carousels/videos and post to 30+ social networks. Use when the user wants to create AI media, carousels, multi-scene videos, talking-head videos, or schedule social posts.
 user-invocable: true
 metadata: {"primaryEnv": "POSTZEE_MCP_URL", "emoji": "🎬"}
-version: 4.1.0
+version: 4.2.0
 ---
 
 # Postzee — World-Class AI Social Media Studio
@@ -774,7 +774,16 @@ SLIDE 9 — CTA
 
 #### 8.5.A — Atomic path (preferred — user approved the full script)
 
-One call to `POSTZEE_RENDER_CAROUSEL` with the full `slides[]` array. The response is synchronous — `mediaUrls` arrives populated. Save the returned `mediaGroupId` in your scrollback. This is the fastest path: all slides render in parallel and arrive as one MediaGroup.
+One call to `POSTZEE_RENDER_CAROUSEL` with the full `slides[]` array. Save the returned `mediaGroupId` in your scrollback. This is the fastest path: all slides render in parallel and arrive as one MediaGroup.
+
+**Response can be immediate OR deferred (v4.2).** Rendering is fast but not instant — under load a large carousel can take a couple of minutes. So the tool answers in one of two shapes:
+
+- `status: "success"` → `mediaUrls[]` is populated right now. Done.
+- `status: "processing"` → the render is still running and the response carries a `jobId` (starts with `mcpjob_`) plus a `mediaGroupId`. **Poll `POSTZEE_CHECK_JOB({ jobId })` every ~5 seconds** until `status` is `success` (then read `mediaUrls`), `partial`, or `failed`. This is the SAME poll pattern as `POSTZEE_GENERATE_IMAGE` — treat a `processing` render exactly like an async generation.
+
+⛔ **Never treat `processing` as failure, and never re-call `RENDER_CAROUSEL` because it "didn't return the URLs yet".** A `processing` response means the work is in flight — re-rendering duplicates it. Poll the `jobId` instead. Identical retries are idempotent for 1 hour (they return the same job), but the correct action is always to poll, not retry.
+
+The same `success` / `processing` split applies to `POSTZEE_RENDER_IMAGE`, `POSTZEE_APPEND_CAROUSEL_SLIDE`, `POSTZEE_REPLACE_CAROUSEL_SLIDE`, and `POSTZEE_UPLOAD_MEDIA`. Whenever any of them answers `processing`, poll its `jobId` via `POSTZEE_CHECK_JOB` — don't re-call the tool.
 
 #### 8.5.B — Iterative path (user wants slide-by-slide previews)
 
@@ -791,6 +800,7 @@ Each next slide:    POSTZEE_APPEND_CAROUSEL_SLIDE({ mediaGroupId, slide: slideN 
 
 - ⛔ **Do NOT** call `POSTZEE_RENDER_CAROUSEL` more than once for the same carousel. Subsequent calls create new MediaGroups and pollute the gallery with N orphan single-slide groups.
 - ⛔ **Do NOT** batch slides into multiple `RENDER_CAROUSEL` calls (lote 1 + lote 2 + lote 3). If you need to fragment, the first call is RENDER and EVERY following slide goes through APPEND.
+- ⏳ **One in-flight APPEND per carousel, and poll if it defers.** APPEND may answer `status: "processing"` with a `jobId` — poll `POSTZEE_CHECK_JOB` until `success` before starting the next slide. Do NOT fire the next APPEND (or re-fire the same one) while one is still processing — appends on the same group are serialized server-side, and an identical retry within 1 hour is idempotent (returns the same job, never a duplicate slide).
 - ✅ Once the user is done, summarize: "Carrossel finalizado com N slides. Mídias: [...]". Use the `mediaUrls` from the latest APPEND response in `POSTZEE_CREATE_POST`.
 
 #### 8.5.C — When something fails or returns unexpected output
@@ -1179,7 +1189,7 @@ The MCP exposes each tier as a real model id you can pass directly. Examples:
 | Ideogram V3 best text rendering | `ideogram-v3-quality` | |
 | GPT Image 2 cheap | `gpt-image-2-low` | |
 | GPT Image 2 premium | `gpt-image-2-high` | |
-| Recraft vector / SVG output | `recraft-v4-vector` | Vector tier of Recraft V4 |
+| Recraft vector / SVG output | `recraft-v4-vector` | Vector tier of Recraft V4. ⚠️ SVG/vector output **cannot be attached to a post or imported** — the media pipeline only accepts JPEG/PNG/WebP/GIF/MP4/MOV/WebM. Use this only when the user wants a vector file to download, never as post media. For a postable graphic, generate a raster (PNG) model or use `POSTZEE_RENDER_IMAGE`. |
 | Sora 2 Pro 1080p | `sora-2-t2v-pro-1080p` | Or `i2v` for image-to-video |
 
 The MCP translates virtual ids to the backend's base model + params automatically. If you pick a model that isn't available, the MCP returns `unknown_model` with up to 3 suggestions — use one of those.
@@ -1230,7 +1240,7 @@ All write/generate tools return a JSON object with `success: boolean`, and on fa
 | `unknown_model` | any GENERATE tool | Model id doesn't exist. Inspect `suggestions[]` in the response and pick one (or call `POSTZEE_LIST_MODELS_DETAILED`). |
 | `wrong_type` | any GENERATE tool | You passed an image model to GENERATE_VIDEO (or vice versa). Re-pick from `POSTZEE_LIST_MODELS_DETAILED({type: "..."})`. |
 | `blocked_url` | `POSTZEE_UPLOAD_MEDIA` | URL is malformed, uses a forbidden scheme, or points at a private/loopback/cloud-metadata host. Ask the user for a public http/https URL. |
-| `unsupported_type` | `POSTZEE_UPLOAD_MEDIA` | The URL's Content-Type is not `image/*` or `video/*`. Don't retry with the same URL. |
+| `unsupported_type` | `POSTZEE_UPLOAD_MEDIA` | The downloaded bytes aren't one of the exact supported formats — **JPEG, PNG, WebP, GIF, MP4, MOV, WebM**. (v4.2 validates the real file bytes, not just the header, so `image/svg+xml`, `image/avif`, `image/heic`, PDF, and HTML are all rejected even if the URL's Content-Type claims otherwise.) Don't retry with the same URL — ask the user for a JPG/PNG/MP4. |
 | `size_limit_exceeded` | `POSTZEE_UPLOAD_MEDIA` | File is larger than 50 MB. Ask the user for a smaller version. |
 | `fetch_failed` | `POSTZEE_UPLOAD_MEDIA` | URL returned a non-2xx status or didn't respond. Could be expired (Telegram/WhatsApp links), private, or rate-limited. Surface the message to the user. |
 | `storage_full` | `POSTZEE_UPLOAD_MEDIA` / `POSTZEE_GENERATE_*` | Org's storage quota is reached. Tell the user to free space at `https://dashboard.postzee.app/library` or upgrade. |
